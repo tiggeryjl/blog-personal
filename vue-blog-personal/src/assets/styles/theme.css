@@ -1,0 +1,65 @@
+/* 默认主题（浅色） */
+:root {
+  /* 页面背景色 */
+  --bg-color: linear-gradient(to bottom, #7fd4ffa5 5%, #dddddd 30%);
+  /* 导航栏背景色 */
+  --navbar-bg: #f8f9fae7;
+  /* 文字标题颜色 */
+  --text-color: #000000;
+  /* 正文颜色 */
+  --text-main-color: #333333;
+  /* 次要文字颜色 */
+  --text-secondary-color: #555555;
+  /* 提示文字颜色 */
+  --text-prompt-color: #555555c1;
+  /* 数据提示文字颜色 */
+  --text-data-prompt-color: #0291ff;
+  /* 卡片背景色 */
+  --card-bg: #f8f9fabe;
+  --card-secound-bg: #ffffffd4;
+  --card-bg-hover: #ffffffcd;
+  /* 边框颜色 */
+  --border-color: #202020;
+  /* 主色调 */
+  --primary-color: #007efbc3;
+  /* 悬浮颜色 */
+  --hover-color: #fb4700;
+  /* 向上按钮颜色 */
+  --scroll-top-color: #121212;
+}
+
+/* 深色主题 */
+[data-theme="dark"] {
+  --bg-color: #1e1e1e9a;
+  --navbar-bg: #090601a9;
+  --text-color: #ffffff;
+  --text-main-color: #cccccc;
+  --text-secondary-color: #888888;
+  --text-prompt-color: #8888889e;
+  --text-data-prompt-color: #3108ff;
+  --card-bg: #110b02c0;
+  --card-secound-bg: #23201dc0;
+  --card-bg-hover: #605b52f9;
+  --border-color: #b7b4b4;
+  --primary-color: #3b82f6;
+  --hover-color: #fb4700;
+  --scroll-top-color: #fafafa;
+}
+
+/* 浅色主题 */
+[data-theme="white"] {
+  --bg-color: #f4ecec9a;
+  --navbar-bg: #ecdfdfd1;
+  --text-color: #000000;
+  --text-main-color: #333333;
+  --text-secondary-color: #555555;
+  --text-prompt-color: #999999;
+  --text-data-prompt-color: #0291ff;
+  --card-bg: #dadadae8;
+  --card-secound-bg: #ffffffd4;
+  --card-bg-hover: #fffdfdcc;
+  --border-color: #000000;
+  --primary-color: #3b82f6;
+  --hover-color: #fb4700;
+  --scroll-top-color: #6f6c66;
+}

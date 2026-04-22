@@ -1,0 +1,286 @@
+/* ==============================================
+   全站响应式布局 — 手机端自动生效
+   电脑端无任何变化
+============================================== */
+/* 电脑端隐藏菜单按钮 */
+.mobile-menu-btn {
+  display: none !important;
+}
+
+@media (max-width: 930px) {
+
+  /* 1. 导航栏手机样式 */
+  .header {
+    width: 95% !important;
+    height: auto !important;
+    padding: 12px 0 !important;
+  }
+
+  .nav-container {
+    flex-direction: column !important;
+    position: relative !important;
+    align-items: flex-start !important;
+  }
+
+  /* 手机菜单按钮 */
+  .mobile-menu-btn {
+    display: flex !important;
+    position: absolute !important;
+    right: 10px !important;
+    width: 40px !important;
+    height: 40px !important;
+    color: #fff !important;
+    font-size: 24px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+  }
+
+  /* 菜单折叠 */
+  .nav-menu-wrapper {
+    display: none !important;
+    width: 100% !important;
+  }
+
+  .nav-menu-wrapper.show {
+    display: block !important;
+    margin-top: 10px !important;
+  }
+
+  /* 导航竖排 */
+  .nav-menu {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 6px !important;
+  }
+
+  .nav-menu li {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    padding-left: 14px !important;
+  }
+
+  /* 右侧工具栏竖排 */
+  .right_tool {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding: 10px 0 0 14px !important;
+    width: 100% !important;
+  }
+
+  /* 2. 页面布局：侧边栏在上，主内容在下 */
+  .blog-layout {
+    flex-direction: column !important;
+    padding: 10px 15px !important;
+    gap: 20px !important;
+  }
+
+  .sidebar,
+  .content {
+    width: 100% !important;
+  }
+
+  /* 3. 文章卡片：手机端强制单列 */
+  .article-list.grid,
+  .article-list.grid3 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  .article-item {
+    height: auto !important;
+    flex-direction: column !important;
+  }
+
+  .article-img {
+    width: 100% !important;
+    height: 180px !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1280px) {
+
+  /* 1. 导航栏调整 - 适当缩小间距 */
+  .header {
+    width: 90% !important;
+    height: 65px !important;
+  }
+
+  .nav-menu li {
+    padding: 0 12px !important;
+    font-size: 16px !important;
+  }
+
+  /* 2. 右侧工具栏缩小间距 */
+  .right_tool {
+    gap: 8px !important;
+  }
+
+  .theme-icon,
+  .layout-trigger {
+    font-size: 20px !important;
+  }
+
+  .login-btn {
+    width: 85px !important;
+    height: 38px !important;
+    font-size: 14px !important;
+  }
+
+  /* 用户信息区域 */
+  .user-dropdown-trigger {
+    gap: 6px !important;
+  }
+
+  .nickname {
+    font-size: 14px !important;
+    max-width: 80px !important;
+  }
+
+  /* 3. 页面布局：侧边栏和主内容比例调整 */
+  .blog-layout {
+    padding: 15px 20px !important;
+    gap: 24px !important;
+  }
+
+  .sidebar {
+    width: 30% !important;
+    max-width: 280px !important;
+  }
+
+  .content {
+    width: 70% !important;
+  }
+
+  /* 4. 文章卡片：iPad 上保持两列网格 */
+  .article-list.grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 20px !important;
+  }
+
+  /* 三列布局在 iPad 上改为两列 */
+  .article-list.grid3 {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 20px !important;
+  }
+
+  /* 5. 文章卡片内边距调整 */
+  .article-item {
+    padding: 16px !important;
+  }
+
+  .article-img {
+    height: 160px !important;
+  }
+
+  .article-title {
+    font-size: 18px !important;
+  }
+
+  .article-desc {
+    font-size: 14px !important;
+  }
+
+  /* 6. 侧边栏组件调整 */
+  .sidebar .card {
+    padding: 16px !important;
+  }
+
+  .sidebar .card-title {
+    font-size: 16px !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* 7. 日历组件缩小 */
+  .calendar-table td,
+  .calendar-table th {
+    padding: 6px !important;
+    font-size: 13px !important;
+  }
+
+  /* 8. 分类标签调整 */
+  .category-list li {
+    padding: 6px 12px !important;
+    font-size: 14px !important;
+  }
+
+  /* 9. 主内容区顶部边距 */
+  :deep(.el-main) {
+    padding-top: 75px !important;
+  }
+}
+
+/* ==============================================
+   小尺寸 iPad / 大屏手机横屏 (900px - 1023px)
+   介于手机和平板之间的过渡尺寸
+============================================== */
+@media (min-width: 930px) and (max-width: 1023px) {
+
+  /* 1. 导航栏 */
+  .header {
+    width: 96% !important;
+  }
+
+  .nav-menu li {
+    padding: 0 10px !important;
+    font-size: 15px !important;
+  }
+
+  /* 2. 页面布局：侧边栏稍微宽一点 */
+  .blog-layout {
+    padding: 15px !important;
+    gap: 20px !important;
+  }
+
+  .sidebar {
+    width: 32% !important;
+  }
+
+  .content {
+    width: 68% !important;
+  }
+
+  /* 3. 文章卡片：两列 */
+  .article-list.grid,
+  .article-list.grid3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  /* 4. 文章图片高度调整 */
+  .article-img {
+    height: 150px !important;
+  }
+}
+
+/* ==============================================
+   大尺寸 iPad Pro / 小笔记本 (1280px - 1440px)
+   优化显示效果
+============================================== */
+@media (min-width: 1281px) and (max-width: 1440px) {
+
+  /* 1. 导航栏稍微加宽 */
+  .header {
+    width: 85% !important;
+  }
+
+  /* 2. 主内容区最大宽度限制 */
+  .blog-layout {
+    max-width: 1300px !important;
+    margin: 0 auto !important;
+    padding: 20px !important;
+  }
+
+  /* 3. 三列布局保持三列，但适当缩小间距 */
+  .article-list.grid3 {
+    gap: 24px !important;
+  }
+
+  .article-img {
+    height: 180px !important;
+  }
+}
