@@ -14,6 +14,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/store/userloginstatus'
 import ScrollToTop from '@/components/ScrollToTop.vue'
 import MusicPlayer from '@/components/MusicPlayer.vue'
+import WelcomeBanner from '@/components/WelcomeBanner.vue'
 
 // 获取路由对象
 const router = useRouter()
@@ -383,6 +384,7 @@ onUnmounted(() => {
       </el-header>
 
       <!-- main主内容区 -->
+      <!-- <WelcomeBanner /> -->
       <el-main>
         <router-view />
       </el-main>

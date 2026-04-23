@@ -1,7 +1,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { ref, onMounted, onUnmounted } from 'vue'
-import { Expand, Menu, Grid } from '@element-plus/icons-vue'
+import { Expand, Menu, Grid, Edit } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const articleList = ref([
@@ -85,6 +85,9 @@ const articleList = ref([
   },
 ])
 
+const goEdit = () => {
+  router.push('/editInput')
+}
 const goDetail = (id) => {
   router.push('/article/' + id)
 }
@@ -138,6 +141,13 @@ onUnmounted(() => {
         </div>
         <h2>最新文章</h2>
         <div class="layout-dropdown">
+          <button class="layout-trigger" @click="goEdit()">
+            <span class="icon-wrap">
+              <el-icon>
+                <Edit />
+              </el-icon>
+            </span>发布文章
+          </button>
           <button class="layout-trigger" @click="showDropdown = !showDropdown">
             <span class="icon-wrap">
               <component :is="layoutIcons[layoutMode]" />
@@ -236,6 +246,7 @@ onUnmounted(() => {
   color: var(--text-color);
   cursor: pointer;
   padding: 4px 8px;
+  margin: 0px 5px;
   border-radius: 16px;
   transition: all 0.3s ease;
   display: inline-flex;

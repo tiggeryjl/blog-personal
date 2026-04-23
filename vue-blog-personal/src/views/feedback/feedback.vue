@@ -88,19 +88,36 @@ const publishComment = (commentId, replyId, content) => {
   })
   ElMessage.success('回复成功！')
 }
+// 点赞评论
 const likeComment = (commentId) => {
+  const storageKey = `liked_comment_${commentId}`
+  if (localStorage.getItem(storageKey)) {
+    ElMessage.warning('你已经点过赞了')
+    return
+  }
   const comment = commentList.value.find(c => c.id === commentId)
-  if (comment) comment.like++
-  ElMessage.success('点赞成功！')
+  if (comment) {
+    comment.like++
+    localStorage.setItem(storageKey, '1')
+    ElMessage.success('点赞成功！')
+  }
 }
 
 // 点赞回复
 const likeReply = (commentId, replyId) => {
+  const storageKey = `liked_reply_${commentId}_${replyId}`
+  if (localStorage.getItem(storageKey)) {
+    ElMessage.warning('你已经点过赞了')
+    return
+  }
   const comment = commentList.value.find(c => c.id === commentId)
   if (!comment) return
   const reply = comment.replies.find(r => r.id === replyId)
-  if (reply) reply.like++
-  ElMessage.success('点赞成功！')
+  if (reply) {
+    reply.like++
+    localStorage.setItem(storageKey, '1')
+    ElMessage.success('点赞成功！')
+  }
 }
 // 表情相关（用于留言板）
 const showPublishEmoji = ref(false)

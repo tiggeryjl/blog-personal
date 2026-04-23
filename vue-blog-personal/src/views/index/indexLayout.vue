@@ -1,6 +1,7 @@
 <script setup>
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import WelcomeBanner from '@/components/WelcomeBanner.vue'
 
 const today = new Date()
 const currentYear = ref(today.getFullYear())
@@ -71,11 +72,21 @@ const calendarDays = computed(() => {
 })
 
 const router = useRouter()
+const route = useRoute()
+
+const show = computed(() => {
+  return route.path === '/' || route.path.startsWith('/index')
+})
 
 </script>
 
 <template>
+  <div v-if="show">
+    <WelcomeBanner />
+  </div>
+
   <div class="blog-layout">
+
     <!-- 左侧侧边栏 -->
     <aside class="sidebar">
       <!-- 1. 个人信息区域 -->

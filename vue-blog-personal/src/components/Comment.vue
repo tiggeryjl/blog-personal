@@ -63,9 +63,11 @@ const getReplyUI = (commentId, replyId) => {
 const closeAllReplies = () => {
   for (let ui of commentUI.values()) {
     ui.replying = false
+    ui.replyText = ''
   }
   for (let ui of replyUI.values()) {
     ui.replying = false
+    ui.replyText = ''
   }
 }
 

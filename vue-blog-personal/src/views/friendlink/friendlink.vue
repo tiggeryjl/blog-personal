@@ -76,8 +76,6 @@ const applyForm = ref({
 
 // 加载已通过的友联
 const loadLinks = async () => {
-  // const res = await axios.get('/api/links?status=pass')
-  // linkList.value = res.data
 }
 
 // 提交申请
@@ -190,6 +188,7 @@ onMounted(() => loadLinks())
 .links-header,
 .links-info,
 .button,
+.copy-button,
 .links-grid {
   opacity: 0;
   transform: translateY(-15px);
@@ -353,9 +352,9 @@ onMounted(() => loadLinks())
 }
 
 .copy-button:hover {
-  background-color: #13569ac3;
-  color: #ffffffc3;
-  border: 1px solid #13569ac3;
+  background-color: #ebb1a2b8;
+  color: var(--hover-color);
+  border: 1px solid #ebb1a2b8;
 }
 
 /* 提示框样式 */

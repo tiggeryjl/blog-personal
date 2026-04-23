@@ -6,6 +6,7 @@ import IndexView from '@/views/index/index.vue'
 import LoginView from '@/views/login/index.vue'
 import ArticleView from '@/views/article/article.vue'
 import ArticleDetailView from '@/views/article/articleDetail.vue'
+import editInputView from '@/views/article/editInput.vue'
 import DailyDetailView from '@/views/daily/dailyDetail.vue'
 import DailyView from '@/views/daily/daily.vue'
 import FriendLinkView from '@/views/friendlink/friendlink.vue'
@@ -44,6 +45,7 @@ const router = createRouter({
         { path: 'setting', name: 'setting', component: SettingView },
         { path: 'article/:id', name: 'articleDetail', component: ArticleDetailView },
         { path: 'daily/:id', name: 'dailyDetail', component: DailyDetailView },
+        { path: 'editInput', name: 'editInput', component: editInputView },
       ]
     },
     { path: '/login', name: 'login', component: LoginView },

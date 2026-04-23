@@ -147,9 +147,17 @@ const article = ref({
   // 核心：文章内容（带 <p> <img> 标签）
   content: ''
 })
-
+//点赞文章
 const like = () => {
+  const articleId = route.params.id
+  const storageKey = `liked_article_${articleId}`
+  if (localStorage.getItem(storageKey)) {
+    ElMessage.warning('你已经点过赞了')
+    return
+  }
   article.value.like++
+  localStorage.setItem(storageKey, '1')
+  ElMessage.success('点赞成功！')
 }
 
 const loadArticle = () => {
