@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { DArrowRight } from '@element-plus/icons-vue'
+import { DArrowRight, ChatLineSquare, Document, View, Reading } from '@element-plus/icons-vue'
 import WelcomeBanner from '@/components/WelcomeBanner.vue'
 
 const router = useRouter()
@@ -12,16 +12,93 @@ const notice = ref(`【公告】
 这里会记录技术文章、日常感悟、学习笔记~
 
 后续更新计划：
-▫️ 完善文章发布功能
-▫️ 新增评论系统
+▫️ 完善登录注册功能
+▫️ 新增日常发布按钮
 ▫️ 优化页面样式
-▫️ 增加 dark/light 模式`)
+▫️ 增加设置页面`)
 
+const articleList = ref([
+  {
+    id: 1,
+    title: "新起点 新动力！",
+    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
+    category: "心得",
+    date: "2026-02-21 14:03",
+    cover: "https://picsum.photos/400/250",
+    view: 636,
+    like: 7,
+    comment: 12,
+    words: 1077
+  },
+  {
+    id: 2,
+    title: "新起点 新动力！",
+    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
+    category: "心得",
+    date: "2026-02-21 14:03",
+    cover: "https://picsum.photos/400/250",
+    view: 636,
+    like: 7,
+    comment: 12,
+    words: 1077
+  },
+  {
+    id: 3,
+    title: "新起点 新动力！",
+    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
+    category: "心得",
+    date: "2026-02-21 14:03",
+    cover: "https://picsum.photos/400/250",
+    view: 636,
+    like: 7,
+    comment: 12,
+    words: 1077
+  },
+  {
+    id: 4,
+    title: "新起点 新动力！",
+    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
+    category: "心得",
+    date: "2026-02-21 14:03",
+    cover: "https://picsum.photos/400/250",
+    view: 636,
+    like: 7,
+    comment: 12,
+    words: 1077
+  },
+  {
+    id: 5,
+    title: "新起点 新动力！",
+    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
+    category: "心得",
+    date: "2026-02-21 14:03",
+    cover: "https://picsum.photos/400/250",
+    view: 636,
+    like: 7,
+    comment: 12,
+    words: 1077
+  },
+  {
+    id: 6,
+    title: "新起点 新动力！",
+    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
+    category: "心得",
+    date: "2026-02-21 14:03",
+    cover: "https://picsum.photos/400/250",
+    view: 636,
+    like: 7,
+    comment: 12,
+    words: 1077
+  },
+])
+
+const goDetail = (id) => {
+  router.push('/article/' + id)
+}
 </script>
 
 <template>
   <div class="common-index">
-
 
     <!-- 公告卡片（占满父级宽度） -->
     <div class="notice-card">
@@ -38,7 +115,9 @@ const notice = ref(`【公告】
         <div class="line-right"></div>
         <div class="line-bottom-left"></div>
         <div class="line-bottom-right"></div>
-        <span>文章列表<el-icon>
+        <span><el-icon>
+            <Document />
+          </el-icon>文章列表<el-icon>
             <DArrowRight />
           </el-icon></span>
       </div>
@@ -50,9 +129,48 @@ const notice = ref(`【公告】
         <div class="line-right"></div>
         <div class="line-bottom-left"></div>
         <div class="line-bottom-right"></div>
-        <span>日常分享<el-icon>
+        <span><el-icon>
+            <Reading />
+          </el-icon>日常分享<el-icon>
             <DArrowRight />
           </el-icon></span>
+      </div>
+    </div>
+
+    <div>
+      <h2> 热门文章 </h2>
+      <div class="divider"></div>
+      <div class="article-list">
+        <div class="article-item" v-for="item in articleList" :key="item.id" @click="goDetail(item.id)">
+          <!-- 左侧图片 -->
+          <div class="article-img">
+            <img :src="item.cover" alt="文章封面" />
+          </div>
+          <!-- 右侧内容 -->
+          <div class="article-content">
+            <div class="article-meta">
+              <span class="category">{{ item.category }}</span>
+              <span class="date">{{ item.date }}</span>
+            </div>
+            <h3 class="article-title">{{ item.title }}</h3>
+            <p class="article-desc">{{ item.desc }}</p>
+            <div class="article-stats">
+              <span><el-icon>
+                  <View />
+                </el-icon> {{ item.view }}</span>
+              <span><font-awesome-icon icon="fa-solid fa-thumbs-up" /> {{ item.like }}</span>
+              <span><el-icon>
+                  <ChatLineSquare />
+                </el-icon> {{ item.comment }}</span>
+              <span><el-icon>
+                  <Document />
+                </el-icon> {{ item.words }}字</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-if="articleList.length === 0" class="empty-data">
+        暂无文章数据
       </div>
     </div>
 
@@ -96,6 +214,7 @@ const notice = ref(`【公告】
   display: flex;
   gap: 16px;
   width: 100%;
+  margin-bottom: 15px;
 }
 
 .quick-btn {
@@ -141,7 +260,7 @@ const notice = ref(`【公告】
 .quick-btn .line-bottom-left,
 .quick-btn .line-bottom-right {
   position: absolute;
-  background: rgb(255, 207, 183);
+  background: rgba(165, 255, 229, 0.808);
   opacity: 0;
   transition: opacity 0.2s;
   z-index: 5;
@@ -264,5 +383,198 @@ const notice = ref(`【公告】
     width: 50%;
     opacity: 1;
   }
+}
+
+.header-row h2 {
+  margin: 0 0 8px;
+  color: var(--text-color);
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-color);
+  margin-bottom: 20px;
+}
+
+/* 默认列表模式 */
+.article-list {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 双列网格 */
+.article-list.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+/* 三列网格（田字格） */
+.article-list.grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+/* 网格模式下：卡片改为垂直布局 + 自适应高度 */
+.article-list.grid .article-item,
+.article-list.grid3 .article-item {
+  height: auto;
+  flex-direction: column;
+  padding: 0;
+  gap: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* 网格模式：图片高度 */
+.article-list.grid .article-item .article-img,
+.article-list.grid3 .article-item .article-img {
+  width: 100%;
+  height: 160px;
+}
+
+/* 网格模式：内容区域更紧凑 */
+.article-list.grid .article-item .article-content,
+.article-list.grid3 .article-item .article-content {
+  padding: 12px;
+  gap: 4px;
+}
+
+/* 标题缩小、间距收紧 */
+.article-list.grid .article-item .article-title,
+.article-list.grid3 .article-item .article-title {
+  font-size: 18px;
+  margin: 0 0 6px;
+}
+
+/* 摘要更小、更紧凑、行数更少 */
+.article-list.grid .article-item .article-desc,
+.article-list.grid3 .article-item .article-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  /* 稍微放大一点，避免文字贴边 */
+  max-height: 3em;
+  /* 改成 2 行完整高度：13px × 1.5 × 2 = 39px */
+  margin: 0 0 8px;
+  overflow: hidden;
+  display: -webkit-box;
+}
+
+/* 元信息、统计信息缩小间距 */
+.article-list.grid .article-item .article-meta,
+.article-list.grid3 .article-item .article-meta,
+.article-list.grid .article-item .article-stats,
+.article-list.grid3 .article-item .article-stats {
+  font-size: 12px;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+/* 卡片统一动画 */
+.article-item {
+  transition: all 0.3s ease;
+  /* 悬浮动画 */
+  /* animation: fadeIn 0.4s ease forwards; */
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 0px;
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  /* 鼠标移上去变小手 */
+}
+
+/* 卡片悬浮上浮效果 */
+.article-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(229, 199, 147, 0.426);
+}
+
+/* 左侧图片容器 */
+.article-img {
+  width: 32%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.article-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+  /* 图片放大动画 */
+}
+
+/* 图片悬浮放大 */
+.article-item:hover .article-img img {
+  transform: scale(1.08);
+}
+
+/* 右侧内容区 */
+.article-content {
+  flex: 1;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.article-meta {
+  display: flex;
+  gap: 16px;
+  color: var(--text-secondary-color);
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.article-meta .category {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.article-title {
+  font-size: 26px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: var(--text-color);
+  white-space: nowrap;
+  /* 不换行 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* 超出... */
+}
+
+.article-desc {
+  font-size: 16px;
+  color: var(--text-main-color);
+  line-height: 1.6;
+  margin: 0 0 16px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.article-stats {
+  display: flex;
+  gap: 20px;
+  color: var(--text-secondary-color);
+  font-size: 14px;
+}
+
+.empty-data {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary-color);
+  font-size: 16px;
+  padding: 60px 0;
 }
 </style>

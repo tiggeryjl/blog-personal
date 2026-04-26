@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { DArrowLeft, DArrowRight } from '@element-plus/icons-vue'
+import { DArrowLeft, DArrowRight, ZoomIn, ZoomOut } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import CommentList from '@/components/Comment.vue'
@@ -8,10 +8,6 @@ import Emoji from '@/components/Emoji.vue'
 
 const router = useRouter()
 const route = useRoute()
-
-// 控制放大弹窗
-const showImageModal = ref(false)
-const previewImageUrl = ref('')
 
 const prevArticle = ref(null)
 const nextArticle = ref(null)
@@ -122,19 +118,63 @@ const goToArticle = (id) => {
   router.push(`/article/${id}`)
 }
 
+
+// 控制放大弹窗
+const showImageModal = ref(false)
+const previewImageUrl = ref('')
+// 缩放比例、当前文章所有图片列表、当前图片索引
+const scale = ref(1)
+const imageList = ref([])
+const currentImageIndex = ref(0)
 // 点击图片时触发
 const handleImageClick = (e) => {
   // 只处理点击的是图片的情况
   if (e.target.tagName === 'IMG') {
-    previewImageUrl.value = e.target.src
+    // 获取文章内所有图片
+    const imgs = document.querySelectorAll('.article-body img')
+    imageList.value = Array.from(imgs).map(img => img.src)
+    // 当前点击的图片索引
+    currentImageIndex.value = Array.from(imgs).findIndex(img => img === e.target)
+    // 赋值并打开
+    previewImageUrl.value = imageList.value[currentImageIndex.value]
+    scale.value = 1
     showImageModal.value = true
   }
+}
+
+// 上一张
+const prevImage = () => {
+  if (currentImageIndex.value > 0) {
+    currentImageIndex.value--
+    previewImageUrl.value = imageList.value[currentImageIndex.value]
+    scale.value = 1
+  }
+}
+
+// 下一张
+const nextImage = () => {
+  if (currentImageIndex.value < imageList.value.length - 1) {
+    currentImageIndex.value++
+    previewImageUrl.value = imageList.value[currentImageIndex.value]
+    scale.value = 1
+  }
+}
+
+// 放大
+const zoomIn = () => {
+  scale.value = Math.min(scale.value + 0.2, 3)
+}
+
+// 缩小
+const zoomOut = () => {
+  scale.value = Math.max(scale.value - 0.2, 0.6)
 }
 
 // 关闭弹窗
 const closeModal = () => {
   showImageModal.value = false
   previewImageUrl.value = ''
+  scale.value = 1
 }
 
 const article = ref({
@@ -189,8 +229,6 @@ const loadArticle = () => {
   nextArticle.value = currentIndex < articleList.length - 1 ? articleList[currentIndex + 1] : null
 }
 
-
-
 // 表情相关
 const showEmoji = ref(false)
 const closeEmojiOutside = (e) => {
@@ -201,6 +239,16 @@ const closeEmojiOutside = (e) => {
     showEmoji.value = false
     // hoverEmoji.value = null
   }
+}
+
+const insertEmoji = (code) => {
+  if (showEmoji.value) {
+    commentForm.value.content += code
+    closeEmoji()
+  }
+}
+const closeEmoji = () => {
+  showEmoji.value = false
 }
 
 watch(() => route.params.id, () => {
@@ -277,11 +325,11 @@ onUnmounted(() => {
               <textarea v-model="commentForm.content" placeholder="请输入评论内容..." maxlength="500"
                 class="comment-textarea"></textarea>
 
-              <div class="emoji-btn" @click="showEmoji = !showEmoji">
+              <div class="emoji-btn" @click.stop="showEmoji = !showEmoji">
                 <font-awesome-icon :icon="['fa', 'face-smile']" />
               </div>
 
-              <Emoji :show="showEmoji" @select="(code) => commentForm.content += code" @close="showEmoji = false" />
+              <Emoji v-if="showEmoji" :show="showEmoji" @select="insertEmoji" @close="closeEmoji" />
 
               <el-button type="primary" size="small" @click="publishComment()" class="publish-btn">
                 发表评论
@@ -295,8 +343,29 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div v-if="showImageModal" class="image-modal" @click="closeModal">
-      <img :src="previewImageUrl" alt="放大图片" class="preview-image" />
+    <div v-if="showImageModal" class="image-modal" @click.self="closeModal">
+      <!-- 关闭按钮 -->
+      <div class="img-close" @click="closeModal">✕</div>
+
+      <!-- 上一张 -->
+      <div class="img-prev" @click="prevImage">‹</div>
+
+      <!-- 图片 -->
+      <img :src="previewImageUrl" alt="预览" class="preview-image" :style="{ transform: `scale(${scale})` }" @click.stop
+        draggable="false" user-select="none" />
+
+      <!-- 下一张 -->
+      <div class="img-next" @click="nextImage">›</div>
+
+      <!-- 缩放按钮 -->
+      <div class="img-zoom">
+        <div @click="zoomOut"><el-icon>
+            <ZoomOut />
+          </el-icon></div>
+        <div @click="zoomIn"><el-icon>
+            <ZoomIn />
+          </el-icon></div>
+      </div>
     </div>
 
   </div>
@@ -396,6 +465,10 @@ onUnmounted(() => {
   display: block;
   cursor: pointer;
   border: 2px solid var(--border-color);
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-user-drag: none !important;
+  outline: none !important;
 }
 
 .article-body :deep(img:hover) {
@@ -421,7 +494,7 @@ onUnmounted(() => {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -429,11 +502,97 @@ onUnmounted(() => {
   cursor: zoom-out;
 }
 
+img {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-user-drag: none !important;
+  pointer-events: auto;
+}
+
+/* 预览图片 */
 .preview-image {
-  max-width: 90%;
-  max-height: 90%;
+  max-width: 85%;
+  max-height: 85vh;
   object-fit: contain;
   border-radius: 8px;
+  cursor: default;
+  transition: transform 0.2s ease;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-user-drag: none !important;
+  outline: none !important;
+  border: none !important;
+}
+
+/* 关闭按钮 */
+.img-close {
+  position: absolute;
+  top: 30px;
+  right: 40px;
+  font-size: 28px;
+  color: #fff;
+  cursor: pointer;
+  user-select: none;
+  z-index: 10;
+}
+
+.img-close:hover {
+  color: #ff4444;
+}
+
+/* 上一张 / 下一张 */
+.img-prev,
+.img-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 50px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  user-select: none;
+  z-index: 10;
+  padding: 0 20px;
+}
+
+.img-prev {
+  left: 20px;
+}
+
+.img-next {
+  right: 20px;
+}
+
+.img-prev:hover,
+.img-next:hover {
+  color: #fff;
+}
+
+/* 缩放按钮 */
+.img-zoom {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px;
+  z-index: 10;
+}
+
+.img-zoom div {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.img-zoom div:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* 翻页按钮 */
@@ -577,7 +736,6 @@ onUnmounted(() => {
   position: absolute;
   left: 12px;
   bottom: 12px;
-  font-size: 18px;
   cursor: pointer;
   z-index: 2;
   transition: transform 0.2s;
@@ -585,12 +743,12 @@ onUnmounted(() => {
 
 .emoji-btn :deep(.svg-inline--fa) {
   color: #313131 !important;
-  /* 深黄色 → 你可以自己改颜色 */
   font-size: 17px !important;
 }
 
-.emoji-btn:hover {
+.emoji-btn:hover :deep(.svg-inline--fa) {
   transform: scale(1.1);
+  color: var(--primary-color) !important;
 }
 
 /* 表情面板 */

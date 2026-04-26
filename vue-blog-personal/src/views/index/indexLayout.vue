@@ -6,6 +6,25 @@ import WelcomeBanner from '@/components/WelcomeBanner.vue'
 const today = new Date()
 const currentYear = ref(today.getFullYear())
 const currentMonth = ref(today.getMonth() + 1)
+const selectedDate = ref(null)
+
+// 点击日期
+const selectDay = (day) => {
+  if (day.isOtherMonth) return
+  selectedDate.value = {
+    year: currentYear.value,
+    month: currentMonth.value,
+    date: day.date,
+    isToday: day.isToday
+  }
+}
+
+// 回到今天
+const goToday = () => {
+  currentYear.value = today.getFullYear()
+  currentMonth.value = today.getMonth() + 1
+  selectedDate.value = null
+}
 
 // 上一个月
 const prevMonth = () => {
@@ -14,6 +33,7 @@ const prevMonth = () => {
     currentMonth.value = 12
     currentYear.value--
   }
+  selectedDate.value = null
 }
 
 // 下一个月
@@ -23,6 +43,7 @@ const nextMonth = () => {
     currentMonth.value = 1
     currentYear.value++
   }
+  selectedDate.value = null
 }
 
 // 生成日历数据
@@ -113,20 +134,25 @@ const show = computed(() => {
 
       <!-- 2. 分类/公告区域 -->
       <div class="category-card">
-        <h4>📌 分类导航</h4>
+        <h4><el-icon>
+            <Management />
+          </el-icon> 分类导航</h4>
         <ul class="category-list">
-          <li>前端开发</li>
-          <li>后端技术</li>
-          <li>生活随笔</li>
-          <li>项目分享</li>
+          <li><font-awesome-icon icon="folder-open" /> 前端开发</li>
+          <li><font-awesome-icon icon="server" /> 后端技术</li>
+          <li><font-awesome-icon icon="pen-fancy" /> 生活随笔</li>
+          <li><font-awesome-icon icon="share-alt" /> 项目分享</li>
         </ul>
       </div>
 
       <!-- 美化版日历组件 -->
       <div class="category-card">
         <div class="calendar-header">
-          <h4>📅 日历</h4>
+          <h4><font-awesome-icon icon="calendar" size="lg" /> 日历</h4>
           <div class="calendar-nav">
+            <el-icon class="arrow today-btn" @click="goToday" style="margin-left:6px;">
+              <RefreshRight />
+            </el-icon>
             <el-icon class="arrow" @click="prevMonth">
               <ArrowLeft />
             </el-icon>
@@ -145,7 +171,10 @@ const show = computed(() => {
               'calendar-day': true,
               'other-month': day.isOtherMonth,
               'today': day.isToday,
-            }">
+              'selected': selectedDate !== null && selectedDate?.year === currentYear &&
+                selectedDate?.month === currentMonth &&
+                selectedDate?.date === day.date && !day.isOtherMonth
+            }" @click="selectDay(day)">
               {{ day.date }}
             </span>
           </div>
@@ -264,6 +293,12 @@ const show = computed(() => {
   border-radius: 8px;
 }
 
+.category-card h4 :deep(.el-icon) {
+  font-size: 24px !important;
+  vertical-align: middle;
+  position: relative;
+}
+
 .category-card h4 {
   margin: 0 0 12px;
   font-size: 16px;
@@ -364,6 +399,18 @@ const show = computed(() => {
   color: #fff;
   font-weight: bold;
   box-shadow: 0 2px 8px rgba(64, 158, 255, 0.4);
+}
+
+/* 选中的日期 */
+.calendar-day.selected {
+  background-color: #f38600 !important;
+  color: #ffffff !important;
+  font-weight: bold;
+}
+
+/* 回到今天按钮 hover */
+.today-btn:hover {
+  color: var(--primary-color) !important;
 }
 
 main {

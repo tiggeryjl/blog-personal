@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onBeforeUnmount } from 'vue'
 
 const props = defineProps({
   show: {
@@ -32,17 +32,19 @@ const emojiList = ref([
   { code: '😴', name: '睡觉' },
   { code: '🥺', name: '可怜' },
   { code: '😭', name: '大哭' },
-  { code: '😗', name: '[汪汪]' },
+  { code: '😗', name: '事不关己' },
   { code: '😚', name: '愉快' },
   { code: '😙', name: '亲亲' },
   { code: '😛', name: '吐舌' },
   { code: '🤑', name: '见钱眼开' },
   { code: '🤠', name: '牛仔' },
-  { code: '😢', name: '伤心' },
+  { code: '😢', name: '伤心' }
 ])
-const hoverEmoji = ref(null)
 
-// 选中表情插入输入框
+const hoverEmoji = ref(null)
+const tooltipPosition = ref({ top: 0, left: 0 })
+let cleanupMouseMove = null
+
 const selectEmoji = (emoji) => {
   emit('select', emoji.code)
 }
@@ -50,6 +52,19 @@ const selectEmoji = (emoji) => {
 const closePanel = () => {
   hoverEmoji.value = null
   emit('close')
+}
+
+const showTooltip = (emoji, event) => {
+  hoverEmoji.value = emoji
+  const rect = event.target.closest('span').getBoundingClientRect()
+  tooltipPosition.value = {
+    top: rect.top - 20,   // 显示在表情上方 30px
+    left: rect.left + rect.width / 2
+  }
+}
+
+const hideTooltip = () => {
+  hoverEmoji.value = null
 }
 
 watch(() => props.show, (newVal, oldVal) => {
@@ -60,31 +75,20 @@ watch(() => props.show, (newVal, oldVal) => {
 </script>
 
 <template>
-  <!-- <div class="comment-list-widget">
-    <div class="emoji-btn" @click="showEmoji = !showEmoji">
-      <font-awesome-icon :icon="['fa', 'face-smile']" />
-    </div>
-
-    <div v-if="showEmoji" class="emoji-panel">
-      <span v-for="emoji in emojiList" :key="emoji.code" @click="selectEmoji(emoji)" @mouseenter="hoverEmoji = emoji"
-        @mouseleave="hoverEmoji = null">
-        {{ emoji.code }}
-
-        <div v-if="hoverEmoji === emoji" class="emoji-tooltip">
-          {{ hoverEmoji.name }}
-        </div>
-      </span>
-    </div>
-  </div> -->
   <div v-if="show" class="emoji-panel" @click.stop>
-    <span v-for="emoji in emojiList" :key="emoji.code" @click="selectEmoji(emoji)" @mouseenter="hoverEmoji = emoji"
-      @mouseleave="hoverEmoji = null">
+    <span v-for="emoji in emojiList" :key="emoji.code" @click="selectEmoji(emoji)"
+      @mouseenter="showTooltip(emoji, $event)" @mouseleave="hideTooltip">
       {{ emoji.code }}
-      <div v-if="hoverEmoji === emoji" class="emoji-tooltip">
-        {{ hoverEmoji.name }}
-      </div>
     </span>
   </div>
+
+  <Teleport to="body">
+    <div v-if="hoverEmoji" class="global-emoji-tooltip"
+      :style="{ top: tooltipPosition.top + 'px', left: tooltipPosition.left + 'px' }">
+      {{ hoverEmoji.name }}
+      <div class="tooltip-arrow"></div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -115,31 +119,32 @@ watch(() => props.show, (newVal, oldVal) => {
 .emoji-panel span:hover {
   transform: scale(1.2);
 }
+</style>
 
-.emoji-tooltip {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
+<style>
+.global-emoji-tooltip {
+  position: fixed;
   background: #444;
   color: #fff;
   font-size: 12px;
-  padding: 3px 6px;
+  padding: 4px 8px;
   border-radius: 4px;
   white-space: nowrap;
   pointer-events: none;
-  margin-bottom: 4px;
-  z-index: 100;
+  z-index: 9999;
+  transform: translateX(-50%);
+  margin-top: -8px;
 }
 
-.emoji-tooltip::after {
-  content: '';
+.global-emoji-tooltip .tooltip-arrow {
   position: absolute;
-  top: 100%;
+  bottom: -6px;
   left: 50%;
   transform: translateX(-50%);
-  border-width: 3px;
-  border-style: solid;
-  border-color: #444 transparent transparent transparent;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid #444;
 }
 </style>

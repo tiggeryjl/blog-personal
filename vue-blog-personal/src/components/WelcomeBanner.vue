@@ -15,9 +15,7 @@ const scrollToContent = () => {
     behavior: 'smooth'
   })
 }
-// setInterval(() => {
-//   current.value = (current.value + 1) % banners.value.length
-// }, 5000)
+
 const current = ref(0)
 const scrollY = ref(0)
 const handleScroll = () => {
@@ -74,7 +72,6 @@ const bannerTranslate = () => {
     opacity: bannerOpacity(),
     transform: `translateY(${-bannerTranslate()}px)`
   }">
-    <!-- <div class="banner-bg" :style="{ backgroundImage: `url(${banners[current].url})` }"></div> -->
     <div class="banner-mask"></div>
     <div class="meteor-shower">
       <div class="meteor"></div>

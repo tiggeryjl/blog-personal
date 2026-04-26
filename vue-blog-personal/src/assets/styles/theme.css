@@ -37,12 +37,12 @@
   --text-secondary-color: #888888;
   --text-prompt-color: #8888889e;
   --text-data-prompt-color: #3108ff;
-  --card-bg: #110b02c0;
-  --card-secound-bg: #23201dc0;
-  --card-bg-hover: #605b52f9;
-  --border-color: #b7b4b4;
+  --card-bg: #0d0902c0;
+  --card-secound-bg: #32302fc0;
+  --card-bg-hover: #554e41f9;
+  --border-color: #ededed;
   --primary-color: #3b82f6;
-  --hover-color: #fb4700;
+  --hover-color: #fb4700f4;
   --scroll-top-color: #fafafa;
 }
 

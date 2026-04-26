@@ -1,8 +1,10 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ZoomIn, ZoomOut, ChatDotRound } from '@element-plus/icons-vue'
 
 const router = useRouter()
+
 const dailyList = ref([
   {
     id: 1,
@@ -44,13 +46,66 @@ const goComment = (id) => {
   router.push(`/daily/${id}`)
 }
 
+const showImageModal = ref(false)
+const previewImageUrl = ref('')
+const scale = ref(1)
+const imageList = ref([])
+const currentImageIndex = ref(0)
+
+// 点击图片时触发
+const handleImageClick = (e, item) => {
+  if (e.target.tagName === 'IMG') {
+    // 只取当前这条日常的图片
+    imageList.value = item.images
+    // 算出当前点击的是第几张
+    currentImageIndex.value = item.images.findIndex(url => url === e.target.src)
+    previewImageUrl.value = e.target.src
+    scale.value = 1
+    showImageModal.value = true
+  }
+}
+
+// 上一张
+const prevImage = () => {
+  if (currentImageIndex.value > 0) {
+    currentImageIndex.value--
+    previewImageUrl.value = imageList.value[currentImageIndex.value]
+    scale.value = 1
+  }
+}
+
+// 下一张
+const nextImage = () => {
+  if (currentImageIndex.value < imageList.value.length - 1) {
+    currentImageIndex.value++
+    previewImageUrl.value = imageList.value[currentImageIndex.value]
+    scale.value = 1
+  }
+}
+
+// 放大
+const zoomIn = () => {
+  scale.value = Math.min(scale.value + 0.2, 3)
+}
+
+// 缩小
+const zoomOut = () => {
+  scale.value = Math.max(scale.value - 0.2, 0.6)
+}
+
+const closeModal = () => {
+  showImageModal.value = false
+  previewImageUrl.value = ''
+  scale.value = 1
+}
+
 </script>
 
 <template>
   <div class="common-article">
     <!-- 🔒 固定区域：标题 + 分割线 + 发布框（不受排版影响） -->
     <div class="fixed-header">
-      <h2>最新日常</h2>
+      <h2>日常</h2>
       <div class="publish-box" v-if="false">
         <!-- 你的发布输入框代码 -->
       </div>
@@ -72,8 +127,9 @@ const goComment = (id) => {
         <div class="card-content">{{ item.content }}</div>
 
         <!-- 图片 -->
-        <div class="card-images" v-if="item.images.length">
-          <img v-for="img in item.images" :key="img" :src="img" />
+        <div class="card-images" v-if="item.images.length" @click="handleImageClick">
+          <img v-for="img in item.images" :key="img" :src="img" @click.stop="handleImageClick($event, item)"
+            draggable="false" user-select="none" />
         </div>
 
         <!-- 点赞 + 评论 -->
@@ -82,7 +138,9 @@ const goComment = (id) => {
             <font-awesome-icon icon="fa-solid fa-thumbs-up" /> {{ item.like }}
           </button>
           <button class="comment-btn" @click.stop="goComment(item.id)">
-            💬 {{ item.comment }}
+            <el-icon>
+              <ChatDotRound />
+            </el-icon> {{ item.comment }}
           </button>
         </div>
       </div>
@@ -91,10 +149,40 @@ const goComment = (id) => {
         暂无日常数据
       </div>
     </div>
+
+    <div v-if="showImageModal" class="image-modal" @click.self="closeModal">
+      <!-- 关闭按钮 -->
+      <div class="img-close" @click="closeModal">✕</div>
+
+      <!-- 上一张 -->
+      <div class="img-prev" @click="prevImage">‹</div>
+
+      <!-- 图片 -->
+      <img :src="previewImageUrl" alt="预览" class="preview-image" :style="{ transform: `scale(${scale})` }" @click.stop
+        draggable="false" user-select="none" />
+
+      <!-- 下一张 -->
+      <div class="img-next" @click="nextImage">›</div>
+
+      <!-- 缩放按钮 -->
+      <div class="img-zoom">
+        <div @click="zoomOut"><el-icon>
+            <ZoomOut />
+          </el-icon></div>
+        <div @click="zoomIn"><el-icon>
+            <ZoomIn />
+          </el-icon></div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.comment-btn :deep(.el-icon) {
+  font-size: 16px !important;
+  margin-right: 4px;
+}
+
 .common-article {
   flex: 1;
   /* 占满剩余宽度 */
@@ -191,7 +279,7 @@ const goComment = (id) => {
 /* 操作栏 */
 .card-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 14px;
   padding-top: 4px;
 }
@@ -223,5 +311,111 @@ const goComment = (id) => {
   color: var(--text-secondary-color);
   font-size: 16px;
   padding: 60px 0;
+}
+
+.image-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  cursor: zoom-out;
+}
+
+/* 预览图片 */
+.preview-image {
+  max-width: 85%;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 8px;
+  cursor: default;
+  transition: transform 0.2s ease;
+}
+
+/* 关闭按钮 */
+.img-close {
+  position: absolute;
+  top: 30px;
+  right: 40px;
+  font-size: 28px;
+  color: #fff;
+  cursor: pointer;
+  user-select: none;
+  z-index: 10;
+}
+
+.img-close:hover {
+  color: #ff4444;
+}
+
+/* 上一张 / 下一张 */
+.img-prev,
+.img-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 50px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  user-select: none;
+  z-index: 10;
+  padding: 0 20px;
+}
+
+.img-prev {
+  left: 20px;
+}
+
+.img-next {
+  right: 20px;
+}
+
+.img-prev:hover,
+.img-next:hover {
+  color: #fff;
+}
+
+/* 缩放按钮 */
+.img-zoom {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px;
+  z-index: 10;
+}
+
+.img-zoom div {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.img-zoom div:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+:deep(img) {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  pointer-events: auto;
+}
+
+.preview-image {
+  user-select: none !important;
+  -webkit-user-select: none !important;
 }
 </style>

@@ -1,7 +1,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { ref, onMounted, onUnmounted } from 'vue'
-import { Expand, Menu, Grid, Edit } from '@element-plus/icons-vue'
+import { Expand, Menu, Grid, Edit, ChatLineSquare, Document, View } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const articleList = ref([
@@ -15,8 +15,7 @@ const articleList = ref([
     view: 636,
     like: 7,
     comment: 12,
-    words: 1077,
-    readTime: "3分钟"
+    words: 1077
   },
   {
     id: 2,
@@ -28,8 +27,7 @@ const articleList = ref([
     view: 636,
     like: 7,
     comment: 12,
-    words: 1077,
-    readTime: "3分钟"
+    words: 1077
   },
   {
     id: 3,
@@ -41,8 +39,7 @@ const articleList = ref([
     view: 636,
     like: 7,
     comment: 12,
-    words: 1077,
-    readTime: "3分钟"
+    words: 1077
   },
   {
     id: 4,
@@ -54,8 +51,7 @@ const articleList = ref([
     view: 636,
     like: 7,
     comment: 12,
-    words: 1077,
-    readTime: "3分钟"
+    words: 1077
   },
   {
     id: 5,
@@ -67,8 +63,7 @@ const articleList = ref([
     view: 636,
     like: 7,
     comment: 12,
-    words: 1077,
-    readTime: "3分钟"
+    words: 1077
   },
   {
     id: 6,
@@ -80,8 +75,7 @@ const articleList = ref([
     view: 636,
     like: 7,
     comment: 12,
-    words: 1077,
-    readTime: "3分钟"
+    words: 1077
   },
 ])
 
@@ -139,7 +133,7 @@ onUnmounted(() => {
         <div class="publish-box" v-if="false">
           <!-- 你的发布输入框代码 -->
         </div>
-        <h2>最新文章</h2>
+        <h2>文章</h2>
         <div class="layout-dropdown">
           <button class="layout-trigger" @click="goEdit()">
             <span class="icon-wrap">
@@ -191,11 +185,16 @@ onUnmounted(() => {
           <h3 class="article-title">{{ item.title }}</h3>
           <p class="article-desc">{{ item.desc }}</p>
           <div class="article-stats">
-            <span>👁 {{ item.view }}</span>
+            <span><el-icon>
+                <View />
+              </el-icon> {{ item.view }}</span>
             <span><font-awesome-icon icon="fa-solid fa-thumbs-up" /> {{ item.like }}</span>
-            <span>💬 {{ item.comment }}</span>
-            <span>📄 {{ item.words }}字</span>
-            <span>⏱️ {{ item.readTime }}</span>
+            <span><el-icon>
+                <ChatLineSquare />
+              </el-icon> {{ item.comment }}</span>
+            <span><el-icon>
+                <Document />
+              </el-icon> {{ item.words }}字</span>
           </div>
         </div>
       </div>
@@ -207,6 +206,15 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.article-stats :deep(.el-icon) {
+  font-size: 16px !important;
+  margin-right: 4px;
+  vertical-align: middle;
+  position: relative;
+  top: 0.1px;
+}
+
+
 .common-article {
   padding: 5px 12px;
   border-radius: 8px;

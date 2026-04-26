@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted, watch, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import Emoji from '@/components/Emoji.vue'
+import { ChatLineRound } from '@element-plus/icons-vue'
 
 // 只接收评论数据
 const props = defineProps({
@@ -202,7 +203,9 @@ watch(() => props.commentList, (newVal, oldVal) => {
             </button>
             <button class="action-btn" :class="{ active: getCommentUI(item.id).replying }"
               @click="toggleCommentReply(item.id)">
-              💬 回复
+              <el-icon>
+                <ChatLineRound />
+              </el-icon> 回复
             </button>
           </div>
 
@@ -253,7 +256,9 @@ watch(() => props.commentList, (newVal, oldVal) => {
                   </button>
                   <button class="action-btn" :class="{ active: getReplyUI(item.id, r.id).replying }"
                     @click="toggleReplyReply(item.id, r.id)">
-                    💬 回复
+                    <el-icon>
+                      <ChatLineRound />
+                    </el-icon> 回复
                   </button>
                 </div>
 
@@ -292,6 +297,11 @@ watch(() => props.commentList, (newVal, oldVal) => {
 </template>
 
 <style scoped>
+.action-btn :deep(.el-icon) {
+  font-size: 16px !important;
+  margin-right: 4px;
+}
+
 .comment-list {
   display: flex;
   flex-direction: column;

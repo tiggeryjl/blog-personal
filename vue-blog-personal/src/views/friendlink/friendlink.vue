@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { CopyDocument } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const linkList = [
@@ -109,7 +110,9 @@ onMounted(() => loadLinks())
                 <div class="info-row">
                   <span class="info-label">网站名称:</span>
                   <span class="my-name">小叶同学</span>
-                  <button class="copy-button tooltip" @click="copyUrl">点击复制url
+                  <button class="copy-button tooltip" @click="copyUrl"><el-icon>
+                      <CopyDocument />
+                    </el-icon>复制头像url
                     <span class="tooltip-text">点击复制我的头像url</span>
                   </button>
                 </div>
