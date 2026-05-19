@@ -3,6 +3,19 @@ import { useRouter, useRoute } from 'vue-router'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import WelcomeBanner from '@/components/WelcomeBanner.vue'
 
+const userProfile = ref({
+  avatar: "https://picsum.photos/64/64",
+  nickname: "你的昵称",
+  bio: "这是我的个人简介，记录生活与技术思考 ✨",
+  articleCount: 10,
+  categoryCount: 10,
+  links: {
+    github: "#",
+    email: "#",
+    qq: "#"
+  }
+})
+
 const today = new Date()
 const currentYear = ref(today.getFullYear())
 const currentMonth = ref(today.getMonth() + 1)
@@ -112,23 +125,24 @@ const show = computed(() => {
     <aside class="sidebar">
       <!-- 1. 个人信息区域 -->
       <div class="profile-card">
-        <img src="https://picsum.photos/64/64" alt="头像" class="avatar" />
-        <h3 class="nickname">你的昵称</h3>
-        <p class="bio">这是我的个人简介，记录生活与技术思考 ✨</p>
+        <img :src="userProfile.avatar" alt="头像" class="avatar" />
+        <h3 class="nickname">{{ userProfile.nickname }}</h3>
+        <p class="bio">{{ userProfile.bio }}</p>
+
         <div class="stats">
           <div class="stats-item">
             <span>文章</span>
-            <span>10</span>
+            <span>{{ userProfile.articleCount }}</span>
           </div>
           <div class="stats-item">
             <span>分类</span>
-            <span>10</span>
+            <span>{{ userProfile.categoryCount }}</span>
           </div>
         </div>
         <div class="links">
-          <a href="javascript:void(0)">github</a>
-          <a href="javascript:void(0)">email</a>
-          <a href="javascript:void(0)">QQ</a>
+          <a :href="userProfile.links.github" target="_blank">github</a>
+          <a :href="userProfile.links.email" target="_blank">email</a>
+          <a :href="userProfile.links.qq" target="_blank">QQ</a>
         </div>
       </div>
 

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { Eye, EyeOff, Mail, Sparkles } from 'lucide-vue-next'
 import AnimatedCharacters from './AnimatedCharacters.vue'
+import Captcha from '@/components/Captcha.vue';
 
 const props = defineProps({
   brandName: {
@@ -16,7 +17,7 @@ const props = defineProps({
     type: String,
     default: '请输入您的信息'
   },
-  emailPlaceholder: {
+  accountPlaceholder: {
     type: String,
     default: '请输入用户名/手机号/邮箱'
   },
@@ -30,29 +31,38 @@ const props = defineProps({
   }
 })
 
-// const emit = defineEmits(['submit'])
 const emit = defineEmits(['login-submit', 'register-submit'])
 
 const isLogin = ref(true)
 
 // 登录表单
-const email = ref('')
+const account = ref('')
 const password = ref('')
 const remember = ref(false)
 
 // 注册表单
+const nickname = ref('')
+const username = ref('')
+const phone = ref('')
+const regEmail = ref('')
 const regPassword = ref('')
 const regConfirmPwd = ref('')
 const regAgree = ref(false)
 
-//验证码
+// 登录验证码
+const needLoginCaptcha = ref(false)
+const loginEmailCode = ref('')
+const loginCodeBtnDisabled = ref(false)
+const loginCodeBtnText = ref('获取验证码')
+//注册验证码
 const needEmailCode = ref(false)
 const codeBtnDisabled = ref(false)
 const codeBtnText = ref('获取验证码')
-let captcha = null
+const emailCode = ref('')
 
 // 展示密码动画状态
-const showPassword = ref(false)
+const showLoginPwd = ref(false)
+const showRegPwd = ref(false)
 
 // 状态
 const errorMsg = ref('')
@@ -68,34 +78,148 @@ defineExpose({
 const currentPassword = computed(() => {
   return isLogin.value ? password.value : regPassword.value
 })
+const showPassword = computed(() => {
+  return isLogin.value ? showLoginPwd.value : showRegPwd.value
+})
+
+//滑块验证码校验逻辑
+const captchaComponent = ref(null)
+let pendingLoginData = null
+
+const handleCaptchaFail = () => {
+  loading.value = false
+  errorMsg.value = ''
+  pendingLoginData = null
+}
+
+const handleCaptchaSuccess = (verifyParam) => {
+  if (!pendingLoginData) {
+    loading.value = false
+    return
+  }
+
+  if (!verifyParam) {
+    errorMsg.value = '验证参数无效，请重试'
+    loading.value = false
+    pendingLoginData = null
+    return
+  }
+
+  loading.value = true
+  errorMsg.value = ''
+
+  emit('login-submit', {
+    ...pendingLoginData,
+    captchaVerifyParam: verifyParam
+  })
+
+  pendingLoginData = null
+}
 
 // 登录提交
-const onSubmit = () => {
-  errorMsg.value = ''
-  emit('login-submit', {
-    email: email.value,
+const onSubmit = async () => {
+  // 统一校验
+  const valid = await validate('login')
+  if (!valid) return
+
+  pendingLoginData = {
+    account: account.value,
     password: password.value,
     remember: remember.value,
+    emailCode: loginEmailCode.value,
+  }
+
+  loading.value = true
+  errorMsg.value = ''
+
+  if (captchaComponent.value) {
+    captchaComponent.value.show()        // 弹出滑块
+  } else {
+    errorMsg.value = '验证码组件未加载'
+    loading.value = false
+    pendingLoginData = null
+  }
+
+  // if (needLoginCaptcha.value) {
+  //   emit('login-submit', {
+  //     account: account.value,
+  //     password: password.value,
+  //     remember: remember.value,
+  //     emailCode: loginEmailCode.value,
+  //     ticket: localStorage.getItem('lastTicket'),
+  //     randstr: localStorage.getItem('lastRandstr'),
+  //   })
+  //   return
+  // }
+}
+
+// 登录滑块验证回调
+const loginCaptchaBack = async (res) => {
+  if (res.ret !== 0) {
+    errorMsg.value = '验证失败'
+    loading.value = false
+    return
+  }
+
+  localStorage.setItem('lastTicket', res.ticket)
+  localStorage.setItem('lastRandstr', res.randstr)
+
+  // 发给后端判断是否风险登录
+  const { data } = await axios.post('/api/login/check', {
+    account: account.value,
+    password: password.value,
+    ticket: res.ticket,
+    randstr: res.randstr
   })
+
+  loading.value = false
+
+  if (data.needEmailCode) {
+    needLoginCaptcha.value = true
+    errorMsg.value = '当前为风险登录，请完成邮箱验证'
+  } else {
+    // 无风险 → 直接登录成功
+    emit('login-submit', {
+      account: account.value,
+      password: password.value,
+      remember: remember.value
+    })
+  }
+}
+
+// 登录发送邮箱验证码
+const sendLoginEmailCode = async () => {
+  await axios.post('/api/login/sendCode', { account: account.value })
+  loginCodeBtnDisabled.value = true
+  loginCodeBtnText.value = '重新发送(60s)'
+  setTimeout(() => {
+    loginCodeBtnDisabled.value = false
+    loginCodeBtnText.value = '获取验证码'
+  }, 60000)
 }
 
 // 注册提交
-const onRegister = () => {
+const onRegister = async () => {
+  const valid = await validate('register')
+  if (!valid) return
+
   // captcha.show();
+  loading.value = true
   errorMsg.value = '';
-  if (regPassword.value !== regConfirmPwd.value) {
-    errorMsg.value = '两次密码不一致';
-    return;
-  }
+
   emit('register-submit', {
-    email: email.value,
-    password: regPassword.value
+    nickname: nickname.value,
+    username: username.value,
+    phone: phone.value,
+    email: regEmail.value,
+    password: regPassword.value,
+    confirmPwd: regConfirmPwd.value,
+    emailCode: emailCode.value
   })
+  isLogin.value = true
 }
 
-/*onMounted(() => {
-  captcha = new window.TencentCaptcha('你的APPID', captchaBack)
-})*/
+onMounted(() => { })
 
 const captchaBack = async (res) => {
   if (res.ret !== 0) return alert('滑块失败')
@@ -107,7 +231,7 @@ const captchaBack = async (res) => {
   const { data } = await axios.post('/api/register/check', {
     username: username.value,
     password: password.value,
-    email: email.value,
+    regEmail: regEmail.value,
     ticket: res.ticket,
     randstr: res.randstr
   })
@@ -121,20 +245,164 @@ const captchaBack = async (res) => {
 }
 // 发送邮箱验证码
 const sendEmailCode = async () => {
-  await axios.post('/api/register/send-email-code', { email: email.value })
+  await axios.post('/api/register/sendCode', { account: account.value })
   // 倒计时逻辑自己加
 }
+
 // 确认注册（带邮箱验证码）
 const confirmRegister = async () => {
   await axios.post('/api/register/confirm', {
     username: username.value,
     password: password.value,
-    email: email.value,
+    regEmail: regEmail.value,
     emailCode: emailCode.value,
     ticket: localStorage.getItem('lastTicket'),
     randstr: localStorage.getItem('lastRandstr')
   })
   alert('注册成功')
+}
+
+// 重置表单（切换登录/注册时调用）
+const resetForm = () => {
+  // 清空输入
+  account.value = ''
+  password.value = ''
+  remember.value = false
+
+  nickname.value = ''
+  username.value = ''
+  phone.value = ''
+  regEmail.value = ''
+  regPassword.value = ''
+  regConfirmPwd.value = ''
+  emailCode.value = ''
+  loginEmailCode.value = ''
+
+  // 清空验证状态
+  needLoginCaptcha.value = false
+  needEmailCode.value = false
+  loginCodeBtnDisabled.value = false
+  loginCodeBtnText.value = '获取验证码'
+  codeBtnDisabled.value = false
+  codeBtnText.value = '获取验证码'
+
+  // 清空提示
+  errorMsg.value = ''
+  loading.value = false
+}
+
+//表单校验
+const loginRules = {
+  account: [
+    { required: true, message: '请输入账号' }
+  ],
+  password: [
+    { required: true, message: '请输入密码' }
+  ]
+}
+
+const registerRules = {
+  username: [
+    { required: true, message: '请输入用户名' }
+  ],
+  phone: [
+    { required: true, message: '请输入手机号' },
+    { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确' }
+  ],
+  email: [
+    { required: true, message: '请输入邮箱' },
+  ],
+  password: [
+    { required: true, message: '请输入密码' },
+    { min: 6, message: '密码至少6位' }
+  ],
+  confirmPwd: [
+    { required: true, message: '请确认密码' },
+    { same: 'password', message: '两次密码不一致' }
+  ]
+}
+
+const validate = (formType) => {
+  return new Promise((resolve) => {
+    errorMsg.value = ''
+    let data = {}
+    let rules = {}
+
+    if (formType === 'login') {
+      data = { account: account.value, password: password.value }
+      rules = loginRules
+    } else {
+      data = {
+        username: username.value,
+        phone: phone.value,
+        email: regEmail.value,
+        password: regPassword.value,
+        confirmPwd: regConfirmPwd.value
+      }
+      rules = registerRules
+    }
+
+    // 开始校验
+    for (let key in rules) {
+      const val = data[key]
+      const ruleList = rules[key]
+
+      for (let rule of ruleList) {
+        // 必填
+        if (rule.required && !val) {
+          errorMsg.value = rule.message
+          return resolve(false)
+        }
+        // 最小长度
+        if (rule.min && val.length < rule.min) {
+          errorMsg.value = rule.message
+          return resolve(false)
+        }
+        //邮箱具体规则
+        if (key === 'email') {
+          const e = val.trim()
+          const atPos = e.indexOf('@')
+
+          if (atPos === -1) {
+            errorMsg.value = '邮箱必须包含 @ 符号'
+            return resolve(false)
+          }
+          if (atPos === 0) {
+            errorMsg.value = '邮箱格式错误，@ 前面不能没有内容'
+            return resolve(false)
+          }
+          const domain = e.slice(atPos + 1)
+          if (!domain) {
+            errorMsg.value = '邮箱格式错误，@ 后面需要填写域名（如 qq.com）'
+            return resolve(false)
+          }
+          const dotPos = domain.lastIndexOf('.')
+          if (dotPos === -1) {
+            errorMsg.value = '邮箱域名缺少后缀（如 .com/.cn/.net）'
+            return resolve(false)
+          }
+          if (dotPos >= domain.length - 2) {
+            errorMsg.value = '邮箱后缀过短,至少2位'
+            return resolve(false)
+          }
+        }
+        // 正则
+        if (rule.pattern && !rule.pattern.test(val)) {
+          errorMsg.value = rule.message
+          return resolve(false)
+        }
+        // 确认密码
+        if (rule.same) {
+          if (val !== data[rule.same]) {
+            errorMsg.value = rule.message
+            return resolve(false)
+          }
+        }
+      }
+    }
+
+    resolve(true)
+  })
 }
 </script>
 
@@ -180,18 +448,29 @@ const confirmRegister = async () => {
           </div>
           <form @submit.prevent="onSubmit" class="form">
             <div class="field">
-              <label for="login-email">账号</label>
-              <input id="login-email" type="email" :placeholder="emailPlaceholder" v-model="email" autocomplete="off"
-                @focus="isTyping = true" @blur="isTyping = false" required />
+              <label for="login-account">账号</label>
+              <input id="login-account" type="text" :placeholder="accountPlaceholder" v-model="account"
+                autocomplete="off" @focus="isTyping = true" @blur="isTyping = false" />
             </div>
             <div class="field">
               <label for="login-password">密码</label>
               <div class="password-wrap">
-                <input id="login-password" :type="showPassword ? 'text' : 'password'" placeholder="请输入密码"
-                  v-model="password" required />
-                <button type="button" class="eye-btn" @click="showPassword = !showPassword">
-                  <EyeOff v-if="showPassword" :size="20" />
+                <input id="login-password" :type="showLoginPwd ? 'text' : 'password'" placeholder="请输入密码"
+                  v-model="password" />
+                <button type="button" class="eye-btn" @click="showLoginPwd = !showLoginPwd">
+                  <EyeOff v-if="showLoginPwd" :size="20" />
                   <Eye v-else :size="20" />
+                </button>
+              </div>
+            </div>
+
+            <Captcha ref="captchaComponent" @captchaSuccess="handleCaptchaSuccess" @captchaFail="handleCaptchaFail" />
+            <div class="field" v-if="needLoginCaptcha">
+              <label>验证码</label>
+              <div class="captcha-wrap">
+                <input v-model="loginEmailCode" placeholder="请输入邮箱验证码" />
+                <button type="button" class="captcha-btn" :disabled="loginCodeBtnDisabled" @click="sendLoginEmailCode">
+                  {{ loginCodeBtnText }}
                 </button>
               </div>
             </div>
@@ -207,7 +486,7 @@ const confirmRegister = async () => {
           <!-- <button v-if="showGoogleLogin" type="button" class="btn-google">
             <Mail :size="20" /> 使用Google登录
           </button> -->
-          <p class="signup-link">没有账号怎么办? <a @click="isLogin = false">去注册</a></p>
+          <p class="signup-link">没有账号怎么办? <a @click="isLogin = false; resetForm()">去注册</a></p>
         </div>
 
         <!-- 注册 -->
@@ -216,34 +495,30 @@ const confirmRegister = async () => {
             <h1>创建您的账号</h1>
             <p>填写信息完成注册</p>
           </div>
-          <form @submit.prevent="onRegister" class="form">
+          <form @submit.prevent="onRegister" class="form" novalidate>
             <div class="field">
               <label>昵称</label>
-              <input id="register-email" type="email" placeholder="请输入昵称(可选填)" v-model="email" autocomplete="off"
-                @focus="isTyping = true" @blur="isTyping = false" required />
+              <input type="text" placeholder="请输入昵称(可选填)" v-model="nickname" />
             </div>
             <div class="field">
               <label>账号</label>
-              <input id="register-email" type="email" placeholder="请输入用户名" v-model="email" autocomplete="off"
-                @focus="isTyping = true" @blur="isTyping = false" required />
+              <input type="text" placeholder="请输入用户名" v-model="username" />
             </div>
             <div class="field">
               <label>手机号</label>
-              <input id="register-email" type="email" placeholder="请输入手机号" v-model="email" autocomplete="off"
-                @focus="isTyping = true" @blur="isTyping = false" required />
+              <input type="text" placeholder="请输入手机号" v-model="phone" />
             </div>
             <div class="field">
               <label>邮箱</label>
-              <input id="register-email" type="email" placeholder="请输入邮箱" v-model="email" autocomplete="off"
-                @focus="isTyping = true" @blur="isTyping = false" required />
+              <input type="text" placeholder="请输入邮箱" v-model="regEmail" />
             </div>
 
             <div class="field">
               <label>设置密码</label>
               <div class="password-wrap">
-                <input :type="showPassword ? 'text' : 'password'" v-model="regPassword" placeholder="请输入密码" required />
-                <button type="button" class="eye-btn" @click="showPassword = !showPassword">
-                  <EyeOff v-if="showPassword" :size="20" />
+                <input :type="showRegPwd ? 'text' : 'password'" v-model="regPassword" placeholder="请输入密码" />
+                <button type="button" class="eye-btn" @click="showRegPwd = !showRegPwd">
+                  <EyeOff v-if="showRegPwd" :size="20" />
                   <Eye v-else :size="20" />
                 </button>
               </div>
@@ -252,10 +527,9 @@ const confirmRegister = async () => {
             <div class="field">
               <label>确认密码</label>
               <div class="password-wrap">
-                <input :type="showPassword ? 'text' : 'password'" v-model="regConfirmPwd" placeholder="请输入确认密码"
-                  required />
-                <button type="button" class="eye-btn" @click="showPassword = !showPassword">
-                  <EyeOff v-if="showPassword" :size="20" />
+                <input :type="showRegPwd ? 'text' : 'password'" v-model="regConfirmPwd" placeholder="请输入确认密码" />
+                <button type="button" class="eye-btn" @click="showRegPwd = !showRegPwd">
+                  <EyeOff v-if="showRegPwd" :size="20" />
                   <Eye v-else :size="20" />
                 </button>
               </div>
@@ -282,7 +556,7 @@ const confirmRegister = async () => {
             </button>
           </form>
 
-          <p class="signup-link">已有账号？<a @click="isLogin = true">去登录</a></p>
+          <p class="signup-link">已有账号？<a @click="isLogin = true; resetForm()">去登录</a></p>
         </div>
       </div>
     </div>

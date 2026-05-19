@@ -1,7 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import LayoutView from '@/views/layout/index.vue'
-import IndexLayoutView from '@/views/index/indexLayout.vue'
+import IndexLayoutView from '@/views/layout/indexLayout.vue'
+import SettingLayoutView from '@/views/layout/settingLayout.vue'
 import IndexView from '@/views/index/index.vue'
 import LoginView from '@/views/login/index.vue'
 import ArticleView from '@/views/article/article.vue'
@@ -12,7 +13,9 @@ import DailyView from '@/views/daily/daily.vue'
 import FriendLinkView from '@/views/friendlink/friendlink.vue'
 import FeedbackView from '@/views/feedback/feedback.vue'
 import AboutView from '@/views/about/about.vue'
-import SettingView from '@/views/setting/setting.vue'
+import BaseView from '@/views/setting/base.vue'
+import RepwdView from '@/views/setting/repwd.vue'
+import AccountView from '@/views/setting/account.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -39,16 +42,27 @@ const router = createRouter({
             { path: 'daily', name: 'daily', component: DailyView },
           ]
         },
+        {
+          path: 'SettingLayout',
+          name: 'SettingLayout',
+          component: SettingLayoutView,
+          redirect: 'base',
+          children: [
+            { path: '/base', name: 'base', component: BaseView },
+            { path: '/repwd', name: 'repwd', component: RepwdView },
+            { path: '/account', name: 'account', component: AccountView },
+          ]
+        },
         { path: 'friendlink', name: 'friendlink', component: FriendLinkView },
         { path: 'feedback', name: 'feedback', component: FeedbackView },
         { path: 'about', name: 'about', component: AboutView },
-        { path: 'setting', name: 'setting', component: SettingView },
         { path: 'article/:id', name: 'articleDetail', component: ArticleDetailView },
         { path: 'daily/:id', name: 'dailyDetail', component: DailyDetailView },
         { path: 'editInput', name: 'editInput', component: editInputView },
       ]
     },
-    { path: '/login', name: 'login', component: LoginView },
+    { path: '/login', name: 'login', component: () => import('@/views/login/index.vue') },
+    { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/components/404.vue') },
   ]
 })
 

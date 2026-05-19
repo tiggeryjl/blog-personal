@@ -6,36 +6,43 @@ import { ElMessage } from 'element-plus';
 export const useUserStore = defineStore('user', {
   state: () => ({
     token: '',         // 用户 token
-    nickname: '',      // 昵称
-    avatar: '',        // 头像
-    email: '',        // 邮箱
-    phone: '',         // 手机号
-    password: ''    // 密码
+    userInfo: {
+      id: '',         // 用户 id
+      nickname: '',      // 昵称
+      avatar: '',        // 头像
+      email: '',        // 邮箱
+      phone: '',         // 手机号
+    }
   }),
 
   actions: {
     // 登录成功保存信息
-    loginSuccess(userInfo) {
-      this.token = userInfo.token
-      this.nickname = userInfo.nickname
-      this.avatar = userInfo.avatar
-      this.email = userInfo.email
-      this.phone = userInfo.phone
-      this.password = userInfo.password
+    loginSuccess(res) {
+
+      this.token = res.token
+      this.userInfo = {
+        id: res.id,
+        nickname: res.nickname,
+        avatar: res.avatar,
+        email: res.email,
+        phone: res.phone
+      };
 
       // 同时保存到 localStorage（刷新不丢失）
-      localStorage.setItem('token', userInfo.token)
-      localStorage.setItem('userInfo', JSON.stringify(userInfo))
+      localStorage.setItem('token', res.token)
+      localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
     },
 
     // 退出登录
     logout() {
-      this.token = ''
-      this.nickname = ''
-      this.avatar = ''
-      this.email = ''
-      this.phone = ''
-      this.password = ''
+      this.token = '';
+      this.userInfo = {
+        id: '',
+        nickname: '',
+        avatar: '',
+        email: '',
+        phone: ''
+      };
 
       localStorage.removeItem('token')
       localStorage.removeItem('userInfo')
@@ -46,21 +53,39 @@ export const useUserStore = defineStore('user', {
       try {
 
         const token = localStorage.getItem('token') || ''
-        const userInfo = localStorage.getItem('userInfo') || ''
+        const userInfoStr = localStorage.getItem('userInfo') || ''
 
-        if (token && userInfo) {
-          const info = JSON.parse(userInfo)
-          this.token = info.token
-          this.nickname = info.nickname
-          this.avatar = info.avatar
-          this.email = info.email
-          this.phone = info.phone
-          this.password = info.password
+        if (!token) {
+          this.logout()
+          return
         }
-      } catch {
-        ElMessage.error("您未登录!");
-      }
 
+        this.token = token;
+        if (userInfoStr) {
+          const info = JSON.parse(userInfoStr)
+          this.userInfo = {
+            id: info.id || '',
+            nickname: info.nickname || '',
+            avatar: info.avatar || '',
+            email: info.email || '',
+            phone: info.phone || ''
+          }
+        }
+
+      } catch (e) {
+        ElMessage.error("登录状态已失效，请重新登录!");
+        this.logout();
+      }
+    },
+    updateUserInfo(newInfo) {
+      this.userInfo = {
+        id: newInfo.id ?? this.userInfo.id,
+        nickname: newInfo.nickname ?? this.userInfo.nickname,
+        avatar: newInfo.avatar ?? this.userInfo.avatar,
+        email: newInfo.email ?? this.userInfo.email,
+        phone: newInfo.phone ?? this.userInfo.phone,
+      }
+      localStorage.setItem('userInfo', JSON.stringify(this.userInfo));
     }
   }
 })

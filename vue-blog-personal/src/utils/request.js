@@ -13,9 +13,9 @@ const request = axios.create({
 //axios的请求 request 拦截器 - 获取localStorage中的token,在请求头中添加token
 request.interceptors.request.use(
   (config) => {//成功回调
-    const loginUser = JSON.parse(localStorage.getItem('userInfo'));
-    if (loginUser && loginUser.token) {
-      config.headers.token = loginUser.token;
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.token = token;
     }
     return config;
   },
@@ -27,7 +27,14 @@ request.interceptors.request.use(
 // axios的响应 response 拦截器
 request.interceptors.response.use(
   (response) => { //成功回调
-    return response.data
+    const { data, status } = response
+    if (status === 200) {
+      return data
+    } else {
+      ElMessage.error('请求失败')
+      return Promise.reject(response)
+    }
+    // return response.data
   },
   (error) => { //失败回调
     if (error.response.status == 401) { //===:全等 两边都是同类型比如字符串类型才想等  ==:一边是字符串一边是整形也相等

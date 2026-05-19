@@ -54,11 +54,7 @@ const goLogin = () => {
 }
 
 const goProfile = () => {
-  router.push('/setting')
-}
-
-const goResetPwd = () => {
-  ElMessage.success("修改密码");
+  router.push('/SettingLayout')
 }
 
 //导航栏跳转
@@ -260,7 +256,7 @@ onUnmounted(() => {
         <div class="nav-container">
 
           <div class="logo">
-            <img src="@/assets/image/logo.png" alt="Logo" style="height: 65px;" />
+            <img src="@/assets/image/logo.png" alt="Logo" @click="goTo('/index')" />
           </div>
 
           <div ref="menuBtnRef" class="mobile-menu-btn" @click="showMobileMenu = !showMobileMenu">
@@ -350,8 +346,8 @@ onUnmounted(() => {
                 <!-- 已登录 → 头像 + 昵称 -->
                 <el-dropdown trigger="hover">
                   <div class="user-dropdown-trigger">
-                    <el-avatar :src="userStore.avatar" size="36" />
-                    <span class="nickname">{{ userStore.nickname }}</span>
+                    <el-avatar :src="userStore.userInfo?.avatar" size="36" />
+                    <span class="nickname">{{ userStore.userInfo?.nickname || '' }}</span>
                   </div>
 
                   <!-- 🔥 下拉菜单 -->
@@ -362,14 +358,9 @@ onUnmounted(() => {
                           <User />
                         </el-icon> 个人中心
                       </el-dropdown-item>
-                      <el-dropdown-item @click="goResetPwd">
-                        <el-icon>
-                          <Lock />
-                        </el-icon> 修改密码
-                      </el-dropdown-item>
 
                       <!-- 分割线 -->
-                      <el-dropdown-item divided @click="logout" class="logout-item">
+                      <el-dropdown-item tem divided @click="logout" class="logout-item">
                         <el-icon>
                           <SwitchButton />
                         </el-icon> 退出登录
@@ -384,7 +375,6 @@ onUnmounted(() => {
       </el-header>
 
       <!-- main主内容区 -->
-      <!-- <WelcomeBanner /> -->
       <el-main>
         <router-view />
       </el-main>
@@ -567,6 +557,22 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   height: 100%;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.logo img {
+  height: 60px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.logo img:hover {
+  transform: scale(1.08);
 }
 
 /* 导航菜单 */
@@ -783,13 +789,19 @@ onUnmounted(() => {
 
   /* 3. logo样式 */
   .logo {
-    font-size: 22px !important;
-    font-weight: bold !important;
-    line-height: 1 !important;
-    display: flex !important;
-    align-items: center !important;
-    height: 100% !important;
-    color: var(--primary-color) !important;
+    display: flex;
+    align-items: center;
+    height: 100%;
+  }
+
+  .logo img {
+    height: 50px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+  }
+
+  .logo img:hover {
+    transform: scale(1.08);
   }
 
   /* 4. 汉堡按钮 */

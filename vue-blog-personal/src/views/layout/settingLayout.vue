@@ -1,18 +1,26 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { DArrowLeft } from '@element-plus/icons-vue'
+import { useRouter, useRoute } from 'vue-router'
+
+const router = useRouter()
+const route = useRoute()
 
 // 菜单数据
 const menuList = ref([
-  { key: 'base', name: '基本设置' },
-  { key: 'account', name: '账号安全' },
-  { key: 'theme', name: '主题样式' },
-  { key: 'notify', name: '消息通知' },
-  { key: 'about', name: '关于本站' }
+  { key: '/base', name: '个人信息' },
+  { key: '/repwd', name: '修改密码' },
+  // { key: '/account', name: '账号安全' },
+  // { key: 'notify', name: '消息通知' },
+  // { key: 'about', name: '关于本站' }
 ])
 
 // 当前选中
-const activeKey = ref('base')
+const activeKey = computed(() => route.path)
+
+const goPage = (path) => {
+  router.push(path)
+}
 </script>
 
 <template>
@@ -21,39 +29,18 @@ const activeKey = ref('base')
     <div class="settings-layout">
       <!-- 左侧菜单 -->
       <div class="settings-menu">
+        <h2>账号与安全</h2>
+        <div class="divider"></div>
         <div v-for="item in menuList" :key="item.key" class="menu-item" :class="{ active: activeKey === item.key }"
-          @click="activeKey = item.key">
+          @click="goPage(item.key)">
           {{ item.name }}
         </div>
       </div>
 
       <!-- 右侧内容区 -->
-      <div class="settings-content">
-        <div v-if="activeKey === 'base'">
-          <h3>基本设置</h3>
-          <p>这里可以修改昵称、头像、简介等基础信息</p>
-        </div>
-
-        <div v-if="activeKey === 'account'">
-          <h3>账号安全</h3>
-          <p>修改密码、绑定邮箱、登录设备管理</p>
-        </div>
-
-        <div v-if="activeKey === 'theme'">
-          <h3>主题样式</h3>
-          <p>深色模式 / 浅色模式、主题色切换</p>
-        </div>
-
-        <div v-if="activeKey === 'notify'">
-          <h3>消息通知</h3>
-          <p>设置邮件通知、站内消息</p>
-        </div>
-
-        <div v-if="activeKey === 'about'">
-          <h3>关于本站</h3>
-          <p>版本信息、项目介绍、联系方式</p>
-        </div>
-      </div>
+      <main class="settings-content">
+        <router-view />
+      </main>
     </div>
   </div>
 </template>
@@ -90,8 +77,18 @@ const activeKey = ref('base')
 }
 
 /* 左侧菜单 */
+.divider {
+  height: 1px;
+  background: var(--border-color);
+}
+
+.settings-menu h2 {
+  font-size: 20px;
+  color: var(--text-color);
+}
+
 .settings-menu {
-  width: 200px;
+  width: 24%;
   background-color: var(--card-bg);
   border-radius: 8px;
   padding: 12px;
@@ -101,6 +98,7 @@ const activeKey = ref('base')
 }
 
 .menu-item {
+  font-size: 18px;
   padding: 12px 16px;
   border-radius: 6px;
   cursor: pointer;
@@ -121,20 +119,7 @@ const activeKey = ref('base')
 /* 右侧内容 */
 .settings-content {
   flex: 1;
-  background-color: var(--card-bg);
   border-radius: 8px;
-  padding: 24px;
   min-height: 100%;
-}
-
-.settings-content h3 {
-  margin: 0 0 16px 0;
-  font-size: 20px;
-  color: var(--text-color);
-}
-
-.settings-content p {
-  color: var(--text-secondary-color);
-  line-height: 1.6;
 }
 </style>

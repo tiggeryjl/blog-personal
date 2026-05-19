@@ -100,6 +100,7 @@ onMounted(() => loadLinks())
         <h2>友链</h2>
         <p>发现更多优质网站｜记录一些优质的个人博客，常来串门～｜定期更新</p>
         <div class="divider"></div>
+
         <div class="links-info">
 
           <div class="my-blog-info">
@@ -417,9 +418,9 @@ onMounted(() => loadLinks())
 }
 
 .button:hover {
-  background-color: #ebb1a2b8;
+  background-color: #ebb1a2;
   color: var(--hover-color);
-  border: 1px solid #ebb1a2b8;
+  border: 1px solid #ebb1a2;
 }
 
 .divider {

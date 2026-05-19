@@ -4,45 +4,66 @@ import LoginPage from '@/components/login/LoginPage.vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/userloginstatus'
 import { ElMessage } from 'element-plus';
-
-const userStore = useUserStore()
-let loginForm = ref({ token: '', nickname: '', avatar: '', email: '', phone: '', password: '' })
-
-const loginRef = ref();
+import { loginApi, registerApi } from '@/api/auth'
 
 const router = useRouter()
+const loginRef = ref();
+const userStore = useUserStore()
 
-async function handleLogin(payload) {
-  loginRef.value?.setLoading(true)
+const handleLogin = async (payload) => {
 
-  // Replace with your real auth logic
-  await new Promise(r => setTimeout(r, 500))
+  try {
+    loginRef.value?.setLoading(true)
 
-  if (payload.email === '2087691050@qq.com' && payload.password === '1234') {
-    loginForm.value.token = 'eyJhbGciOiJIUzI1NiJ9.eyJpZCI6NDAsInVzZXJuYW1lIjoieWVzaXIiLCJleHAiOjE3NzIyMjk5NDl9.mKTizrokyQkL6xH9FXjSWbEfmGBKxL34Kii7v1oFURM'
-    loginForm.value.nickname = '小叶同学'
-    loginForm.value.email = '2087691050@qq.com'
-    loginForm.value.password = '1234'
-    loginForm.value.avatar = 'https://picsum.photos/64/64'
-    userStore.loginSuccess(loginForm.value)
-    // router.push('/index')
-    router.go(-1)
-    ElMessage.success("登录成功!");
-  } else {
-    loginRef.value?.setError('邮箱或密码错误')
+    const result = await loginApi({
+      loginName: payload.account,
+      password: payload.password,
+      remember: payload.remember,
+      emailCode: payload.emailCode,
+      captchaVerifyParam: payload.captchaVerifyParam
+    })
+
+    if (result.code == 200) {
+      ElMessage.success("登录成功!");
+      userStore.loginSuccess(result.data)
+      router.push('/index')
+      // router.go(-1)
+    } else {
+      loginRef.value?.setError(result.msg)
+    }
+  } catch (error) {
+    console.error('登录异常：', error);
+
+  } finally {
+    loginRef.value?.setLoading(false)
   }
-
-  loginRef.value?.setLoading(false)
 }
 
-async function handleRegister(payload) {
+const handleRegister = async (payload) => {
+  try {
+    loginRef.value?.setLoading(true)
 
-  loginRef.value?.setLoading(true)
+    const result = await registerApi({
+      nickname: payload.nickname,
+      username: payload.username,
+      phone: payload.phone,
+      email: payload.email,
+      password: payload.password,
+      confirmPwd: payload.confirmPwd,
+      emailCode: payload.emailCode
+    })
 
-  console.log("注册中。。。")
-  await new Promise(r => setTimeout(r, 500))
+    if (result.code == 200) {
+      ElMessage.success("注册成功，请登录!");
+    } else {
+      loginRef.value?.setError(result.msg)
+    }
+  } catch (error) {
+    console.error('注册异常：', error);
 
-  loginRef.value?.setLoading(false)
+  } finally {
+    loginRef.value?.setLoading(false)
+  }
 }
 </script>
 

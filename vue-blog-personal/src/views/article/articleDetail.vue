@@ -317,7 +317,7 @@ onUnmounted(() => {
       <div class="card">
         <!-- 发表评论 -->
         <div class="comment-publish-box">
-          <h3>发表评论</h3>
+          <h3>留下你的想法~</h3>
           <div class="publish-form">
 
             <!-- 核心：用 div 模拟输入框容器 -->

@@ -1,12 +1,15 @@
 <script setup>
 import { useRouter } from 'vue-router'
-import { ref, onMounted, onUnmounted } from 'vue'
+import MyPagination from '@/components/MyPagination.vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { Expand, Menu, Grid, Edit, ChatLineSquare, Document, View } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const articleList = ref([
   {
     id: 1,
+    nickname: '小叶同学',
+    avatar: 'https://picsum.photos/64/64',
     title: "新起点 新动力！",
     desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
     category: "心得",
@@ -19,6 +22,8 @@ const articleList = ref([
   },
   {
     id: 2,
+    nickname: '小叶同学',
+    avatar: 'https://picsum.photos/64/64',
     title: "新起点 新动力！",
     desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
     category: "心得",
@@ -31,6 +36,8 @@ const articleList = ref([
   },
   {
     id: 3,
+    nickname: '小叶同学',
+    avatar: 'https://picsum.photos/64/64',
     title: "新起点 新动力！",
     desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
     category: "心得",
@@ -43,6 +50,8 @@ const articleList = ref([
   },
   {
     id: 4,
+    nickname: '小叶同学',
+    avatar: 'https://picsum.photos/64/64',
     title: "新起点 新动力！",
     desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
     category: "心得",
@@ -55,6 +64,8 @@ const articleList = ref([
   },
   {
     id: 5,
+    nickname: '小叶同学',
+    avatar: 'https://picsum.photos/64/64',
     title: "新起点 新动力！",
     desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
     category: "心得",
@@ -67,6 +78,8 @@ const articleList = ref([
   },
   {
     id: 6,
+    nickname: '小叶同学',
+    avatar: 'https://picsum.photos/64/64',
     title: "新起点 新动力！",
     desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
     category: "心得",
@@ -79,9 +92,11 @@ const articleList = ref([
   },
 ])
 
-const goEdit = () => {
-  router.push('/editInput')
-}
+// 模拟数据
+const total = ref(186)
+const currentPage = ref(1)
+const pageSize = ref(10)
+
 const goDetail = (id) => {
   router.push('/article/' + id)
 }
@@ -133,15 +148,8 @@ onUnmounted(() => {
         <div class="publish-box" v-if="false">
           <!-- 你的发布输入框代码 -->
         </div>
-        <h2>文章</h2>
+        <h2>全部文章</h2>
         <div class="layout-dropdown">
-          <button class="layout-trigger" @click="goEdit()">
-            <span class="icon-wrap">
-              <el-icon>
-                <Edit />
-              </el-icon>
-            </span>发布文章
-          </button>
           <button class="layout-trigger" @click="showDropdown = !showDropdown">
             <span class="icon-wrap">
               <component :is="layoutIcons[layoutMode]" />
@@ -179,8 +187,10 @@ onUnmounted(() => {
         <!-- 右侧内容 -->
         <div class="article-content">
           <div class="article-meta">
-            <span class="category">{{ item.category }}</span>
+            <img class="avatar" :src="item.avatar" alt="头像" />
+            <span class="nickname">{{ item.nickname }}</span>
             <span class="date">{{ item.date }}</span>
+            <span class="category">{{ item.category }}</span>
           </div>
           <h3 class="article-title">{{ item.title }}</h3>
           <p class="article-desc">{{ item.desc }}</p>
@@ -201,6 +211,12 @@ onUnmounted(() => {
     </div>
     <div v-if="articleList.length === 0" class="empty-data">
       暂无文章数据
+    </div>
+    <div>
+
+      <!-- 分页 -->
+      <MyPagination :total="total" :current-page="currentPage" :page-size="pageSize"
+        @update:current-page="currentPage = $event" @update:page-size="pageSize = $event" />
     </div>
   </div>
 </template>
@@ -238,7 +254,7 @@ onUnmounted(() => {
 }
 
 .header-row h2 {
-  margin: 0 0 8px;
+  margin: 2px 0;
   color: var(--text-color);
 }
 
@@ -462,10 +478,25 @@ onUnmounted(() => {
 
 .article-meta {
   display: flex;
-  gap: 16px;
+  align-items: center;
+  gap: 8px;
   color: var(--text-secondary-color);
   font-size: 14px;
   margin-bottom: 12px;
+}
+
+.article-meta .avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+
+.article-meta .nickname {
+  color: var(--text-color);
+}
+
+.article-meta .date {
+  margin: 0px 12px;
 }
 
 .article-meta .category {
