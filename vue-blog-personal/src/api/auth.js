@@ -7,7 +7,7 @@ export const loginApi = (user) => request.post('/user/login', user);
 export const registerApi = (user) => request.post('/user/register', user);
 
 //根据ID查询用户信息
-export const queryByIdApi = (id) => request.get(`/user/getUserInfo?id=${id}`);
+export const queryUserInfoApi = () => request.get(`/user/getUserInfo`);
 
 //修改
 export const updateApi = (user) => request.put('/user/update', user);

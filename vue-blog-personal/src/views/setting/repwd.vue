@@ -1,17 +1,14 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Eye, EyeOff } from 'lucide-vue-next'
 import { editPwdApi } from '@/api/auth'
-import { useUserStore } from '@/store/userloginstatus'
 
 const form = ref({
   oldPwd: '',
   newPwd: '',
   confirmPwd: ''
 })
-const userStore = useUserStore()
-const userId = computed(() => userStore.userInfo.id)
 
 //表单校验
 const validateForm = () => {
@@ -40,7 +37,6 @@ const validateForm = () => {
     return false
   }
 
-  // 所有校验通过
   return true
 }
 
@@ -51,7 +47,6 @@ const submitPwd = async () => {
 
   try {
     const res = await editPwdApi({
-      userId: userId.value,
       oldPassword: form.value.oldPwd,
       newPassword: form.value.newPwd,
       confirmPwd: form.value.confirmPwd

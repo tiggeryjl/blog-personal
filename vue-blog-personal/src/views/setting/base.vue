@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/userloginstatus'
 import { Edit } from '@element-plus/icons-vue'
-import { queryByIdApi, updateApi } from '@/api/auth'
+import { queryUserInfoApi, updateApi } from '@/api/auth'
 import { uploadApi } from '@/api/upload'
 
 const originalUserInfo = ref({ avatar: '', username: '', nickname: '', email: '', sex: '', phone: '', createTime: '' })
@@ -21,7 +21,7 @@ const getUserInfo = async () => {
       ElMessage.error("未登录，请先登录！")
       return
     }
-    const result = await queryByIdApi(userId.value)
+    const result = await queryUserInfoApi()
 
     if (result && result.code === 200 && result.data) {
       originalUserInfo.value = result.data
@@ -65,22 +65,33 @@ const handleConfirm = async () => {
   if (editKeys.value.length === 0) return
 
   let updateData = {}
+
   for (let key of editKeys.value) {
-    if (key !== 'avatar') {
-      updateData[key] = form.value[key]
+    if (form.value[key] !== originalUserInfo.value[key]) {
+      if (key !== 'avatar') {
+        updateData[key] = form.value[key]
+      }
     }
   }
 
-  updateData.id = userId.value
-
-  const result = await updateApi(updateData)
-
-  if (result && result.code == 200) {
-    ElMessage.success('修改成功！')
+  if (Object.keys(updateData).length === 0) {
     editKeys.value = []
-    getUserInfo();
-  } else {
-    ElMessage.error("修改失败!");
+    return
+  }
+
+  try {
+    const result = await updateApi(updateData)
+
+    if (result && result.code == 200) {
+      ElMessage.success('修改成功！')
+      editKeys.value = []
+      getUserInfo();
+    } else {
+      const msg = result?.msg || '修改失败'
+      ElMessage.error(msg)
+    }
+  } catch (err) {
+    ElMessage.error(err?.message || '操作异常，请稍后重试')
   }
 }
 
@@ -211,7 +222,7 @@ const formatSex = (sexVal) => {
           </div>
 
           <div class="info-item">
-            <label>创建时间</label>
+            <label>加入时间</label>
             <span>{{ originalUserInfo?.createTime }}</span>
           </div>
         </div>

@@ -86,6 +86,7 @@ const showPassword = computed(() => {
 const captchaComponent = ref(null)
 let pendingLoginData = null
 
+//回调失败恢复状态
 const handleCaptchaFail = () => {
   loading.value = false
   errorMsg.value = ''
@@ -117,7 +118,7 @@ const handleCaptchaSuccess = (verifyParam) => {
 }
 
 // 登录提交
-const onSubmit = async () => {
+const onSubmit1 = async () => {
   // 统一校验
   const valid = await validate('login')
   if (!valid) return
@@ -139,6 +140,39 @@ const onSubmit = async () => {
     loading.value = false
     pendingLoginData = null
   }
+
+  // if (needLoginCaptcha.value) {
+  //   emit('login-submit', {
+  //     account: account.value,
+  //     password: password.value,
+  //     remember: remember.value,
+  //     emailCode: loginEmailCode.value,
+  //     ticket: localStorage.getItem('lastTicket'),
+  //     randstr: localStorage.getItem('lastRandstr'),
+  //   })
+  //   return
+  // }
+}
+
+//临时跳过验证用的
+const onSubmit = async () => {
+  // 统一校验
+  const valid = await validate('login')
+  if (!valid) return
+
+  loading.value = true
+  errorMsg.value = ''
+
+  emit('login-submit', {
+    account: account.value,
+    password: password.value,
+    remember: remember.value,
+    emailCode: loginEmailCode.value,
+    ticket: localStorage.getItem('lastTicket'),
+    randstr: localStorage.getItem('lastRandstr'),
+  })
+
+  return
 
   // if (needLoginCaptcha.value) {
   //   emit('login-submit', {
