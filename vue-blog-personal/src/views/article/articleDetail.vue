@@ -118,63 +118,112 @@ const goToArticle = (id) => {
   router.push(`/article/${id}`)
 }
 
-
-// 控制放大弹窗
+// ========== 图片预览（循环轮播 + 预加载 + loading） ==========
 const showImageModal = ref(false)
 const previewImageUrl = ref('')
-// 缩放比例、当前文章所有图片列表、当前图片索引
 const scale = ref(1)
 const imageList = ref([])
 const currentImageIndex = ref(0)
-// 点击图片时触发
-const handleImageClick = (e) => {
-  // 只处理点击的是图片的情况
-  if (e.target.tagName === 'IMG') {
-    // 获取文章内所有图片
-    const imgs = document.querySelectorAll('.article-body img')
-    imageList.value = Array.from(imgs).map(img => img.src)
-    // 当前点击的图片索引
-    currentImageIndex.value = Array.from(imgs).findIndex(img => img === e.target)
-    // 赋值并打开
-    previewImageUrl.value = imageList.value[currentImageIndex.value]
+const imageLoading = ref(false)   // 加载状态
+
+// 预加载单张图片
+const preloadImage = (url) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(url)
+    img.onerror = (err) => reject(err)
+    img.src = url
+  })
+}
+
+// 预加载当前图片的相邻两张（循环）
+const preloadAdjacent = (list, currentIdx) => {
+  if (!list.length) return
+  const len = list.length
+  const prevIdx = (currentIdx - 1 + len) % len
+  const nextIdx = (currentIdx + 1) % len
+  if (list[prevIdx]) preloadImage(list[prevIdx]).catch(() => { })
+  if (list[nextIdx]) preloadImage(list[nextIdx]).catch(() => { })
+}
+
+// 切换到指定索引的图片（带loading）
+const switchToImage = async (newIndex) => {
+  if (imageLoading.value) return
+  const len = imageList.value.length
+  if (len === 0) return
+  // 确保索引在合法范围（实际上调用前已处理循环，但防御一下）
+  const safeIndex = (newIndex + len) % len
+  const targetUrl = imageList.value[safeIndex]
+  if (!targetUrl) return
+
+  imageLoading.value = true
+  try {
+    await preloadImage(targetUrl)
+    currentImageIndex.value = safeIndex
+    previewImageUrl.value = targetUrl
     scale.value = 1
-    showImageModal.value = true
+    // 预加载新的相邻图片
+    preloadAdjacent(imageList.value, safeIndex)
+  } catch (err) {
+    console.warn('图片加载失败', err)
+    currentImageIndex.value = safeIndex
+    previewImageUrl.value = targetUrl
+  } finally {
+    imageLoading.value = false
   }
 }
 
-// 上一张
+// 点击图片打开预览
+const handleImageClick = async (e) => {
+  if (e.target.tagName !== 'IMG') return
+  const imgs = document.querySelectorAll('.article-body img')
+  imageList.value = Array.from(imgs).map(img => img.src)
+  const clickedIndex = Array.from(imgs).findIndex(img => img === e.target)
+  if (clickedIndex === -1) return
+
+  currentImageIndex.value = clickedIndex
+  previewImageUrl.value = imageList.value[clickedIndex]
+  scale.value = 1
+  showImageModal.value = true
+  imageLoading.value = true
+  try {
+    await preloadImage(imageList.value[clickedIndex])
+    preloadAdjacent(imageList.value, clickedIndex)
+  } catch (err) {
+    console.warn('初始图片加载失败', err)
+  } finally {
+    imageLoading.value = false
+  }
+}
+
+// 上一张（循环）
 const prevImage = () => {
-  if (currentImageIndex.value > 0) {
-    currentImageIndex.value--
-    previewImageUrl.value = imageList.value[currentImageIndex.value]
-    scale.value = 1
-  }
+  if (imageLoading.value) return
+  const len = imageList.value.length
+  if (len === 0) return
+  const newIndex = (currentImageIndex.value - 1 + len) % len
+  switchToImage(newIndex)
 }
 
-// 下一张
+// 下一张（循环）
 const nextImage = () => {
-  if (currentImageIndex.value < imageList.value.length - 1) {
-    currentImageIndex.value++
-    previewImageUrl.value = imageList.value[currentImageIndex.value]
-    scale.value = 1
-  }
+  if (imageLoading.value) return
+  const len = imageList.value.length
+  if (len === 0) return
+  const newIndex = (currentImageIndex.value + 1) % len
+  switchToImage(newIndex)
 }
 
-// 放大
-const zoomIn = () => {
-  scale.value = Math.min(scale.value + 0.2, 3)
-}
-
-// 缩小
-const zoomOut = () => {
-  scale.value = Math.max(scale.value - 0.2, 0.6)
-}
+// 放大/缩小
+const zoomIn = () => { scale.value = Math.min(scale.value + 0.2, 3) }
+const zoomOut = () => { scale.value = Math.max(scale.value - 0.2, 0.6) }
 
 // 关闭弹窗
 const closeModal = () => {
   showImageModal.value = false
   previewImageUrl.value = ''
   scale.value = 1
+  imageLoading.value = false
 }
 
 const article = ref({
@@ -350,6 +399,11 @@ onUnmounted(() => {
       <!-- 上一张 -->
       <div class="img-prev" @click="prevImage">‹</div>
 
+      <div v-if="imageLoading" class="image-loading-overlay">
+        <div class="loading-spinner"></div>
+        <span>加载中...</span>
+      </div>
+
       <!-- 图片 -->
       <img :src="previewImageUrl" alt="预览" class="preview-image" :style="{ transform: `scale(${scale})` }" @click.stop
         draggable="false" user-select="none" />
@@ -365,6 +419,10 @@ onUnmounted(() => {
         <div @click="zoomIn"><el-icon>
             <ZoomIn />
           </el-icon></div>
+        <!-- 图片计数器（循环时提示当前位置） -->
+        <div class="image-counter" v-if="imageList.length">
+          {{ currentImageIndex + 1 }} / {{ imageList.length }}
+        </div>
       </div>
     </div>
 
@@ -574,25 +632,45 @@ img {
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 20px;
+  gap: 12px;
+  align-items: center;
   z-index: 10;
 }
 
-.img-zoom div {
+/* 缩放按钮（圆形） */
+.img-zoom div:not(.image-counter) {
   width: 44px;
   height: 44px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(4px);
   color: #fff;
   font-size: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
 }
 
-.img-zoom div:hover {
-  background: rgba(255, 255, 255, 0.3);
+.img-zoom div:not(.image-counter):hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
+}
+
+/* 计数器样式 - 独立矩形，与按钮间隔开 */
+.image-counter {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  padding: 8px 14px;
+  border-radius: 30px;
+  font-size: 14px;
+  font-family: monospace;
+  color: white;
+  margin-left: 8px;
+  /* 与缩放按钮拉开距离 */
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 /* 翻页按钮 */
@@ -640,6 +718,40 @@ img {
 .next-btn:hover {
   border-color: var(--primary-color);
   color: var(--primary-color);
+}
+
+/* 图片加载遮罩 */
+.image-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  color: white;
+  font-size: 16px;
+  backdrop-filter: blur(2px);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .card {

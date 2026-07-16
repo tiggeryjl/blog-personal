@@ -140,13 +140,13 @@ const handleAvatarClick = () => {
 }
 
 const genderOptions = [
-  { label: '男', value: 0 },
-  { label: '女', value: 1 },
+  { label: '女', value: 0 },
+  { label: '男', value: 1 },
   { label: '保密', value: 2 }]
 const formatSex = (sexVal) => {
   const sexMap = {
-    0: '男',
-    1: '女',
+    0: '女',
+    1: '男',
     2: '保密',
   }
   return sexMap[sexVal] || '保密'

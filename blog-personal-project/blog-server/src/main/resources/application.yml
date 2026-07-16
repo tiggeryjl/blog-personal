@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: blog-server
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  main:
+    allow-circular-references: true
+  servlet:
+    multipart:
+      #最大单个文件大小
+      max-file-size: 10MB
+      #最大请求大小(包括所有文件和表单数据)
+      max-request-size: 100MB
+
+mybatis:
+  #mapper配置文件
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.blog.pojo.entity
+  configuration:
+    #开启驼峰命名
+    map-underscore-to-camel-case: true
+
+
+blog:
+  alioss:
+    access-key-id: ${OSS_ACCESS_KEY_ID}
+    access-key-secret: ${OSS_ACCESS_KEY_SECRET}
+    bucket-name: blog-personal-yjl
+    endpoint: oss-cn-beijing.aliyuncs.com
+    region: cn-beijing
+    scene-id: jvdry8hq
+  jwt:
+    user-secret-key: hello19990124xiaoyetongxuedegerenbokewangzhan
+    user-token-name: Authorization
+    user-ttl: 1200000
+    user-refresh-Ttl: 604800000

@@ -23,7 +23,7 @@ const route = useRoute()
 //获取pinia登录状态
 const userStore = useUserStore()
 //判断是否为登录状态
-const isLogin = computed(() => !!userStore.token)
+const isLogin = computed(() => !!userStore.user_token)
 // 手机菜单控制
 const showMobileMenu = ref(false)
 

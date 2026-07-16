@@ -1,0 +1,17 @@
+#开发环境
+server:
+  port: 8080
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/blog?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 1234
+
+logging:
+  level:
+    com.blog.mapper: debug
+    com.blog.service: info
+    com.blog.controller: info
+

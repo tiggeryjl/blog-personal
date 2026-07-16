@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.blog.mapper.SysUserMapper">
+    <insert id="register">
+        INSERT INTO sys_user(nickname, username, phone, email,sex, password, salt, avatar, intro,status,
+                         delete_flag,lock_flag,lock_time,website, github, create_time, update_time, login_ip,login_agent, login_time)
+        VALUES (#{nickname},#{username},#{phone},#{email},#{sex},#{password},#{salt},#{avatar},
+                #{intro},#{status},#{deleteFlag},#{lockFlag},#{lockTime},#{website},#{github},#{createTime},
+                #{updateTime},#{loginIp},#{loginAgent},#{loginTime})
+    </insert>
+    <update id="update">
+        UPDATE sys_user
+        <set>
+            <if test="nickname != null and nickname != ''">nickname = #{nickname},</if>
+            <if test="username != null and username != ''">username = #{username},</if>
+            <if test="phone != null and phone != ''">phone = #{phone},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="sex != null">sex = #{sex},</if>
+            <if test="password != null and password != ''">password = #{password},</if>
+            <if test="salt != null">salt = #{salt},</if>
+            <if test="avatar != null">avatar = #{avatar},</if>
+            <if test="intro != null">intro = #{intro},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="deleteFlag != null">delete_flag = #{deleteFlag},</if>
+            <if test="lockFlag != null">lock_flag = #{lockFlag},</if>
+            <if test="lockTime != null">lock_time = #{lockTime},</if>
+            <if test="website != null">website = #{website},</if>
+            <if test="github != null">github = #{github},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="loginIp != null">login_ip = #{loginIp},</if>
+            <if test="loginAgent != null">login_agent = #{loginAgent},</if>
+            <if test="loginTime != null">login_time = #{loginTime},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectRoleListByUserId" resultType="com.blog.pojo.entity.SysRole">
+        select r.*
+            from sys_user u
+            inner join sys_user_role ur on u.id = ur.user_id
+            inner join sys_role r on ur.role_id = r.id
+            where u.id = #{userId}
+    </select>
+
+    <select id="selectByIds" resultType="com.blog.pojo.entity.SysUser">
+        SELECT * FROM sys_user
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <resultMap id="UserVOResultMap" type="com.blog.pojo.vo.UserPageVo">
+        <id column="id" property="id"/>
+        <result column="nickname" property="nickname"/>
+        <result column="username" property="username"/>
+        <result column="phone" property="phone"/>
+        <result column="email" property="email"/>
+        <result column="sex" property="sex"/>
+        <result column="avatar" property="avatar"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+
+        <!-- 一对多：角色集合 -->
+        <collection property="roleList" ofType="com.blog.pojo.vo.SysRoleSimpleVO">
+            <id column="r_id" property="id"/>
+            <result column="role_name" property="roleName"/>
+            <result column="role_key" property="roleKey"/>
+        </collection>
+    </resultMap>
+
+    <select id="pageQuery" resultMap="UserVOResultMap">
+        select u.*,
+        r.id r_id,
+        r.role_name,
+        r.role_key
+        from sys_user u
+        LEFT JOIN sys_user_role ur ON u.id = ur.user_id
+        LEFT JOIN sys_role r ON ur.role_id = r.id
+        <where>
+            <if test="nickname != null and nickname != ''">
+                AND u.nickname LIKE CONCAT('%', #{nickname}, '%')
+            </if>
+            <if test="search != null and search != ''">
+                AND (
+                u.username LIKE CONCAT('%', #{search}, '%')
+                OR u.phone LIKE CONCAT('%', #{search}, '%')
+                OR u.email LIKE CONCAT('%', #{search}, '%')
+                )
+            </if>
+            <if test="status != null ">
+                AND u.status = #{status}
+            </if>
+            <if test="begin != null and end != null">
+                AND u.create_time BETWEEN #{begin} AND #{end}
+            </if>
+            <if test="role != null and role != ''">
+                AND
+                <choose>
+                    <!-- 1. 前端选了【普通用户】role=""，查无任何角色的用户 -->
+                    <when test="role == 'no-role'">
+                        ur.user_id IS NULL
+                    </when>
+                    <!-- 2. 传入具体角色key，查询拥有该角色的用户 -->
+                    <otherwise>
+                        r.role_key = #{role}
+                    </otherwise>
+                </choose>
+            </if>
+        </where>
+        ORDER BY create_time ASC
+    </select>
+
+    <delete id="deleteBatch">
+        delete from sys_user
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+    <delete id="deleteBatchLogic">
+        update sys_user set delete_flag=#{deleteFlag}
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>

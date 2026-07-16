@@ -174,17 +174,6 @@ const onSubmit = async () => {
 
   return
 
-  // if (needLoginCaptcha.value) {
-  //   emit('login-submit', {
-  //     account: account.value,
-  //     password: password.value,
-  //     remember: remember.value,
-  //     emailCode: loginEmailCode.value,
-  //     ticket: localStorage.getItem('lastTicket'),
-  //     randstr: localStorage.getItem('lastRandstr'),
-  //   })
-  //   return
-  // }
 }
 
 // 登录滑块验证回调

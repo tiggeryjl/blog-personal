@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.blog.mapper.TagMapper">
+
+    <insert id="add">
+        INSERT INTO tag(name,status,delete_flag,create_time,update_time)
+        VALUES (#{name},#{status},#{deleteFlag},#{createTime},#{updateTime})
+    </insert>
+
+    <update id="update">
+        UPDATE tag
+        <set>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="status != null ">status = #{status},</if>
+            <if test="deleteFlag != null">delete_flag = #{deleteFlag},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        delete from tag
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="getTagOptions" resultType="com.blog.pojo.vo.OptionVO">
+        SELECT
+            name AS label,
+            name AS value
+        FROM tag
+        WHERE status = 1 AND delete_flag = 0
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

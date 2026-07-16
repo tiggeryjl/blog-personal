@@ -5,7 +5,7 @@ import { ElMessage } from 'element-plus';
 // 第二个参数是配置
 export const useUserStore = defineStore('user', {
   state: () => ({
-    token: '',         // 用户 token
+    user_token: '',         // 用户 token
     userInfo: {
       id: '',         // 用户 id
       nickname: '',      // 昵称
@@ -19,23 +19,23 @@ export const useUserStore = defineStore('user', {
     // 登录成功保存信息
     loginSuccess(res) {
 
-      this.token = res.token
+      this.user_token = res.token
       this.userInfo = {
-        id: res.id,
-        nickname: res.nickname,
-        avatar: res.avatar,
-        email: res.email,
-        phone: res.phone
+        id: res.user.id,
+        nickname: res.user.nickname,
+        avatar: res.user.avatar,
+        email: res.user.email,
+        phone: res.user.phone
       };
 
       // 同时保存到 localStorage（刷新不丢失）
-      localStorage.setItem('token', res.token)
+      localStorage.setItem('user_token', res.token)
       localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
     },
 
     // 退出登录
     logout() {
-      this.token = '';
+      this.user_token = '';
       this.userInfo = {
         id: '',
         nickname: '',
@@ -44,7 +44,7 @@ export const useUserStore = defineStore('user', {
         phone: ''
       };
 
-      localStorage.removeItem('token')
+      localStorage.removeItem('user_token')
       localStorage.removeItem('userInfo')
     },
 
@@ -52,7 +52,7 @@ export const useUserStore = defineStore('user', {
     loadStorage() {
       try {
 
-        const token = localStorage.getItem('token') || ''
+        const token = localStorage.getItem('user_token') || ''
         const userInfoStr = localStorage.getItem('userInfo') || ''
 
         if (!token) {
@@ -60,7 +60,7 @@ export const useUserStore = defineStore('user', {
           return
         }
 
-        this.token = token;
+        this.user_token = token;
         if (userInfoStr) {
           const info = JSON.parse(userInfoStr)
           this.userInfo = {

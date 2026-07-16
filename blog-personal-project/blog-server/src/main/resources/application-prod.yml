@@ -1,0 +1,23 @@
+#生产环境
+server:
+  port: 80
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    #你的服务器IP:3306
+    url: jdbc:mysql://localhost:3306/blog?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=true&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+
+logging:
+  level:
+    com.blog.mapper: info
+    com.blog.service: info
+    com.blog.controller: info
+
+#  在开发环境中需要先将prod的环境变量参数配置进去，以下步骤
+#  1.sudo vim  /etc/environment
+#   2.在文件最后面添加SPRING_PROFILES_ACTIVE=prod
+#3.sudo reboot重启服务器
+#4.echo $SPRING_PROFILES_ACTIVE验证输出prod即配置成功

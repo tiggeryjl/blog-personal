@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
-
+import { getRefreshTokenApi } from '@/api/auth.js'
+import { ElMessage } from 'element-plus'
 import LayoutView from '@/views/layout/index.vue'
 import IndexLayoutView from '@/views/layout/indexLayout.vue'
 import SettingLayoutView from '@/views/layout/settingLayout.vue'
@@ -64,6 +65,35 @@ const router = createRouter({
     { path: '/login', name: 'login', component: () => import('@/views/login/index.vue') },
     { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/components/404.vue') },
   ]
+})
+
+let isRefreshing = false
+
+router.beforeEach(async (to, from, next) => {
+  const whiteList = ['/login', '/404']
+  if (whiteList.includes(to.path)) return next()
+
+  const localToken = localStorage.getItem('user_token')
+  if (localToken) {
+    // 已有token直接放行
+    next()
+  } else {
+    // 无本地token，静默刷新
+    if (isRefreshing) return next()
+    isRefreshing = true
+    try {
+      const res = await getRefreshTokenApi()
+      const newToken = res.data.token
+      localStorage.setItem('user_token', newToken)
+      // 刷新路由上下文
+      next({ ...to, replace: true })
+    } catch (err) {
+      ElMessage.info('登录过期，请重新登录')
+      next('/login')
+    } finally {
+      isRefreshing = false
+    }
+  }
 })
 
 export default router
