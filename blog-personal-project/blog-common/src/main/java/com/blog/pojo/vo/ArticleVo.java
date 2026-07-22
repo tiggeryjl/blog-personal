@@ -1,9 +1,10 @@
-package com.blog.pojo.entity;
+package com.blog.pojo.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -13,9 +14,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Article implements Serializable {
-
-    private static final long serialVersionUID = 1L;
+public class ArticleVo implements Serializable {
 
     private Long id;
 
@@ -73,9 +72,12 @@ public class Article implements Serializable {
     // 用户头像
     private String userAvatar;
 
-    // 逻辑删除 0=正常 1=删除
-    private Integer deleteFlag;
-
     // 排序
     private Integer sort;
+
+    //冗余分类
+    private String category;
+
+    //冗余标签
+    private List<Long> tags;
 }

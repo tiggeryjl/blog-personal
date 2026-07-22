@@ -1,14 +1,18 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import EditorView from '@/components/MyEditor.vue'
-import { useRouter } from 'vue-router'
-import { ElMessage, ElSelect, ElOption, ElUpload } from 'element-plus'
+import { ARTICLE_STATUS } from '@/constants/articleConstants'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox, ElSelect, ElOption, ElUpload } from 'element-plus'
 import { getCategoryOptionsApi } from '@/api/category.js'
 import { getTagOptionsApi } from '@/api/tag.js'
-import { addArticleApi } from '@/api/article.js'
+import { addArticleApi, updateArticleApi, getArticleDetailApi } from '@/api/article.js'
 import { useUserStore } from '@/stores/userloginstatus'
 
 const router = useRouter()
+const route = useRoute()
+const isEdit = ref(false)
+const articleStatus = ref()
 
 const articleForm = ref({
   id: '',
@@ -16,7 +20,8 @@ const articleForm = ref({
   content: '',
   categoryId: '',
   tags: [],
-  cover: ''
+  cover: '',
+  status: ''
 })
 
 //单独为上传图片功能设置请求头token，从pinia里拿
@@ -52,6 +57,7 @@ const getCategoryOptions = async () => {
   }
 }
 
+//标签列表
 // const tagOptions = ref([
 //   { label: 'Vue', value: 'Vue' },
 //   { label: '前端', value: '前端' },
@@ -60,7 +66,6 @@ const getCategoryOptions = async () => {
 //   { label: '生活', value: '生活' },
 //   { label: '随想', value: '随想' }
 // ])
-//标签列表
 const tagOptions = ref([])
 const getTagOptions = async () => {
   try {
@@ -73,32 +78,110 @@ const getTagOptions = async () => {
   }
 }
 
-const submit = async () => {
+const saveArticle = async (status) => {
   try {
-    const result = await addArticleApi(articleForm)
+    if (!articleForm.value.title.trim() || !articleForm.value.content.trim()) {
+      ElMessage.warning('文章标题或内容为空')
+      return
+    }
+
+    if (status === ARTICLE_STATUS.PUBLISHED) {
+      await ElMessageBox.confirm('确定要发布该文章吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      })
+    }
+
+    const submitData = {
+      ...articleForm.value,
+      status: status
+    }
+
+    let result
+    if (isEdit.value && articleForm.value.id) {
+      result = await updateArticleApi(submitData)
+    } else {
+      result = await addArticleApi(submitData);
+    }
+
     if (result.code === 200) {
-      ElMessage.success('草稿保存成功!');
+      const actionText = status === 1 ? '文章发布' : '草稿保存'
+      ElMessage.success(`${actionText}成功!`)
       router.go(-1)
     }
+
   } catch (error) {
-    ElMessage.error('保存失败,接口异常!');
+    if (error === 'cancel') {
+      ElMessage.info('已取消发布')
+    } else {
+      ElMessage.error('操作失败，请重试')
+    }
+  }
+}
+
+// 获取文章详情
+const getArticleDetail = async (id) => {
+  try {
+    const result = await getArticleDetailApi(id)
+    if (result.code === 200) {
+
+      if (result.data.status === ARTICLE_STATUS.ARCHIVED) {
+        ElMessageBox.alert('已归档文章无法直接编辑，请先取消归档', '提示', {
+          confirmButtonText: '返回列表',
+          callback: () => router.back()
+        })
+      }
+
+      const data = result.data
+
+      if (data.categoryId !== undefined && data.categoryId !== null) {
+        data.categoryId = String(data.categoryId)
+      }
+
+      if (data.tags && Array.isArray(data.tags)) {
+        // 如果 tags 是对象数组，提取 id 并转成字符串
+        if (data.tags.length > 0 && typeof data.tags[0] === 'object') {
+          data.tags = data.tags.map(tag => String(tag.id))
+        } else {
+          // 如果已经是 ID 数组，确保每个元素是字符串
+          data.tags = data.tags.map(tag => String(tag))
+        }
+      } else {
+        data.tags = []
+      }
+
+      articleForm.value = data
+
+    }
+  } catch (error) {
+    ElMessage.error('加载文章数据失败,请重试!')
   }
 }
 
 const clearContent = () => {
+  if (isEdit.value) {
+    ElMessage.warning('编辑状态下清空会丢失当前修改，请谨慎操作')
+    return
+  }
   ElMessage.success(`已清空`)
   articleForm.value = { title: '', content: '', categoryId: '', tags: [], cover: '' }
 }
 const cancel = () => {
   router.go(-1)
 }
-const publish = () => {
-  ElMessage.success(`保存并发布`)
-}
 
 onMounted(() => {
   getCategoryOptions()
   getTagOptions()
+
+  const id = route.query.id || route.params.id
+  if (id) {
+    isEdit.value = true
+    articleStatus.value = route.query.status
+    articleForm.value.id = id
+    getArticleDetail(id)
+  }
 })
 </script>
 
@@ -154,10 +237,11 @@ onMounted(() => {
 
     <!-- 按钮组 -->
     <div class="btn-group">
-      <button class="btn btn-publish" @click="publish">保存发布</button>
+      <button class="btn btn-publish" @click="saveArticle(ARTICLE_STATUS.PUBLISHED)">{{ isEdit ? '更新并发布' : '保存并发布'
+      }}</button>
       <button class="btn btn-reset" @click="clearContent">清空内容</button>
       <button class="btn btn-cancel" @click="cancel">取消编辑</button>
-      <button class="btn btn-submit" @click="submit">保存草稿</button>
+      <button class="btn btn-submit" @click="saveArticle(ARTICLE_STATUS.DRAFT)">{{ isEdit ? '更新编辑' : '保存草稿' }}</button>
     </div>
   </div>
 </template>

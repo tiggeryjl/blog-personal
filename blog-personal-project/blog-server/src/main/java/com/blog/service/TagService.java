@@ -10,39 +10,39 @@ import java.util.List;
 
 public interface TagService {
     /**
-     * 新增分类
+     * 新增标签
      * @param tagDTO
      */
     void add(TagDTO tagDTO);
 
     /**
-     * 查询所有分类信息
+     * 查询所有标签信息
      * @return
      */
     List<TagVo> findAll();
 
     /**
-     * 根据分类id查询
+     * 根据标签id查询
      * @param id
      * @return
      */
     TagVo getById(Long id);
 
     /**
-     * 修改分类
+     * 修改标签
      * @param tagDTO
      */
     void update(TagDTO tagDTO);
 
     /**
-     * 启用禁用分类
+     * 启用禁用标签
      * @param id
      * @param status
      */
     void updateStatus(Long id, Integer status);
 
     /**
-     * 删除分类
+     * 删除标签
      * @param ids
      */
     void delete(List<Long> ids);

@@ -33,7 +33,7 @@ public class TagServiceImpl implements TagService {
     private ArticleTagMapper articleTagMapper;
 
     /**
-     * 新增分类
+     * 新增标签
      * @param tagDTO
      */
     @Override
@@ -47,7 +47,7 @@ public class TagServiceImpl implements TagService {
     }
 
     /**
-     * 查询所有分类信息
+     * 查询所有标签信息
      * @return
      */
     @Override
@@ -57,7 +57,7 @@ public class TagServiceImpl implements TagService {
     }
 
     /**
-     * 根据分类id查询
+     * 根据标签id查询
      * @param id
      * @return
      */
@@ -67,7 +67,7 @@ public class TagServiceImpl implements TagService {
     }
 
     /**
-     * 修改分类
+     * 修改标签
      * @param tagDTO
      */
     @Override
@@ -79,7 +79,7 @@ public class TagServiceImpl implements TagService {
     }
 
     /**
-     * 启用禁用分类
+     * 启用禁用标签
      * @param id
      * @param status
      */
@@ -91,16 +91,16 @@ public class TagServiceImpl implements TagService {
     }
 
     /**
-     * 删除分类
+     * 删除标签
      * @param ids
      */
     @Override
     public void delete(List<Long> ids) {
-        List<Long> linkedTagIds=articleTagMapper.selectRelationTagIds(ids);
-        if (linkedTagIds.isEmpty()) {
+        List<Long> linkedArticleIds=articleTagMapper.selectRelationTagIds(ids);
+        if (linkedArticleIds.isEmpty()) {
             tagMapper.delete(ids);
         } else {
-            throw new CategoryException(MessageConstant.ASSOCIATED_ARTICLES);
+            throw new CategoryException(MessageConstant.ASSOCIATED_TAG_ARTICLES);
         }
     }
 

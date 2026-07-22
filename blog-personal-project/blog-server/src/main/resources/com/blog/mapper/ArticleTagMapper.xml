@@ -2,13 +2,23 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.blog.mapper.ArticleTagMapper">
+    <insert id="batchInsert">
+        insert into article_tag(article_id, tag_id, create_time)
+        VALUES
+        <foreach collection="tagIds" item="tagId" separator=",">
+            (#{articleId}, #{tagId},#{createTime})
+        </foreach>
+    </insert>
 
     <select id="selectRelationTagIds" resultType="java.lang.Long">
-        SELECT DISTINCT tag_id from article_tag
+        SELECT DISTINCT article_id from article_tag
         where tag_id in
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
+    </select>
+    <select id="selectRelationArticleId" resultType="java.lang.Long">
+        select tag_id from article_tag where article_id =#{id}
     </select>
 
 </mapper>

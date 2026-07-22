@@ -53,6 +53,7 @@ CREATE TABLE `article`
     `create_time`   datetime     DEFAULT NULL COMMENT '创建时间',
     `update_time`   datetime     DEFAULT NULL COMMENT '修改时间',
     `publish_time`  datetime     DEFAULT NULL COMMENT '发布时间',
+    `timed_publish_time` datetime DEFAULT NULL  COMMENT '定时发布时间',
 
     `user_id`       bigint       DEFAULT NULL COMMENT '作者ID',
     `user_nickname` varchar(50)  DEFAULT NULL COMMENT '作者昵称',
@@ -67,7 +68,8 @@ CREATE TABLE `article`
     KEY `idx_user_status_del_pubtime` (`user_id`, `status`, `delete_flag`, `publish_time`),
     KEY `idx_status_del_pubtime` (`status`, `delete_flag`, `publish_time`),
     KEY `idx_status_publishtime` (`status`, `publish_time`),
-    KEY `idx_status_hot_del_pubtime` (`status`, `is_hot`, `delete_flag`, `publish_time`)
+    KEY `idx_status_hot_del_pubtime` (`status`, `is_hot`, `delete_flag`, `publish_time`),
+    KEY `idx_timed_publish_time` (timed_publish_time)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4

@@ -93,6 +93,12 @@
             <artifactId>pagehelper-spring-boot-starter</artifactId>
         </dependency>
 
+        <!-- Spring AI OpenAI Starter（兼容 DeepSeek） -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-openai</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

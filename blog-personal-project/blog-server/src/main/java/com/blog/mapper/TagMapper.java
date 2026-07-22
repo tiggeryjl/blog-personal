@@ -13,20 +13,20 @@ import java.util.List;
 @Mapper
 public interface TagMapper {
     /**
-     * 新增分类
+     * 新增标签
      * @param tag
      */
     void add(Tag tag);
 
     /**
-     * 查询所有分类信息
+     * 查询所有标签信息
      * @return
      */
     @Select("select * from tag order by create_time desc")
     List<TagVo> findAll();
 
     /**
-     * 根据分类id查询
+     * 根据标签id查询
      * @param id
      * @return
      */
@@ -34,13 +34,13 @@ public interface TagMapper {
     TagVo getById(Long id);
 
     /**
-     * 修改分类
+     * 修改标签
      * @param tag
      */
     void update(Tag tag);
 
     /**
-     * 删除分类
+     * 删除标签
      * @param ids
      */
     void delete(List<Long> ids);

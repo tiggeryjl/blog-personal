@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -21,7 +22,7 @@ public class ArticleDTO implements Serializable {
     private String title;
 
     //摘要
-//    private String summary;
+    private String summary;
 
     //内容
     private String content;
@@ -35,6 +36,9 @@ public class ArticleDTO implements Serializable {
     //封面
     private String cover;
 
+    //文章状态 0草稿 1已发布 2已下架 3已归档 4定时发布 5私密
+    private Integer status;
+
     //创建时间
     private LocalDateTime createTime;
 
@@ -43,6 +47,10 @@ public class ArticleDTO implements Serializable {
 
     //发布时间
     private LocalDateTime publishTime;
+
+    //定时时间
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime timedPublishTime;
 
     //用户id
     private Long userId;

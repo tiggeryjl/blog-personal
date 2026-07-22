@@ -30,7 +30,7 @@
     <select id="getTagOptions" resultType="com.blog.pojo.vo.OptionVO">
         SELECT
             name AS label,
-            name AS value
+            id AS value
         FROM tag
         WHERE status = 1 AND delete_flag = 0
         ORDER BY create_time DESC

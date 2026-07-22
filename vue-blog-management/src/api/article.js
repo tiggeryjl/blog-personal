@@ -1,22 +1,26 @@
 import request from '@/utils/request';
 
+
+// 获取文章信息
+export const getArticleListApi = (data) => request.get(`/admin/article/getArticleList`, { params: data });
+
 //新增
 export const addArticleApi = (article) => request.post('/admin/article/add', article);
-
-// 获取分类下拉选项
-// export const getCategoryOptionsApi = () => request.get(`/article/CategoryOptions`);
 
 //获取标签下拉选项
 // export const getTagOptionsApi = () => request.get('/article/TagOptions');
 
-//根据ID查询分类
-// export const queryInfoTagApi = (id) => request.get(`/tags/${id}`);
+//根据ID查询文章
+export const getArticleDetailApi = (id) => request.get(`/admin/article/${id}`);
 
 //修改
-// export const updateTagApi = (tag) => request.put('/tags/update', tag);
+export const updateArticleApi = (article) => request.put('/admin/article/update', article);
 
-//修改启用禁用状态
-// export const updateTagStatusApi = (id, status) => request.put(`/tags/${id}/status/${status}`);
+//定时发布
+export const setTimedApi = (article) => request.post('/admin/article/setTimed', null, { params: article });
+
+//取消定时
+export const cancelTimedApi = (id) => request.post('/admin/article/cancelTimed', null, { params: { id } });
 
 //删除
 // export const deleteTagApi = (ids) => request.delete(`/tags?ids=${ids}`);

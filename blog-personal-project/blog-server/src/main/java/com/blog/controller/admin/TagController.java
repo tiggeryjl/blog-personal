@@ -35,7 +35,7 @@ public class TagController {
     }
 
     /**
-     * 根据分类id查询
+     * 根据标签id查询
      * @param id
      * @return
      */
@@ -47,7 +47,7 @@ public class TagController {
     }
 
     /**
-     * 查询所有分类信息
+     * 查询所有标签信息
      * @return
      */
     @GetMapping()

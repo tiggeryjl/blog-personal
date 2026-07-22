@@ -1,129 +1,99 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, watch, reactive, onMounted } from 'vue'
 import { useRouter } from "vue-router";
 import MyPagination from '@/components/MyPagination.vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Plus, Search, Refresh, View, Edit, Delete,
-  Upload, Hide, Position, Timer, Close, FolderOpened,
-  Check, FolderRemove, ZoomOut, ZoomIn
+  Plus, Search, Refresh, View, Edit, Delete, Upload, Hide, Position, Timer,
+  Close, FolderOpened, Check, FolderRemove, ZoomOut, ZoomIn
 } from '@element-plus/icons-vue'
+import { getStatusText, getStatusType, getStatusOptions } from '@/constants/articleConstants'
+import { getCategoryOptionsApi } from '@/api/category.js'
+import { getTagOptionsApi } from '@/api/tag.js'
+import { getArticleListApi, setTimedApi, cancelTimedApi } from '@/api/article.js'
+import { getAiChatApi } from '@/api/AIChat.js'
 
 const router = useRouter();
+const statusOptions = getStatusOptions();
 
 // 查询条件
 const queryForm = reactive({
   title: '',
-  Category: '',
-  Tag: '',
+  categoryId: '',
+  tag: '',
   isTop: '',
   status: '',
-  createTime: []
+  createTime: [],
+  begin: '',
+  end: ''
+})
+
+//侦听queryForm中的createTime属性
+watch(() => queryForm.createTime, (newVal, oldVal) => {
+  if (newVal.length == 2) {
+    queryForm.begin = newVal[0];
+    queryForm.end = newVal[1];
+  } else {
+    queryForm.begin = '';
+    queryForm.end = '';
+  }
 })
 
 // 文章列表
-const articleList = ref([])
+const articleList = ref([]);
 
 // 模拟获取文章列表
-const total = ref(51)
-const currentPage = ref(1)
-const pageSize = ref(10)
-const getArticleList = () => {
-  console.log(queryForm)
-  // 这里替换成你的接口请求
-  articleList.value = [
-    {
-      id: 1,
-      cover: 'https://picsum.photos/400/224',
-      title: 'Vue3 + ElementPlus 后台管理实战',
-      category: '技术',
-      tags: 'Vue3,前端',
-      status: 1,
-      isTop: 1,
-      isHot: 1,
-      createTime: '2025-01-01 12:00:00',
-      publishTime: '2025-01-01 12:00:00',
-      updateTime: '2025-01-01 12:00:00'
-    },
-    {
-      id: 2,
-      cover: 'https://picsum.photos/400/224',
-      title: '个人博客开发日记',
-      category: '生活',
-      tags: '博客,记录',
-      status: 0,
-      isTop: 0,
-      isHot: 0,
-      createTime: '2025-01-02 15:30:00',
-      publishTime: '2025-01-01 12:00:00',
-      updateTime: '2025-01-01 12:00:00'
-    },
-    {
-      id: 3,
-      cover: 'https://picsum.photos/400/224',
-      title: '个人博客开发日记',
-      category: '生活',
-      tags: '博客,记录',
-      status: 2,
-      isTop: 0,
-      isHot: 0,
-      createTime: '2025-01-02 15:30:00',
-      publishTime: '2025-01-01 12:00:00',
-      updateTime: '2025-01-01 12:00:00'
-    },
-    {
-      id: 4,
-      cover: 'https://picsum.photos/400/224',
-      title: '个人博客开发日记',
-      category: '生活',
-      tags: '博客,记录',
-      status: 3,
-      isTop: 1,
-      isHot: 1,
-      createTime: '2025-01-02 15:30:00',
-      publishTime: '2025-01-01 12:00:00',
-      updateTime: '2025-01-01 12:00:00'
-    },
-    {
-      id: 5,
-      cover: 'https://picsum.photos/400/224',
-      title: '个人博客开发日记',
-      category: '生活',
-      tags: '博客,记录',
-      status: 4,
-      isTop: 0,
-      isHot: 0,
-      createTime: '2025-01-02 15:30:00',
-      publishTime: '2025-01-01 12:00:00',
-      updateTime: '2025-01-01 12:00:00'
-    },
-    {
-      id: 6,
-      cover: 'https://picsum.photos/400/224',
-      title: '个人博客开发日记',
-      category: '生活',
-      tags: '博客,记录',
-      status: 5,
-      isTop: 0,
-      isHot: 0,
-      createTime: '2025-01-02 15:30:00',
-      publishTime: '2025-01-01 12:00:00',
-      updateTime: '2025-01-01 12:00:00'
+const total = ref(0);
+const currentPage = ref(1);
+const pageSize = ref(10);
+
+const testAiChat = async () => {
+  const message = '你好'
+  try {
+    const res = await getAiChatApi(message)
+    ElMessage.success(JSON.stringify(res.data))
+  } catch (err) {
+    ElMessage.error('AI调用失败：API Key无效，请后端配置正确密钥')
+  }
+}
+const getArticleList = async () => {
+  const params = {
+    ...queryForm,
+    page: currentPage.value,
+    pageSize: pageSize.value
+  };
+  delete params.createTime;
+
+  try {
+    const result = await getArticleListApi(params)
+    if (result.code == 200) {
+      articleList.value = result.data.rows;
+      total.value = result.data.total;
+    } else {
+      ElMessage.error(result.msg || '获取用户列表失败');
+      articleList.value = [];
+      total.value = 0;
     }
-  ]
+
+  } catch (error) {
+    ElMessage.error('网络请求失败，请稍后重试');
+  }
 }
 
 // 重置查询
 const resetQuery = () => {
   queryForm.title = ''
-  queryForm.Category = ''
-  queryForm.Tag = ''
+  queryForm.categoryId = ''
+  queryForm.tag = ''
   queryForm.isTop = ''
   queryForm.status = ''
   queryForm.createTime = []
+  queryForm.begin = ''
+  queryForm.end = ''
   getArticleList()
 }
 
+//新增
 const goto = (path) => {
   router.push(path)
 }
@@ -146,7 +116,10 @@ const viewArticle = (row) => {
 }
 // 编辑
 const editArticle = (row) => {
-  router.push('/editInput')
+  router.push({
+    path: '/editInput',
+    query: { id: row.id, status: row.status }
+  })
 }
 // 删除
 const deleteArticle = (id) => {
@@ -158,9 +131,59 @@ const publishArticle = (id) => {
   ElMessage.success(`文章 ${id} 发布成功`)
   getArticleList()
 }
+
+const timedDialogVisible = ref(false)
+const currentTimedId = ref(null)
+const timedPublishTime = ref('')
+// 禁用今天之前的日期
+const disabledDate = (time) => {
+  return time.getTime() < Date.now() - 86400000
+}
 const setTimed = (id) => {
-  ElMessage.success(`文章 ${id} 定时设置成功`)
-  getArticleList()
+  currentTimedId.value = id
+  timedPublishTime.value = ''
+  timedDialogVisible.value = true
+}
+
+// 提交定时设置
+const submitSetTimed = async () => {
+  if (!timedPublishTime.value) {
+    ElMessage.warning('请选择定时时间')
+    return
+  }
+  try {
+    const tempData = {
+      id: currentTimedId.value,
+      timedPublishTime: timedPublishTime.value
+    }
+    const res = await setTimedApi(tempData)
+    if (res.code === 200) {
+      ElMessage.success('定时发布设置成功')
+      timedDialogVisible.value = false
+      getArticleList()
+    } else {
+      ElMessage.error(res.msg)
+    }
+  } catch (err) {
+    ElMessage.error('设置失败，请重试')
+  }
+}
+
+// 取消定时
+const cancelTimed = (id) => {
+  ElMessageBox.confirm('确定要取消定时发布吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '再想想',
+    type: 'warning'
+  }).then(async () => {
+    const res = await cancelTimedApi(id)
+    if (res.code === 200) {
+      ElMessage.success('已取消定时发布')
+      getArticleList()
+    } else {
+      ElMessage.error(res.msg)
+    }
+  }).catch(() => { })
 }
 
 const offlineArticle = (id) => {
@@ -193,49 +216,6 @@ const cancelArchive = (id) => {
   getArticleList()
 }
 
-// 定时发布独有
-const cancelTimed = (id) => {
-  ElMessage.success(`文章 ${id} 已取消定时`)
-  getArticleList()
-}
-
-
-
-// 文章状态列表（动态给下拉框用）
-const statusOptions = [
-  { label: '全部', value: '' },
-  { label: '草稿', value: 0 },
-  { label: '已发布', value: 1 },
-  { label: '已下架', value: 2 },
-  { label: '已归档', value: 3 },
-  { label: '定时发布', value: 4 },
-  { label: '私密', value: 5 }
-]
-// 状态文本映射
-const getStatusText = (status) => {
-  const map = {
-    0: '草稿',
-    1: '已发布',
-    2: '已下架',
-    3: '已归档',
-    4: '定时发布',
-    5: '私密'
-  }
-  return map[status] || '未知'
-}
-
-// 状态标签颜色
-const getStatusType = (status) => {
-  const map = {
-    0: 'info',
-    1: 'success',
-    2: 'danger',
-    3: 'warning',
-    4: 'primary',
-    5: 'primary'
-  }
-  return map[status] || ''
-}
 
 // 置顶切换
 const toggleTop = (row) => {
@@ -268,8 +248,46 @@ const zoomOut = () => scale.value = Math.max(0.4, scale.value - 0.2)
 const prevImage = () => { }
 const nextImage = () => { }
 
+// 分类列表
+const categoryOptions = ref([])
+// 获取分类下拉选项
+const getCategoryOptions = async () => {
+  try {
+    const result = await getCategoryOptionsApi()
+    if (result.code === 200) {
+      categoryOptions.value = result.data
+    }
+  } catch (error) {
+    ElMessage.error('获取分类列表失败!');
+  }
+}
+
+// 标签列表（从后端获取）
+const tagOptions = ref([])
+
+// 获取标签下拉选项
+const getTagOptions = async () => {
+  try {
+    const result = await getTagOptionsApi()
+    if (result.code === 200) {
+      tagOptions.value = result.data
+    }
+  } catch (error) {
+    ElMessage.error('获取标签列表失败!');
+  }
+}
+
+// 根据标签 ID 获取名称
+const getTagName = (tagId) => {
+  if (!tagOptions.value || tagOptions.value.length === 0) return String(tagId)
+  const found = tagOptions.value.find(item => String(item.value) === String(tagId))
+  return found ? found.label : String(tagId)
+}
+
 onMounted(() => {
   getArticleList()
+  getCategoryOptions()
+  getTagOptions()
 })
 </script>
 
@@ -293,17 +311,19 @@ onMounted(() => {
           <el-input v-model="queryForm.title" placeholder="请输入标题关键词" style="width: 360px" />
         </el-form-item>
         <el-form-item label="分类">
-          <el-input v-model="queryForm.Category" placeholder="请输入分类" style="width: 230px" />
+          <el-select v-model="queryForm.categoryId" placeholder="请选择分类" style="width: 230px" clearable>
+            <el-option v-for="item in categoryOptions" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
         </el-form-item>
         <el-form-item label="标签">
-          <el-input v-model="queryForm.Tag" placeholder="请输入标签" style="width: 230px" />
+          <el-input v-model="queryForm.tag" placeholder="请输入标签" style="width: 230px" />
         </el-form-item>
 
         <el-form-item label="置顶">
           <el-select v-model="queryForm.isTop" placeholder="全部" style="width: 130px">
             <el-option label="全部" value="" />
-            <el-option label="已置顶" value="0" />
-            <el-option label="未置顶" value="1" />
+            <el-option label="已置顶" value="1" />
+            <el-option label="未置顶" value="0" />
           </el-select>
         </el-form-item>
 
@@ -315,7 +335,7 @@ onMounted(() => {
 
         <el-form-item label="发布时间">
           <el-date-picker v-model="queryForm.createTime" type="daterange" range-separator="至" start-placeholder="开始日期"
-            end-placeholder="结束日期" />
+            end-placeholder="结束日期" value-format="YYYY-MM-DD HH:mm:ss" />
         </el-form-item>
 
         <el-form-item>
@@ -329,6 +349,7 @@ onMounted(() => {
               <Refresh />
             </el-icon> 重置
           </el-button>
+          <el-button type="success" @click="testAiChat">AI单独测试</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -347,7 +368,7 @@ onMounted(() => {
           </template>
         </el-table-column>
 
-        <el-table-column prop="title" label="文章标题" min-width="160">
+        <el-table-column prop="title" label="文章标题" min-width="160" align="center">
           <template #default="{ row }">
             <div class="wrap-title">
               <el-tooltip v-if="row.isHot" content="热门" placement="top">
@@ -358,8 +379,38 @@ onMounted(() => {
           </template>
         </el-table-column>
 
-        <el-table-column prop="category" label="分类" width="70" />
-        <el-table-column prop="tags" label="标签" width="100" />
+        <el-table-column prop="category" label="分类" width="70" align="center" />
+
+        <el-table-column label="标签" width="105" align="center">
+          <template #default="{ row }">
+            <div class="tag-cell">
+              <template v-if="row.tags && row.tags.length > 0">
+                <el-tooltip placement="top" :show-after="200" popper-class="article-tags-tooltip">
+                  <!-- 悬浮框内容：展示全部标签 -->
+                  <template #content>
+                    <div class="all-tags">
+                      <el-tag v-for="(tagId, index) in row.tags" :key="index" size="small" type="primary">
+                        {{ getTagName(tagId) }}
+                      </el-tag>
+                    </div>
+                  </template>
+
+                  <!-- 表格内显示：前2个标签 + 多余数量 -->
+                  <div class="tag-show-list">
+                    <el-tag v-for="(tagId, index) in row.tags.slice(0, 2)" :key="index" size="small" type="primary"
+                      effect="light">
+                      {{ getTagName(tagId) }}
+                    </el-tag>
+                    <span v-if="row.tags.length > 2" class="tag-more">
+                      +{{ row.tags.length - 2 }}
+                    </span>
+                  </div>
+                </el-tooltip>
+              </template>
+              <span v-else style="color:#aaa;font-size:13px;">——</span>
+            </div>
+          </template>
+        </el-table-column>
 
         <!-- 置顶列 -->
         <el-table-column label="置顶" width="100" align="center">
@@ -382,7 +433,10 @@ onMounted(() => {
           <template #default="scope">
             <div class="time-group">
               <div>创建：{{ scope.row.createTime || '——' }}</div>
-              <div>发布：{{ scope.row.publishTime || '——' }}</div>
+              <div v-if="scope.row.status === 4">
+                定时：{{ scope.row.timedPublishTime || '——' }}
+              </div>
+              <div v-else>发布：{{ scope.row.publishTime || '——' }}</div>
               <div>修改：{{ scope.row.updateTime || '——' }}</div>
             </div>
           </template>
@@ -465,6 +519,18 @@ onMounted(() => {
       </div>
     </div>
 
+    <el-dialog v-model="timedDialogVisible" title="设置定时发布" width="400px">
+      <el-form label-width="80px">
+        <el-form-item label="发布时间">
+          <el-date-picker v-model="timedPublishTime" type="datetime" placeholder="选择发布时间"
+            value-format="YYYY-MM-DD HH:mm:ss" :disabled-date="disabledDate" style="width: 100%" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="timedDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitSetTimed">确认设置</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -616,5 +682,34 @@ onMounted(() => {
 :deep(.el-table__cell) {
   overflow-x: auto;
   padding: 0 8px;
+}
+</style>
+
+<style>
+/* 不带 scoped，全局有效 */
+.article-tags-tooltip {
+  background: #ffffff !important;
+  border: 1px solid #dcdfe6 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1) !important;
+  padding: 10px 12px !important;
+}
+
+.article-tags-tooltip .all-tags {
+  max-width: 320px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* 修改箭头的边框颜色（灰色） */
+.article-tags-tooltip .el-popper__arrow {
+  border-color: #dcdfe6 !important;
+}
+
+/* 修改箭头的背景颜色（白色）—— 箭头通常用伪元素实现背景 */
+.article-tags-tooltip .el-popper__arrow::before {
+  background: #ffffff !important;
+  border-color: #dcdfe6 !important;
 }
 </style>

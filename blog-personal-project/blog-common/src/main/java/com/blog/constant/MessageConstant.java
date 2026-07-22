@@ -49,5 +49,6 @@ public class MessageConstant {
 
     public static final String CODE_VERIFICATION_FAILED = "验证码校验失败";
 
-    public static final String ASSOCIATED_ARTICLES = "当前分类已关联文章，无法删除";
+    public static final String ASSOCIATED_CATEGORY_ARTICLES = "当前分类已关联文章，无法删除";
+    public static final String ASSOCIATED_TAG_ARTICLES = "当前标签已关联文章，无法删除";
 }

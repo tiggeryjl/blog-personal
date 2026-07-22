@@ -1,3 +1,12 @@
+<!--
+登录 UI 组件来源开源项目
+原仓库地址：https://gitee.com/niumg9527/login-animation
+原作者：niumg9527
+开源协议：MIT License
+Copyright (c) 2026 niumg9527
+修改说明：仅新增注册功能、适配个人博客登录业务逻辑，完整保留原作布局、样式、动画交互逻辑。
+使用范围：个人非商用博客，严格遵循原开源协议全部条款。
+-->
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 

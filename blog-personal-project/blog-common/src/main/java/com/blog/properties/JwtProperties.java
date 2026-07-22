@@ -16,6 +16,8 @@ public class JwtProperties {
     private long userTtl;
     private String userTokenName;
 
-    // RefreshToken 7天
+    /**
+     *  RefreshToken 7天
+     */
     private long userRefreshTtl;
 }

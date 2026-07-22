@@ -94,7 +94,7 @@ public class CategoryServiceImpl implements CategoryService {
         if (linkedCategoryIds.isEmpty()) {
             categoryMapper.delete(ids);
         } else {
-            throw new CategoryException(MessageConstant.ASSOCIATED_ARTICLES);
+            throw new CategoryException(MessageConstant.ASSOCIATED_CATEGORY_ARTICLES);
         }
     }
 

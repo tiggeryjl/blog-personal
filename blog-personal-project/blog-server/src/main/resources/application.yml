@@ -34,3 +34,12 @@ blog:
     user-token-name: Authorization
     user-ttl: 1200000
     user-refresh-Ttl: 604800000
+  ai:
+    api-key: ${DEEPSEEK_API_KEY}
+    base-url: https://api.deepseek.com
+    flash:
+      model: deepseek-v4-flash           # DeepSeek官方Flash模型名
+      temperature: 0.7
+    pro:
+      model: deepseek-v4-pro          # DeepSeek官方Pro/推理模型名
+      temperature: 0.3
