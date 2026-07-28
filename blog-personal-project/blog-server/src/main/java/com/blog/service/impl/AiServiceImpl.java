@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 import java.util.Arrays;
 import java.util.List;
@@ -17,10 +18,10 @@ import java.util.List;
 @AllArgsConstructor
 public class AiServiceImpl implements AiService {
 
-//    @Autowired
+
     @Qualifier("flashChatClient")
     private final ChatClient flashClient;
-//    @Autowired
+
     @Qualifier("proChatClient")
     private final ChatClient proClient;
 
@@ -33,7 +34,6 @@ public class AiServiceImpl implements AiService {
     private ChatClient decideClient(String userMessage, String taskType) {
         return shouldUsePro(userMessage, taskType) ? proClient : flashClient;
     }
-
     private boolean shouldUsePro(String input, String taskType) {
         // 1. 任务类型硬规则
         if ("writing".equals(taskType) || "log-analysis".equals(taskType)) {
@@ -66,6 +66,22 @@ public class AiServiceImpl implements AiService {
         }
 
         return false;
+    }
+
+    /**
+     * 流式对话 - 逐字返回
+     * @param userMessage 用户输入
+     * @return Flux<String> 流式数据流
+     */
+    public Flux<String> chatStream(String userMessage) {
+        // 决定用 Flash 还是 Pro
+        ChatClient baseClient = decideClient(userMessage, "chat");
+        log.info("AI流式对话：{}",userMessage);
+        // 调用 stream()
+        return baseClient.prompt()
+                .user(userMessage)
+                .stream()
+                .content();
     }
 
     /**

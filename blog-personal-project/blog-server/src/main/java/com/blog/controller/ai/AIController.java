@@ -1,5 +1,7 @@
 package com.blog.controller.ai;
 
+import com.blog.constant.MessageConstant;
+import com.blog.exception.UserNotLoginException;
 import com.blog.pojo.dto.AiRequestDTO;
 import com.blog.pojo.dto.WeeklyStatsDTO;
 import com.blog.result.Result;
@@ -7,7 +9,12 @@ import com.blog.service.AdminAiService;
 import com.blog.service.AiService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -22,7 +29,25 @@ public class AIController {
     private AdminAiService adminAiService;
 
     /**
+     * 流式对话 - 逐字返回
+     * @param message  用户发送的问答信息
+     * @param deepThink 是否深度思考
+     * @return
+     */
+    @GetMapping(value = "/stream-chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<String> streamChat(
+            @RequestParam String message,
+            @RequestParam(defaultValue = "false") Boolean deepThink) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new UserNotLoginException(MessageConstant.TOKEN_EXPIRED);
+        }
+        return aiService.chatStream(message);
+    }
+
+    /**
      * 通用对话接口
+     *
      * @param message
      * @return
      */

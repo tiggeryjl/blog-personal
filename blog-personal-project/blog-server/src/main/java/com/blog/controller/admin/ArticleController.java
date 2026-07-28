@@ -73,7 +73,7 @@ public class ArticleController {
      * 设置定时发布
      */
     @PostMapping("/setTimed")
-    public Result setTimed(ArticleDTO articleDTO) {
+    public Result setTimed(@RequestBody ArticleDTO articleDTO) {
         log.info("设置定时发布:{}",articleDTO);
         articleService.setTimedPublish(articleDTO);
         return Result.success();
@@ -82,8 +82,8 @@ public class ArticleController {
     /**
      * 取消定时发布
      */
-    @PostMapping("/cancelTimed")
-    public Result cancelTimed(@RequestParam("id") Long id) {
+    @PostMapping("/cancelTimed/{id}")
+    public Result cancelTimed(@PathVariable Long id) {
         log.info("取消定时发布id为:{}",id);
         articleService.cancelTimedPublish(id);
         return Result.success();

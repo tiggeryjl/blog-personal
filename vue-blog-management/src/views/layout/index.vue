@@ -7,6 +7,7 @@ import { usePermissionStore } from '@/stores/permission'
 import { editPwdApi } from '@/api/admin'
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { EditPen, SwitchButton, Promotion, House, HomeFilled, UserFilled, Setting, HelpFilled, Avatar, PieChart, InfoFilled, Document, Share } from '@element-plus/icons-vue'
+import AiAssistant from '@/components/AiAssistant.vue'
 
 //调用路由函数返回路由实例(在vue文件中才能使用路由实例，js文件中直接用路由js文件返回的实例即可)
 const router = useRouter();
@@ -180,7 +181,11 @@ const updatepsw = ref();
         <el-main>
           <router-view></router-view>
         </el-main>
+
       </el-container>
+
+      <AiAssistant />
+
     </el-container>
   </div>
 

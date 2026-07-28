@@ -1,8 +1,17 @@
 package com.blog.service;
 
+import reactor.core.publisher.Flux;
+
 import java.util.List;
 
 public interface AiService {
+
+    /**
+     * 流式对话 - 逐字返回
+     * @param userMessage
+     * @return
+     */
+    Flux<String> chatStream(String userMessage);
 
     /**
      * 通用对话接口

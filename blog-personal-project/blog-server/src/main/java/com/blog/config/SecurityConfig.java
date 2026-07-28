@@ -68,6 +68,7 @@ public class SecurityConfig {
                                 "/admin/admin/login",
                                 "/admin/admin/refreshToken",
                                 "/admin/admin/logout",
+                                "/AiChat/ai/stream-chat",
                                 "/error",
                                 "/favicon.ico").permitAll() // 放行登录
                         .anyRequest().authenticated() // 其他接口必须认证

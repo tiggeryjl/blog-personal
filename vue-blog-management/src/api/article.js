@@ -17,10 +17,10 @@ export const getArticleDetailApi = (id) => request.get(`/admin/article/${id}`);
 export const updateArticleApi = (article) => request.put('/admin/article/update', article);
 
 //定时发布
-export const setTimedApi = (article) => request.post('/admin/article/setTimed', null, { params: article });
+export const setTimedApi = (article) => request.post('/admin/article/setTimed', article);
 
 //取消定时
-export const cancelTimedApi = (id) => request.post('/admin/article/cancelTimed', null, { params: { id } });
+export const cancelTimedApi = (id) => request.post(`/admin/article/cancelTimed/${id}`);
 
 //删除
 // export const deleteTagApi = (ids) => request.delete(`/tags?ids=${ids}`);

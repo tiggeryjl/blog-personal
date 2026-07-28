@@ -1,5 +1,6 @@
 package com.blog.pojo.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -49,7 +50,7 @@ public class ArticleDTO implements Serializable {
     private LocalDateTime publishTime;
 
     //定时时间
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private LocalDateTime timedPublishTime;
 
     //用户id
