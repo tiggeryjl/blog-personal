@@ -294,7 +294,7 @@ onMounted(() => {
         <el-input v-model="menuForm.component" placeholder="例：system/menu/index" />
       </el-form-item>
       <el-form-item label="权限标识" prop="perms">
-        <el-input v-model="menuForm.perms" placeholder="按钮必填：system:user:add" />
+        <el-input v-model="menuForm.perms" placeholder="按钮必填：sys:user:add" />
       </el-form-item>
       <el-form-item label="排序" prop="sort">
         <el-input-number v-model="menuForm.sort" :min="0" />

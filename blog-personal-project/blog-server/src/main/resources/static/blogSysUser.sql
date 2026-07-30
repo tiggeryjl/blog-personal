@@ -206,7 +206,7 @@ LOCK TABLES `sys_menu` WRITE, `sys_role_menu` WRITE;
 INSERT INTO `sys_menu` (`id`, `parent_id`, `menu_name`, `path`, `component`, `perms`, `menu_type`, `icon`, `sort`,`status`,`delete_flag`,`create_time`, `update_time`)
 VALUES
 -- ===================== 1、首页（顶级页面，无父级） =====================
-(1, 0, '首页', '/index', 'index', 'sys:index:list', 1, 'Promotion', 1,1, 0,NOW(), NOW()),
+(1, 0, '首页', '/index', 'index', 'sys:index:list', 0, 'Promotion', 1,1, 0,NOW(), NOW()),
 
 -- ===================== 2、作品管理【顶级目录 parent_id=0】 =====================
 (2, 0, '作品管理', '/artwork', 'Layout', NULL, 0, 'HelpFilled', 2, 1,0,NOW(), NOW()),
@@ -268,17 +268,24 @@ VALUES
 (42,41,'布局设计', '/meunlayout', 'meunlayout/index', 'sys:layout:list', 1, 'InfoFilled', 1, 1,0,NOW(), NOW()),
 
 -- ===================== 8、系统管理（角色管理，超级管理员专属） =====================
-(43,0, '系统管理', '/system', 'Layout', NULL, 0, 'Tools', 8, 1,0,NOW(), NOW()),
-(44,43,'角色管理', '/role', 'role/index', 'sys:role:list', 1, 'Coin', 1, 1,0,NOW(), NOW()),
+(43,0, '系统管理', '/system', 'Layout', 'sys:manage', 0, 'Tools', 8, 1,0,NOW(), NOW()),
+(44,43,'角色管理', '/role', 'system/role/index', 'sys:role:list', 1, 'Coin', 1, 1,0,NOW(), NOW()),
 (45,44,'新增角色', NULL, NULL, 'sys:role:add', 2, NULL, 1, 1,0,NOW(), NOW()),
 (46,44,'编辑角色', NULL, NULL, 'sys:role:edit', 2, NULL, 2, 1,0,NOW(), NOW()),
 (47,44,'删除角色', NULL, NULL, 'sys:role:delete', 2, NULL, 3, 1,0,NOW(), NOW()),
 (48,44,'分配权限', NULL, NULL, 'sys:role:assign', 2, NULL, 4, 1,0,NOW(), NOW()),
 
-(49,43,'权限管理','/menu','menu/index','sys:menu:list',1,'Key',2,1,0,NOW(),NOW()),
-(50,49,'    新增权限',NULL,NULL,'sys:menu:add',2,NULL,1,1,0,NOW(),NOW()),
+(49,43,'权限管理','/menu','system/menu/index','sys:menu:list',1,'Key',2,1,0,NOW(),NOW()),
+(50,49,'新增权限',NULL,NULL,'sys:menu:add',2,NULL,1,1,0,NOW(),NOW()),
 (51,49,'编辑权限',NULL,NULL,'sys:menu:edit',2,NULL,2,1,0,NOW(),NOW()),
-(52,49,'删除权限',NULL,NULL,'sys:menu:delete',2,NULL,3,1,0,NOW(),NOW())
+(52,49,'删除权限',NULL,NULL,'sys:menu:delete',2,NULL,3,1,0,NOW(),NOW()),
+
+-- ===================== 9、回收站管理（超级管理员专属） =====================
+(53,0, '回收站管理', '/recycleBin', 'Layout', 'sys:recycle', 0, 'Delete', 9, 1,0,NOW(), NOW()),
+(54,43,'权限回收站', '/recycleMenu', 'recycleBin/menu/index', 'sys:recycleMenu:list', 1, 'Delete', 1, 1,0,NOW(), NOW()),
+(55,43,'角色回收站', '/recycleRole', 'recycleBin/role/index', 'sys:recycleRole:list', 1, 'Delete', 2, 1,0,NOW(), NOW()),
+(56,44,'恢复权限', NULL, NULL, 'sys:recycleMenu:recycle', 2, NULL, 1, 1,0,NOW(), NOW()),
+(57,44,'删除权限', NULL, NULL, 'sys:recycleMenu:delete', 2, NULL, 2, 1,0,NOW(), NOW())
 ;
 
 -- 1、超级管理员(role_id=1)：绑定全部菜单权限

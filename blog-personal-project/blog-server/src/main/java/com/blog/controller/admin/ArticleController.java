@@ -8,6 +8,7 @@ import com.blog.result.Result;
 import com.blog.service.ArticleService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -26,6 +27,7 @@ public class ArticleController {
      * @param param
      * @return
      */
+    @PreAuthorize("hasPermission(null,'sys:article:list')")
     @GetMapping("/getArticleList")
     public Result<PageResult> getArticleList(ArticlePageQueryDTO param){
         log.info("分页查询文章列表:{}",param);

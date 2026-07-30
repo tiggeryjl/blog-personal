@@ -23,7 +23,7 @@ const goPage = (page) => {
 const handleSizeChange = (size) => {
   const newPageSize = Number(size)
   const newTotalPages = Math.ceil(props.total / newPageSize)
-  const newCurrentPage = Math.min(props.currentPage, newTotalPages)
+  let newCurrentPage = Math.min(props.currentPage, newTotalPages)
   if (newTotalPages === 0) newCurrentPage = 1
 
   emit('update:pageSize', newPageSize)

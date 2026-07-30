@@ -97,7 +97,7 @@ const applyBg = (url = null) => {
     return
   }
 
-  const finalUrl = url || currentBg.value || 'url("/src/assets/image.png")'
+  const finalUrl = url || currentBg.value || 'url("/src/assets/image1.png")'
   container.style.setProperty('--bg-url', finalUrl)
   container.style.setProperty('--bg-opacity', '1')
 }
