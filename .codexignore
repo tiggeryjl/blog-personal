@@ -1,0 +1,6 @@
+blog-personal-project/target
+vue-blog-management/node_modules
+vue-blog-management/dist
+vue-blog-personal/node_modules
+vue-blog-personal/dist
+.git

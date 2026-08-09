@@ -41,7 +41,7 @@ const router = createRouter({
             { path: 'index', name: 'index', component: IndexView },
             { path: 'article', name: 'article', component: ArticleView },
             { path: 'daily', name: 'daily', component: DailyView },
-          ]
+          ],
         },
         {
           path: 'SettingLayout',
@@ -52,7 +52,7 @@ const router = createRouter({
             { path: '/base', name: 'base', component: BaseView },
             { path: '/repwd', name: 'repwd', component: RepwdView },
             { path: '/account', name: 'account', component: AccountView },
-          ]
+          ],
         },
         { path: 'friendlink', name: 'friendlink', component: FriendLinkView },
         { path: 'feedback', name: 'feedback', component: FeedbackView },
@@ -60,11 +60,11 @@ const router = createRouter({
         { path: 'article/:id', name: 'articleDetail', component: ArticleDetailView },
         { path: 'daily/:id', name: 'dailyDetail', component: DailyDetailView },
         { path: 'editInput', name: 'editInput', component: editInputView },
-      ]
+      ],
     },
     { path: '/login', name: 'login', component: () => import('@/views/login/index.vue') },
     { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/components/404.vue') },
-  ]
+  ],
 })
 
 let isRefreshing = false

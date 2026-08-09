@@ -1,6 +1,6 @@
 import axios from 'axios'
-import { ElMessage } from 'element-plus';
-import router from '../router';
+import { ElMessage } from 'element-plus'
+import router from '../router'
 import { getRefreshTokenApi } from '@/api/auth.js'
 //调用路由函数返回路由实例
 
@@ -18,22 +18,25 @@ const request = axios.create({
 
 //axios的请求 request 拦截器 - 获取localStorage中的token,在请求头中添加token
 request.interceptors.request.use(
-  (config) => {//成功回调
-    const token = localStorage.getItem('user_token');
+  (config) => {
+    //成功回调
+    const token = localStorage.getItem('user_token')
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-      config.headers.token = token;
+      config.headers.Authorization = `Bearer ${token}`
+      config.headers.token = token
     }
-    return config;
+    return config
   },
-  (error) => {//失败回调
+  (error) => {
+    //失败回调
     return Promise.reject(error)
   }
 )
 
 // axios的响应 response 拦截器
 request.interceptors.response.use(
-  (response) => { //成功回调
+  (response) => {
+    //成功回调
     const { data, status } = response
     if (status === 200) {
       return data
@@ -42,13 +45,14 @@ request.interceptors.response.use(
       return Promise.reject(response)
     }
   },
-  async (error) => { //失败回调
+  async (error) => {
+    //失败回调
     const originalReq = error.config
     // 仅处理401且未重试过的接口
     if (error.response?.status === 401 && !originalReq._retry) {
       // 正在刷新，加入等待队列
       if (isRefreshing) {
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
           waitRequestQueue.push((newToken) => {
             originalReq.headers.Authorization = `Bearer ${newToken}`
             resolve(request(originalReq))
@@ -66,7 +70,7 @@ request.interceptors.response.use(
         // 更新本地存储新token
         localStorage.setItem('user_token', newToken)
         // 执行队列所有等待接口
-        waitRequestQueue.forEach(cb => cb(newToken))
+        waitRequestQueue.forEach((cb) => cb(newToken))
         waitRequestQueue = []
         // 重试当前报错接口
         return request(originalReq)
@@ -75,15 +79,15 @@ request.interceptors.response.use(
         localStorage.removeItem('user_token')
         sessionStorage.clear()
         waitRequestQueue = []
-        ElMessage.error("登录超时，请重新登录");
-        router.push('/login');
+        ElMessage.error('登录超时，请重新登录')
+        router.push('/login')
         return Promise.reject(refreshErr)
       } finally {
         isRefreshing = false
       }
     }
     // 非401错误统一提示
-    ElMessage.error("接口访问异常");
+    ElMessage.error('接口访问异常')
     return Promise.reject(error)
   }
 )

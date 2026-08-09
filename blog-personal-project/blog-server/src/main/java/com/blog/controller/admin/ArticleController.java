@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * 文章管理
  */
@@ -88,6 +90,52 @@ public class ArticleController {
     public Result cancelTimed(@PathVariable Long id) {
         log.info("取消定时发布id为:{}",id);
         articleService.cancelTimedPublish(id);
+        return Result.success();
+    }
+
+    /**
+     * 逻辑删除
+     */
+    @PreAuthorize("hasPermission(null,'sys:article:delete')")
+    @DeleteMapping("/logicDelete")
+    public Result logicDelete(@RequestParam List<Long> ids) {
+        log.info("逻辑删除文章id为:{}",ids);
+        articleService.logicDelete(ids);
+        return Result.success();
+    }
+
+    /**
+     * 彻底删除
+     */
+    @PreAuthorize("hasPermission(null,'sys:article:delete')")
+    @DeleteMapping()
+    public Result delete(@RequestParam List<Long> ids) {
+        log.info("彻底删除文章id为:{}",ids);
+        articleService.delete(ids);
+        return Result.success();
+    }
+
+    /**
+     * 修改文章状态
+     * @param articleDTO
+     * @return
+     */
+    @PutMapping("/status")
+    public Result updateStatus(@RequestBody ArticleDTO articleDTO){
+        log.info("修改文章状态:{}",articleDTO);
+        articleService.updateStatus(articleDTO);
+        return Result.success();
+    }
+
+    /**
+     * 置顶设置
+     * @param id
+     * @return
+     */
+    @PutMapping("/{id}")
+    public Result updateTop(@PathVariable Long id){
+        log.info("设置置顶文章id:{}",id);
+        articleService.updateTop(id);
         return Result.success();
     }
 

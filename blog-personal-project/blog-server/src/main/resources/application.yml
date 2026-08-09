@@ -14,7 +14,7 @@ spring:
 
 mybatis:
   #mapper配置文件
-  mapper-locations: classpath:mapper/*.xml
+  mapper-locations: classpath:com/blog/mapper/*.xml
   type-aliases-package: com.blog.pojo.entity
   configuration:
     #开启驼峰命名

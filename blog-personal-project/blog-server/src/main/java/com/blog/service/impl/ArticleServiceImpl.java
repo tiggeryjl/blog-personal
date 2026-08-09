@@ -109,16 +109,12 @@ public class ArticleServiceImpl implements ArticleService {
      */
     @Override
     public ArticleVo getArticleById(Long id) {
-        Article article = articleMapper.getArticleById(id);
-        List<Long> tagIds = articleTagMapper.selectRelationArticleId(id);
-        ArticleVo articleVo = new ArticleVo();
-        BeanUtils.copyProperties(article, articleVo);
-        articleVo.setTags(tagIds);
-        return articleVo;
+        return articleMapper.getArticleVoById(id);
     }
 
     /**
      * 修改文章
+     *
      * @param articleDTO
      */
     @Override
@@ -130,7 +126,7 @@ public class ArticleServiceImpl implements ArticleService {
             throw new ArticleException("文章不存在");
         }
         // 归档文章封存不可修改
-        if (ArticleStatusConstant.ARCHIVED.equals(article.getStatus())){
+        if (ArticleStatusConstant.ARCHIVED.equals(article.getStatus())) {
             throw new ArticleException("已归档文章请先取消归档后再编辑");
         }
 
@@ -179,7 +175,8 @@ public class ArticleServiceImpl implements ArticleService {
 
     /**
      * 根据传递的状态值判断状态操作
-     * @param oldStatus 原文章状态
+     *
+     * @param oldStatus  原文章状态
      * @param actionType 操作类型 0=保存草稿 1=发布
      * @return 最终入库状态
      */
@@ -252,5 +249,116 @@ public class ArticleServiceImpl implements ArticleService {
 
         // 3. 取消后变回草稿状态，清空定时时间
         articleMapper.cancelTimedPublish(article);
+    }
+
+    /**
+     * 批量逻辑删除
+     *
+     * @param ids
+     */
+    @Override
+    public void logicDelete(List<Long> ids) {
+        articleMapper.deleteBatchLogic(ids, DelStatusConstant.DISABLE);
+    }
+
+    /**
+     * 彻底删除
+     *
+     * @param ids
+     */
+    @Override
+    public void delete(List<Long> ids) {
+        articleMapper.deleteBatch(ids);
+    }
+
+    /**
+     * 修改文章状态
+     *
+     * @param articleDTO
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateStatus(ArticleDTO articleDTO) {
+
+        if (articleDTO.getId() == null || articleDTO.getStatus() == null) {
+            throw new ArticleException("文章ID、设置的目标状态不能为空");
+        }
+
+        Article oldArticle = articleMapper.getArticleById(articleDTO.getId());
+        if (oldArticle == null) {
+            throw new ArticleException("文章不存在");
+        }
+
+        Article article = Article.builder()
+                .id(articleDTO.getId())
+                .updateTime(LocalDateTime.now()).build();
+
+        //设置发布，文章为草稿或定时发布或归档或私密时设置
+        if (ArticleStatusConstant.PUBLISHED.equals(articleDTO.getStatus()) && List.of(
+                ArticleStatusConstant.DRAFT,
+                ArticleStatusConstant.REMOVED,
+                ArticleStatusConstant.ARCHIVED,
+                ArticleStatusConstant.SCHEDULED,
+                ArticleStatusConstant.PRIVATE).contains(oldArticle.getStatus())) {
+
+            article.setStatus(ArticleStatusConstant.PUBLISHED);
+            article.setPublishTime(LocalDateTime.now());
+        }
+        //设置下架，文章为发布时设置
+        else if (ArticleStatusConstant.REMOVED.equals(articleDTO.getStatus())
+                && ArticleStatusConstant.PUBLISHED.equals(oldArticle.getStatus())) {
+            article.setStatus(ArticleStatusConstant.REMOVED);
+        }
+        //设置归档，文章为发布时设置
+        else if (ArticleStatusConstant.ARCHIVED.equals(articleDTO.getStatus())
+                && ArticleStatusConstant.PUBLISHED.equals(oldArticle.getStatus())) {
+            article.setStatus(ArticleStatusConstant.ARCHIVED);
+        }
+        //设置私密，文章为发布时设置
+        else if (ArticleStatusConstant.PRIVATE.equals(articleDTO.getStatus())
+                && (ArticleStatusConstant.PUBLISHED.equals(oldArticle.getStatus())
+                || ArticleStatusConstant.ARCHIVED.equals(oldArticle.getStatus()))) {
+            article.setStatus(ArticleStatusConstant.PRIVATE);
+        }
+        // 定时改成私密、归档
+        else if (ArticleStatusConstant.SCHEDULED.equals(oldArticle.getStatus())
+                && (ArticleStatusConstant.PRIVATE.equals(articleDTO.getStatus())
+                || ArticleStatusConstant.ARCHIVED.equals(articleDTO.getStatus()))) {
+            article.setStatus(articleDTO.getStatus());
+        } else {
+            throw new ArticleException("当前状态不允许变更为目标状态");
+        }
+
+        //目标不是定时，清空定时时间
+        if (!ArticleStatusConstant.SCHEDULED.equals(articleDTO.getStatus())) {
+            article.setTimedPublishTime(null);
+        }
+
+        articleMapper.update(article);
+    }
+
+    /**
+     * 置顶设置
+     * @param id
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateTop(Long id) {
+        Article oldArticle = articleMapper.getArticleById(id);
+        if (oldArticle == null) {
+            throw new ArticleException("文章不存在");
+        }
+
+        if (!(ArticleStatusConstant.PUBLISHED.equals(oldArticle.getStatus())
+                || ArticleStatusConstant.ARCHIVED.equals(oldArticle.getStatus()))) {
+            throw new ArticleException("当前文章状态不允许执行置顶操作");
+        }
+
+        Integer newIsTop = StatusConstant.ENABLE.equals(oldArticle.getIsTop()) ? StatusConstant.DISABLE : StatusConstant.ENABLE;
+        Article article = Article.builder()
+                .id(id)
+                .isTop(newIsTop)
+                .updateTime(LocalDateTime.now()).build();
+        articleMapper.update(article);
     }
 }

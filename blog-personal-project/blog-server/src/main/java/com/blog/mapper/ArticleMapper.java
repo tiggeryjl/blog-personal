@@ -43,10 +43,17 @@ public interface ArticleMapper {
     /**
      * 根据ID查询文章
      * @param id
-     * @return
+     * @return 1
      */
     @Select("select * from article where id =#{id}")
     Article getArticleById(Long id);
+
+    /**
+     * 根据ID查询文章完整信息（含分类、作者、标签）
+     * @param id
+     * @re turn
+     */
+    ArticleVo getArticleVoById(Long id);
 
     /**
      * 修改文章
@@ -59,7 +66,7 @@ public interface ArticleMapper {
      */
     int updateTimedPublish(Article article);
 
-    /**
+    /** 2  1
      * 取消定时,改回草稿,清空定时时间
      */
     int cancelTimedPublish(Article article);
@@ -69,4 +76,16 @@ public interface ArticleMapper {
      * @return 影响行数
      */
     int batchPublishExpiredTimed(@Param("now") LocalDateTime now);
+
+    /**
+     * 批量逻辑删除
+     * @param ids
+     */
+    void deleteBatchLogic(List<Long> ids, Integer deleteFlag);
+
+    /**
+     * 批量永久删除
+     * @param ids
+     */
+    void deleteBatch(List<Long> ids);
 }

@@ -6,6 +6,7 @@ import com.blog.pojo.vo.ArticleVo;
 import com.blog.result.PageResult;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface ArticleService {
 
@@ -44,4 +45,28 @@ public interface ArticleService {
      * @param id
      */
     void cancelTimedPublish(Long id);
+
+    /**
+     * 逻辑删除
+     * @param ids
+     */
+    void logicDelete(List<Long> ids);
+
+    /**
+     * 彻底删除
+     * @param ids
+     */
+    void delete(List<Long> ids);
+
+    /**
+     * 修改文章状态
+     * @param articleDTO
+     */
+    void updateStatus(ArticleDTO articleDTO);
+
+    /**
+     * 置顶设置
+     * @param id
+     */
+    void updateTop(Long id);
 }

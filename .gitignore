@@ -67,8 +67,8 @@ buildNumber.properties
 *.logs
 hs_err_pid*
 
-# ==============================================
-# 系统通用垃圾文件
-# ==============================================
 .DS_Store
 Thumbs.db
+
+.codexrules
+.codexignore

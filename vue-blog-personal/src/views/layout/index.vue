@@ -1,20 +1,30 @@
 <script setup>
 import {
-  SwitchButton, User, Lock, HomeFilled, Document, Reading, Link, ChatDotRound, Position,
-  Setting,  // 主题设置图标
-  Sunny,    // 太阳图标
+  SwitchButton,
+  User,
+  Lock,
+  HomeFilled,
+  Document,
+  Reading,
+  Link,
+  ChatDotRound,
+  Position,
+  Setting, // 主题设置图标
+  Sunny, // 太阳图标
   MoonNight, // 月亮图标
   Menu,
-  UserFilled, Picture, Upload, Refresh
+  UserFilled,
+  Picture,
+  Upload,
+  Refresh,
 } from '@element-plus/icons-vue'
-import { useRouter, useRoute } from 'vue-router'  // 引入路由
+import { useRouter, useRoute } from 'vue-router' // 引入路由
 import { setTheme } from '@/utils/theme' //主题色
-import { ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useUserStore } from '@/store/userloginstatus'
 import ScrollToTop from '@/components/ScrollToTop.vue'
 import MusicPlayer from '@/components/MusicPlayer.vue'
-import WelcomeBanner from '@/components/WelcomeBanner.vue'
 
 // 获取路由对象
 const router = useRouter()
@@ -36,7 +46,13 @@ const handleClickOutside = (event) => {
   const menuWrapper = menuWrapperRef.value
   const menuBtn = menuBtnRef.value
 
-  if (showMobileMenu.value && menuWrapper && !menuWrapper.contains(event.target) && menuBtn && !menuBtn.contains(event.target)) {
+  if (
+    showMobileMenu.value &&
+    menuWrapper &&
+    !menuWrapper.contains(event.target) &&
+    menuBtn &&
+    !menuBtn.contains(event.target)
+  ) {
     showMobileMenu.value = false
   }
 }
@@ -74,7 +90,6 @@ const changeTheme = (theme) => {
   setTheme(theme)
 }
 
-
 // 背景图全套功能
 const bgEnabled = ref(JSON.parse(localStorage.getItem('bgEnabled') ?? 'true'))
 // 存储结构：{ id: 唯一标识, name: 文件名, base64: 压缩后base64, url: css url }
@@ -85,6 +100,11 @@ const bgInput = ref(null)
 const bgDialog = ref(false)
 
 let rotateTimer = null
+
+// 批量读取bg文件夹所有图片，打包全部打进dist
+const bgModules = import.meta.glob('@/assets/image/bg/*.{png,jpg,jpeg,webp}', { eager: true })
+// 转为可使用的图片地址数组
+const localBgArr = Object.values(bgModules).map((item) => item.default)
 
 // 应用背景（平滑切换）
 const applyBg = (url = null) => {
@@ -97,7 +117,8 @@ const applyBg = (url = null) => {
     return
   }
 
-  const finalUrl = url || currentBg.value || 'url("/src/assets/image1.png")'
+  const defaultImg = localBgArr[0]
+  const finalUrl = url || currentBg.value || `url(${defaultImg})`
   container.style.setProperty('--bg-url', finalUrl)
   container.style.setProperty('--bg-opacity', '1')
 }
@@ -146,11 +167,16 @@ const uploadBg = (e) => {
         id: Date.now().toString(),
         name: file.name,
         base64: compressedBase64,
-        url: cssUrl
+        url: cssUrl,
       }
 
       customBgList.value.push(item)
       localStorage.setItem('customBgList', JSON.stringify(customBgList.value))
+
+      currentBg.value = cssUrl
+      localStorage.setItem('currentBg', cssUrl)
+      applyBg(cssUrl)
+
       ElMessage.success('上传成功！')
       bgInput.value.value = ''
     }
@@ -169,7 +195,7 @@ const useBg = (item) => {
 
 // 删除背景
 const deleteBg = (item) => {
-  const idx = customBgList.value.findIndex(i => i.id === item.id)
+  const idx = customBgList.value.findIndex((i) => i.id === item.id)
   if (idx > -1) {
     customBgList.value.splice(idx, 1)
     localStorage.setItem('customBgList', JSON.stringify(customBgList.value))
@@ -207,15 +233,21 @@ const startRotate = () => {
   if (!bgEnabled.value) return
   stopRotate()
   let i = 0
-  const len = customBgList.value.length
-  if (len === 0) return
+  const userBgUrls = customBgList.value.map((item) => item.url)
+  const localUrls = localBgArr.map((src) => `url(${src})`)
+  const allBg = userBgUrls.length ? userBgUrls : localUrls
+
+  if (allBg.length === 0) return
+  // const len = customBgList.value.length
+  // if (len === 0) return
 
   rotateTimer = setInterval(() => {
     if (!bgEnabled.value) {
       stopRotate()
       return
     }
-    useBg(customBgList.value[i % len])
+    applyBg(allBg[i % allBg.length])
+    // useBg(customBgList.value[i % allBg.length])
     i++
   }, 6000)
 }
@@ -228,7 +260,7 @@ onMounted(() => {
   userStore.loadStorage()
 
   const savedList = JSON.parse(localStorage.getItem('customBgList')) || []
-  const restoredList = savedList.map(item => {
+  const restoredList = savedList.map((item) => {
     if (item.blobUrl) return item
     return { ...item, blobUrl: `url("${item.blobUrl}")` }
   })
@@ -254,7 +286,6 @@ onUnmounted(() => {
       <!-- Header 导航栏区域 -->
       <el-header class="header">
         <div class="nav-container">
-
           <div class="logo">
             <img src="@/assets/image/logo.png" alt="Logo" @click="goTo('/index')" />
           </div>
@@ -265,30 +296,32 @@ onUnmounted(() => {
             </el-icon>
           </div>
 
-          <div ref="menuWrapperRef" class="nav-menu-wrapper" style="display: contents;"
-            :class="{ show: showMobileMenu }">
+          <div
+            ref="menuWrapperRef"
+            class="nav-menu-wrapper"
+            style="display: contents"
+            :class="{ show: showMobileMenu }"
+          >
             <div>
               <ul class="nav-menu">
-                <li @click="goTo('/index')" :class="{ active: route.path === '/index' }"><el-icon>
-                    <HomeFilled />
-                  </el-icon>首页</li>
-                <li @click="goTo('/article')" :class="{ active: route.path === '/article' }"><el-icon>
-                    <Document />
-                  </el-icon>文章</li>
-                <li @click="goTo('/daily')" :class="{ active: route.path === '/daily' }"><el-icon>
-                    <Reading />
-                  </el-icon>日常</li>
-                <li @click="goTo('/friendlink')" :class="{ active: route.path === '/friendlink' }">
-                  <el-icon>
-                    <Link />
-                  </el-icon>友链
+                <li @click="goTo('/index')" :class="{ active: route.path === '/index' }">
+                  <el-icon> <HomeFilled /> </el-icon>首页
                 </li>
-                <li @click="goTo('/feedback')" :class="{ active: route.path === '/feedback' }"><el-icon>
-                    <ChatDotRound />
-                  </el-icon>留言</li>
-                <li @click="goTo('/about')" :class="{ active: route.path === '/about' }"><el-icon>
-                    <Position />
-                  </el-icon>关于</li>
+                <li @click="goTo('/article')" :class="{ active: route.path === '/article' }">
+                  <el-icon> <Document /> </el-icon>文章
+                </li>
+                <li @click="goTo('/daily')" :class="{ active: route.path === '/daily' }">
+                  <el-icon> <Reading /> </el-icon>日常
+                </li>
+                <li @click="goTo('/friendlink')" :class="{ active: route.path === '/friendlink' }">
+                  <el-icon> <Link /> </el-icon>友链
+                </li>
+                <li @click="goTo('/feedback')" :class="{ active: route.path === '/feedback' }">
+                  <el-icon> <ChatDotRound /> </el-icon>留言
+                </li>
+                <li @click="goTo('/about')" :class="{ active: route.path === '/about' }">
+                  <el-icon> <Position /> </el-icon>关于
+                </li>
               </ul>
             </div>
             <div class="right_tool">
@@ -307,17 +340,20 @@ onUnmounted(() => {
                     <el-dropdown-item command="default">
                       <el-icon>
                         <Sunny />
-                      </el-icon> 默认主题
+                      </el-icon>
+                      默认主题
                     </el-dropdown-item>
                     <el-dropdown-item command="dark">
                       <el-icon>
                         <MoonNight />
-                      </el-icon> 深色主题
+                      </el-icon>
+                      深色主题
                     </el-dropdown-item>
                     <el-dropdown-item command="white">
                       <el-icon>
                         <Sunny />
-                      </el-icon> 浅色主题
+                      </el-icon>
+                      浅色主题
                     </el-dropdown-item>
 
                     <el-dropdown-item divided @click.stop="toggleBg">
@@ -329,7 +365,8 @@ onUnmounted(() => {
                     <el-dropdown-item @click.stop="bgDialog = true">
                       <el-icon>
                         <Picture />
-                      </el-icon> 自定义背景图
+                      </el-icon>
+                      自定义背景图
                     </el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
@@ -356,14 +393,16 @@ onUnmounted(() => {
                       <el-dropdown-item @click="goProfile">
                         <el-icon>
                           <User />
-                        </el-icon> 个人中心
+                        </el-icon>
+                        个人中心
                       </el-dropdown-item>
 
                       <!-- 分割线 -->
-                      <el-dropdown-item tem divided @click="logout" class="logout-item">
+                      <el-dropdown-item divided @click="logout" class="logout-item">
                         <el-icon>
                           <SwitchButton />
-                        </el-icon> 退出登录
+                        </el-icon>
+                        退出登录
                       </el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
@@ -396,14 +435,12 @@ onUnmounted(() => {
           </div>
         </el-footer>
       </div>
-
     </el-container>
 
     <!-- 自定义背景图弹窗 -->
     <el-dialog v-model="bgDialog" title="自定义背景图" width="550px">
       <div class="bg-grid">
         <div class="bg-item" v-for="item in customBgList" :key="item.id">
-          <!-- 🔥 关键：正确绑定图片 -->
           <div class="bg-preview" :style="{ backgroundImage: item.url }" @click="useBg(item)"></div>
           <div class="bg-tool">
             <el-button size="mini" type="danger" @click="deleteBg(item)">删除</el-button>
@@ -411,11 +448,12 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div style="margin-top:15px; display:flex; gap:10px;">
+      <div style="margin-top: 15px; display: flex; gap: 10px">
         <el-button type="primary" @click="bgInput.click()">
           <el-icon>
             <Upload />
-          </el-icon> 上传背景
+          </el-icon>
+          上传背景
         </el-button>
         <el-button @click="toggleBgRotate">
           <el-icon>
@@ -424,7 +462,7 @@ onUnmounted(() => {
           {{ bgRotateEnabled ? '关闭轮换' : '开启轮换' }}
         </el-button>
       </div>
-      <input ref="bgInput" type="file" accept="image/*" style="display:none" @change="uploadBg" />
+      <input ref="bgInput" type="file" accept="image/*" style="display: none" @change="uploadBg" />
     </el-dialog>
   </div>
 </template>
@@ -452,7 +490,6 @@ onUnmounted(() => {
   background: var(--bg-color);
   background-attachment: fixed;
 
-  --bg-url: url("/src/assets/image/image1.png");
   --bg-opacity: 1;
   --bg-url-next: none;
 }
@@ -763,7 +800,6 @@ onUnmounted(() => {
 
 /*响应式布局 */
 @media (max-width: 930px) {
-
   /* 1. 导航栏样式 */
   .header {
     height: 60px !important;

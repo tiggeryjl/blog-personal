@@ -2,7 +2,6 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { DArrowRight, ChatLineSquare, Document, View, Reading } from '@element-plus/icons-vue'
-import WelcomeBanner from '@/components/WelcomeBanner.vue'
 
 const router = useRouter()
 
