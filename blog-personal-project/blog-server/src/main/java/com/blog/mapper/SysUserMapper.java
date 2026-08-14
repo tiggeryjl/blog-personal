@@ -97,4 +97,11 @@ public interface SysUserMapper {
      * @return
      */
     List<UserPageVo> pageQuery(UserPageQueryDTO userPageQueryDTO);
+
+    /**
+     * 分页查询逻辑删除的用户
+     * @param userPageQueryDTO
+     * @return
+     */
+    List<UserPageVo> pageQueryLogicDelete(UserPageQueryDTO userPageQueryDTO);
 }

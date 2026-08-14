@@ -12,8 +12,14 @@ export const updateRoleApi = (data) => request.put('/admin/role/update', data);
 //逻辑删除角色
 export const deleteRoleApi = (id) => request.delete(`/admin/role/logicDelete?id=${id}`);
 
+//查询逻辑删除的角色列表
+export const getLogicDeleteRoleApi = () => request.get('/admin/role/getLogicDelete');
+
+//恢复角色
+export const recoverRoleApi = (id) => request.put(`/admin/role/recover?id=${id}`);
+
 //彻底删除角色
-// export const deleteRoleApi = (id) => request.delete(`/admin/role?id=${id}`);
+export const deleteRoleCompletelyApi = (id) => request.delete(`/admin/role?id=${id}`);
 
 // 获取角色权限树
 export const getRoleMenuTreeApi = (id) => request.get(`/admin/role/menuTreeSelect/${id}`);

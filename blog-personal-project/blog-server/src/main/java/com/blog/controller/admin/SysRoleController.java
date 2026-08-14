@@ -4,6 +4,7 @@ import com.blog.pojo.dto.RoleDTO;
 import com.blog.pojo.dto.RoleMenuAssignDTO;
 import com.blog.pojo.dto.RolePageQueryDTO;
 import com.blog.pojo.vo.RoleMenuTreeVO;
+import com.blog.pojo.vo.SysRoleVo;
 import com.blog.pojo.vo.UserInfoVO;
 import com.blog.result.PageResult;
 import com.blog.result.Result;
@@ -12,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 
 @Slf4j
@@ -73,13 +76,38 @@ public class SysRoleController {
         return Result.success();
     }
 
+    /**
+     * 查询逻辑删除的角色列表
+     * @return
+     */
+    @PreAuthorize("hasAuthority('sys:recycleRole:list')")
+    @GetMapping("/getLogicDelete")
+    public Result<List<SysRoleVo>> getLogicDelete() {
+        log.info("查询逻辑删除的角色列表");
+        List<SysRoleVo> roleVoList = roleService.getLogicDelete();
+        return Result.success(roleVoList);
+    }
+
+    /**
+     * 恢复角色
+     * @param id
+     * @return
+     */
+    @PreAuthorize("hasAuthority('sys:recycleRole:recycle')")
+    @PutMapping("/recover")
+    public Result recover(@RequestParam Long id) {
+        log.info("恢复角色的id{}", id);
+        roleService.recover(id);
+        return Result.success();
+    }
+
 
     /**
      * 彻底删除角色
      * @param id
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:role:delete')")
+    @PreAuthorize("hasAuthority('sys:recycleRole:delete')")
     @DeleteMapping()
     public Result delete(@RequestParam Long id){
         log.info("彻底删除角色的id{}",id);

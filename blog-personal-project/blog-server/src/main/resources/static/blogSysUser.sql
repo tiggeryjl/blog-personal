@@ -282,10 +282,15 @@ VALUES
 
 -- ===================== 9、回收站管理（超级管理员专属） =====================
 (53,0, '回收站管理', '/recycleBin', 'Layout', 'sys:recycle', 0, 'Delete', 9, 1,0,NOW(), NOW()),
-(54,43,'权限回收站', '/recycleMenu', 'recycleBin/menu/index', 'sys:recycleMenu:list', 1, 'Delete', 1, 1,0,NOW(), NOW()),
-(55,43,'角色回收站', '/recycleRole', 'recycleBin/role/index', 'sys:recycleRole:list', 1, 'Delete', 2, 1,0,NOW(), NOW()),
-(56,44,'恢复权限', NULL, NULL, 'sys:recycleMenu:recycle', 2, NULL, 1, 1,0,NOW(), NOW()),
-(57,44,'删除权限', NULL, NULL, 'sys:recycleMenu:delete', 2, NULL, 2, 1,0,NOW(), NOW())
+(54,53,'权限回收站', '/recycleMenu', 'recycleBin/menu/index', 'sys:recycleMenu:list', 1, 'Delete', 1, 1,0,NOW(), NOW()),
+(55,53,'角色回收站', '/recycleRole', 'recycleBin/role/index', 'sys:recycleRole:list', 1, 'Delete', 2, 1,0,NOW(), NOW()),
+(58,53,'用户回收站', '/recycleUser', 'recycleBin/user/index', 'sys:recycleUser:list', 1, 'Delete', 3, 1,0,NOW(), NOW()),
+(56,54,'恢复权限', NULL, NULL, 'sys:recycleMenu:recycle', 2, NULL, 1, 1,0,NOW(), NOW()),
+(57,54,'删除权限', NULL, NULL, 'sys:recycleMenu:delete', 2, NULL, 2, 1,0,NOW(), NOW()),
+(59,55,'恢复角色', NULL, NULL, 'sys:recycleRole:recycle', 2, NULL, 1, 1,0,NOW(), NOW()),
+(60,55,'彻底删除角色', NULL, NULL, 'sys:recycleRole:delete', 2, NULL, 2, 1,0,NOW(), NOW()),
+(61,58,'恢复用户', NULL, NULL, 'sys:recycleUser:recycle', 2, NULL, 1, 1,0,NOW(), NOW()),
+(62,58,'彻底删除用户', NULL, NULL, 'sys:recycleUser:delete', 2, NULL, 2, 1,0,NOW(), NOW())
 ;
 
 -- 1、超级管理员(role_id=1)：绑定全部菜单权限
@@ -303,6 +308,27 @@ SELECT 3, id, NOW() FROM sys_menu WHERE menu_type IN (0,1);
 /*!40000 ALTER TABLE `sys_menu` ENABLE KEYS */;
 /*!40000 ALTER TABLE `sys_role_menu` ENABLE KEYS */;
 UNLOCK TABLES;
+
+DROP TABLE IF EXISTS `sys_notice`;
+/*!40101 SET @saved_cs_client = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE sys_notice (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+    type VARCHAR(20) NOT NULL COMMENT 'like 点赞 / comment 评论',
+    title VARCHAR(100) NOT NULL COMMENT '通知标题',
+    action_text VARCHAR(50) NOT NULL COMMENT '动作文案：点赞文章 / 评论文章',
+    article_title VARCHAR(255) NOT NULL COMMENT '文章标题',
+    article_id BIGINT NOT NULL COMMENT '文章id',
+    operator_name VARCHAR(100) NOT NULL COMMENT '访客昵称',
+    content TEXT COMMENT '评论内容，点赞为空',
+    is_read TINYINT DEFAULT 0 COMMENT '0未读 1已读',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_read_time (is_read, create_time DESC)
+) ENGINE = InnoDB
+  AUTO_INCREMENT = 1
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_0900_ai_ci COMMENT ='点赞评论通知记录表';
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE = @OLD_TIME_ZONE */;
 

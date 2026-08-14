@@ -8,6 +8,7 @@ import com.blog.mapper.SysMenuMapper;
 import com.blog.mapper.SysRoleMapper;
 import com.blog.mapper.SysRoleMenuMapper;
 import com.blog.mapper.SysUserMapper;
+import com.blog.mapper.SysUserRoleMapper;
 import com.blog.pojo.dto.RoleDTO;
 import com.blog.pojo.dto.RoleMenuAssignDTO;
 import com.blog.pojo.dto.RolePageQueryDTO;
@@ -17,6 +18,7 @@ import com.blog.pojo.entity.SysRoleMenu;
 import com.blog.pojo.vo.MenuTreeVO;
 import com.blog.pojo.vo.RoleMenuTreeVO;
 import com.blog.pojo.vo.SysRoleVo;
+import com.blog.exception.CustomException;
 import com.blog.result.PageResult;
 import com.blog.service.SysRoleService;
 import com.blog.utils.MenuTreeUtil;
@@ -42,6 +44,9 @@ public class SysRoleServiceImpl implements SysRoleService {
 
     @Autowired
     private SysMenuMapper menuMapper;
+
+    @Autowired
+    private SysUserRoleMapper userRoleMapper;
 
     /**
      * 分页查询角色
@@ -102,13 +107,46 @@ public class SysRoleServiceImpl implements SysRoleService {
     }
 
     /**
+     * 查询逻辑删除的角色列表
+     *
+     * @return
+     */
+    @Override
+    public List<SysRoleVo> getLogicDelete() {
+        return roleMapper.getLogicDelete();
+    }
+
+    /**
+     * 恢复角色
+     *
+     * @param id
+     */
+    @Override
+    public void recover(Long id) {
+        SysRole role = roleMapper.selectById(id);
+        if (role == null) {
+            throw new CustomException("角色不存在");
+        }
+        SysRole sysRole = new SysRole();
+        sysRole.setId(id);
+        sysRole.setDeleteFlag(DelStatusConstant.ENABLE);
+        sysRole.setUpdateTime(LocalDateTime.now());
+        roleMapper.update(sysRole);
+    }
+
+    /**
      * 彻底删除角色
      *
      * @param id
      */
     @Override
+    @Transactional
     public void delete(Long id) {
         isAdmin(id);
+        // 删除角色关联的用户、菜单权限数据
+        userRoleMapper.deleteByRoleId(id);
+        roleMenuMapper.deleteByRoleId(id);
+        // 删除角色主表数据
         roleMapper.delete(id);
     }
 

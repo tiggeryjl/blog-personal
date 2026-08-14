@@ -8,6 +8,7 @@ import IndexView from '@/views/index/index.vue';
 import editInputView from '@/views/artwork/articleWork/editInput.vue';
 import LoginView from '@/views/login/index.vue';
 import ArticleDetailView from '@/views/artwork/articleWork/articleDetail.vue';
+import NoticeView from '@/views/noticeCenter/noticeCenter.vue';
 
 export const constantRoutes = [
   {
@@ -18,6 +19,7 @@ export const constantRoutes = [
     children: [
       { path: 'index', name: 'index', component: IndexView },
       { path: 'editInput', name: 'editInput', component: editInputView },
+      { path: '/notice', name: 'notice', component: NoticeView },
     ],
   },
   { path: '/articleDetail', name: 'articleDetail', component: ArticleDetailView },

@@ -4,7 +4,10 @@ import com.blog.pojo.dto.RoleDTO;
 import com.blog.pojo.dto.RoleMenuAssignDTO;
 import com.blog.pojo.dto.RolePageQueryDTO;
 import com.blog.pojo.vo.RoleMenuTreeVO;
+import com.blog.pojo.vo.SysRoleVo;
 import com.blog.result.PageResult;
+
+import java.util.List;
 
 public interface SysRoleService {
 
@@ -32,6 +35,18 @@ public interface SysRoleService {
      * @param id
      */
     void logicDelete(Long id);
+
+    /**
+     * 查询逻辑删除的角色列表
+     * @return
+     */
+    List<SysRoleVo> getLogicDelete();
+
+    /**
+     * 恢复角色
+     * @param id
+     */
+    void recover(Long id);
 
     /**
      * 彻底删除角色

@@ -55,4 +55,10 @@ public interface SysRoleMapper {
      * @return
      */
     List<RoleSelectVO> getRoleList();
+
+    /**
+     * 查询逻辑删除的角色列表
+     * @return
+     */
+    List<SysRoleVo> getLogicDelete();
 }

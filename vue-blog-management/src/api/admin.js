@@ -33,6 +33,12 @@ export const deleteUserApi = (ids) => request.delete(`/admin/admin?ids=${ids}`);
 //逻辑删除
 export const logicDeleteUserApi = (ids) => request.delete(`/admin/admin/logicDelete?ids=${ids}`);
 
+//分页查询逻辑删除的用户
+export const getLogicDeleteUserApi = (data) => request.get('/admin/admin/getLogicDelete', { params: data });
+
+//恢复用户
+export const recoverUserApi = (id) => request.put(`/admin/admin/recover?id=${id}`);
+
 // 刷新token
 export const getRefreshTokenApi = () => request.post(`/admin/admin/refreshToken`);
 

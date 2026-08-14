@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.blog.mapper.HomeMapper">
+
+    <!-- 首页网站数据统计 -->
+    <select id="getStatistics" resultType="com.blog.pojo.vo.HomeStatisticsVO">
+        SELECT
+            (SELECT COUNT(*) FROM article WHERE delete_flag = 0)                                                                   AS articleTotal,
+            (SELECT COUNT(*) FROM daily WHERE delete_flag = 0)                                                                     AS dailyTotal,
+            (SELECT COUNT(*) FROM sys_user WHERE delete_flag = 0)                                                                  AS userTotal,
+            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0)                                                                 AS commentTotal,
+            (SELECT COUNT(*) FROM link WHERE delete_flag = 0)                                                                      AS linkTotal,
+            (SELECT COUNT(*) FROM user_like WHERE delete_flag = 0)                                                                 AS likeTotal,
+            (SELECT COUNT(*) FROM sys_user WHERE delete_flag = 0 AND create_time >= CURDATE())                                     AS todayNewUser,
+            (SELECT COUNT(*) FROM link WHERE delete_flag = 0 AND audit_status = 0)                                                 AS linkPending,
+            (SELECT COUNT(*) FROM link WHERE delete_flag = 0 AND audit_status = 2)                                                 AS linkRejected,
+            (SELECT COUNT(*) FROM link WHERE delete_flag = 0 AND audit_status = 1)                                                 AS linkApproved,
+            (SELECT COUNT(*) FROM category WHERE delete_flag = 0)                                                                  AS categoryTotal,
+            (SELECT COUNT(*) FROM tag WHERE delete_flag = 0)                                                                       AS tagTotal,
+            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0 AND status = 0)                                                  AS commentPending,
+            (SELECT IFNULL(SUM(view_num), 0) FROM article WHERE delete_flag = 0)                                                   AS viewTotal
+    </select>
+
+    <!-- 文章增量趋势 -->
+    <select id="selectArticleTrend" resultType="com.blog.pojo.vo.HomeTrendItemVO">
+        SELECT DATE_FORMAT(create_time, #{format}) AS period, COUNT(*) AS count
+        FROM article
+        WHERE delete_flag = 0
+          AND create_time &gt;= #{begin}
+          AND create_time &lt; #{end}
+        GROUP BY period
+        ORDER BY period
+    </select>
+
+    <!-- 日常增量趋势 -->
+    <select id="selectDailyTrend" resultType="com.blog.pojo.vo.HomeTrendItemVO">
+        SELECT DATE_FORMAT(create_time, #{format}) AS period, COUNT(*) AS count
+        FROM daily
+        WHERE delete_flag = 0
+          AND create_time &gt;= #{begin}
+          AND create_time &lt; #{end}
+        GROUP BY period
+        ORDER BY period
+    </select>
+
+    <!-- 用户增量趋势 -->
+    <select id="selectUserTrend" resultType="com.blog.pojo.vo.HomeTrendItemVO">
+        SELECT DATE_FORMAT(create_time, #{format}) AS period, COUNT(*) AS count
+        FROM sys_user
+        WHERE delete_flag = 0
+          AND create_time &gt;= #{begin}
+          AND create_time &lt; #{end}
+        GROUP BY period
+        ORDER BY period
+    </select>
+
+    <!-- 评论增量趋势 -->
+    <select id="selectCommentTrend" resultType="com.blog.pojo.vo.HomeTrendItemVO">
+        SELECT DATE_FORMAT(create_time, #{format}) AS period, COUNT(*) AS count
+        FROM `comment`
+        WHERE delete_flag = 0
+          AND create_time &gt;= #{begin}
+          AND create_time &lt; #{end}
+        GROUP BY period
+        ORDER BY period
+    </select>
+
+    <!-- 友链增量趋势 -->
+    <select id="selectLinkTrend" resultType="com.blog.pojo.vo.HomeTrendItemVO">
+        SELECT DATE_FORMAT(create_time, #{format}) AS period, COUNT(*) AS count
+        FROM link
+        WHERE delete_flag = 0
+          AND create_time &gt;= #{begin}
+          AND create_time &lt; #{end}
+        GROUP BY period
+        ORDER BY period
+    </select>
+
+    <!-- 点赞增量趋势 -->
+    <select id="selectLikeTrend" resultType="com.blog.pojo.vo.HomeTrendItemVO">
+        SELECT DATE_FORMAT(create_time, #{format}) AS period, COUNT(*) AS count
+        FROM user_like
+        WHERE delete_flag = 0
+          AND create_time &gt;= #{begin}
+          AND create_time &lt; #{end}
+        GROUP BY period
+        ORDER BY period
+    </select>
+
+    <!-- 已拒绝友链增量趋势 -->
+    <select id="selectRejectedLinkTrend" resultType="com.blog.pojo.vo.HomeTrendItemVO">
+        SELECT DATE_FORMAT(create_time, #{format}) AS period, COUNT(*) AS count
+        FROM link
+        WHERE delete_flag = 0
+          AND audit_status = 2
+          AND create_time &gt;= #{begin}
+          AND create_time &lt; #{end}
+        GROUP BY period
+        ORDER BY period
+    </select>
+</mapper>

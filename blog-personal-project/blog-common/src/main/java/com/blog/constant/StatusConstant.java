@@ -5,9 +5,9 @@ package com.blog.constant;
  */
 public class StatusConstant {
 
-    //启用
+    //启用 已读
     public static final Integer ENABLE = 1;
 
-    //禁用
+    //禁用 未读
     public static final Integer DISABLE = 0;
 }

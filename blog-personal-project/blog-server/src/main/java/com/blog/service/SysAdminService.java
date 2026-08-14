@@ -33,6 +33,19 @@ public interface SysAdminService {
     PageResult pageQurey(UserPageQueryDTO userPageQueryDTO);
 
     /**
+     * 分页查询逻辑删除的用户
+     * @param userPageQueryDTO
+     * @return
+     */
+    PageResult pageQueryLogicDelete(UserPageQueryDTO userPageQueryDTO);
+
+    /**
+     * 恢复用户
+     * @param id
+     */
+    void recover(Long id);
+
+    /**
      * 根据id查询用户
      * @param id
      * @return

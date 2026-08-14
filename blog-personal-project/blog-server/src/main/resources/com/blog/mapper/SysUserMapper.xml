@@ -80,6 +80,7 @@
         LEFT JOIN sys_user_role ur ON u.id = ur.user_id
         LEFT JOIN sys_role r ON ur.role_id = r.id
         <where>
+            u.delete_flag=0
             <if test="nickname != null and nickname != ''">
                 AND u.nickname LIKE CONCAT('%', #{nickname}, '%')
             </if>
@@ -121,10 +122,40 @@
         </foreach>
     </delete>
     <delete id="deleteBatchLogic">
-        update sys_user set delete_flag=#{deleteFlag}
+        update sys_user set delete_flag=#{deleteFlag},status=2,update_time=now()
         where id in
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
+
+    <select id="pageQueryLogicDelete" resultMap="UserVOResultMap">
+        select u.*,
+        r.id r_id,
+        r.role_name,
+        r.role_key
+        from sys_user u
+        LEFT JOIN sys_user_role ur ON u.id = ur.user_id
+        LEFT JOIN sys_role r ON ur.role_id = r.id
+        <where>
+            <if test="nickname != null and nickname != ''">
+                AND u.nickname LIKE CONCAT('%', #{nickname}, '%')
+            </if>
+            <if test="search != null and search != ''">
+                AND (
+                u.username LIKE CONCAT('%', #{search}, '%')
+                OR u.phone LIKE CONCAT('%', #{search}, '%')
+                OR u.email LIKE CONCAT('%', #{search}, '%')
+                )
+            </if>
+            <if test="status != null ">
+                AND u.status = #{status}
+            </if>
+            <if test="begin != null and end != null">
+                AND u.create_time BETWEEN #{begin} AND #{end}
+            </if>
+            AND u.delete_flag = 1
+        </where>
+        ORDER BY u.update_time DESC, u.create_time DESC
+    </select>
 </mapper>

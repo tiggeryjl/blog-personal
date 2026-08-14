@@ -216,11 +216,37 @@ public class SysAdminController {
     }
 
     /**
+     * 分页查询逻辑删除的用户
+     * @param param
+     * @return
+     */
+    @PreAuthorize("hasAuthority('sys:recycleUser:list')")
+    @GetMapping("/getLogicDelete")
+    public Result<PageResult> getLogicDelete(UserPageQueryDTO param) {
+        log.info("获取逻辑删除用户信息{}", param);
+        PageResult page = adminService.pageQueryLogicDelete(param);
+        return Result.success(page);
+    }
+
+    /**
+     * 恢复用户
+     * @param id
+     * @return
+     */
+    @PreAuthorize("hasAuthority('sys:recycleUser:recycle')")
+    @PutMapping("/recover")
+    public Result recover(@RequestParam Long id) {
+        log.info("恢复用户的id{}", id);
+        adminService.recover(id);
+        return Result.success();
+    }
+
+    /**
      * 彻底删除用户
      * @param ids
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:user:delete')")
+    @PreAuthorize("hasAuthority('sys:recycleUser:delete')")
     @DeleteMapping()
     public Result delete(@RequestParam List<Long> ids){
         log.info("彻底删除用户的ids{}",ids);

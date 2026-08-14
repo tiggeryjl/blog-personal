@@ -76,6 +76,7 @@ public class SysMenuController {
      * 查询逻辑删除的权限树
      * @return
      */
+    @PreAuthorize("hasPermission(null,'sys:recycleMenu:list')")
     @GetMapping("/getLogicDelete")
     public Result<List<SysMenuVo>> getdeleteMenuTree() {
         log.info("查询逻辑删除的权限树");
@@ -88,6 +89,7 @@ public class SysMenuController {
      * @param id
      * @return
      */
+    @PreAuthorize("hasPermission(null,'sys:recycleMenu:delete')")
     @DeleteMapping()
     public Result delete(@RequestParam Long id){
         log.info("彻底删除权限的id{}",id);
@@ -100,6 +102,7 @@ public class SysMenuController {
      * @param id
      * @return
      */
+    @PreAuthorize("hasPermission(null,'sys:recycleMenu:recycle')")
     @PutMapping("/recover")
     public Result recover(@RequestParam Long id){
         log.info("恢复删除权限:{}", id);

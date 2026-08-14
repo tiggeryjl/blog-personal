@@ -1,9 +1,6 @@
 package com.blog.service.impl;
 
-import com.blog.constant.DelStatusConstant;
-import com.blog.constant.MessageConstant;
-import com.blog.constant.MultiStatusConstant;
-import com.blog.constant.PasswordConstant;
+import com.blog.constant.*;
 import com.blog.context.BaseContext;
 import com.blog.exception.*;
 import com.blog.mapper.SysMenuMapper;
@@ -161,6 +158,40 @@ public class SysAdminServiceImpl implements SysAdminService {
     }
 
     /**
+     * 分页查询逻辑删除的用户
+     *
+     * @param userPageQueryDTO
+     * @return
+     */
+    @Override
+    public PageResult pageQueryLogicDelete(UserPageQueryDTO userPageQueryDTO) {
+        PageHelper.startPage(userPageQueryDTO.getPage(), userPageQueryDTO.getPageSize());
+        List<UserPageVo> userList = userMapper.pageQueryLogicDelete(userPageQueryDTO);
+        PageInfo<UserPageVo> page = new PageInfo<>(userList);
+        return new PageResult(page.getTotal(), page.getList());
+    }
+
+    /**
+     * 恢复用户
+     *
+     * @param id
+     */
+    @Override
+    public void recover(Long id) {
+        SysUser user = userMapper.getByUserId(id);
+        if (user == null) {
+            throw new UserNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+        }
+
+        SysUser updateUser = SysUser.builder()
+                .id(id)
+                .deleteFlag(DelStatusConstant.ENABLE)
+                .updateTime(LocalDateTime.now())
+                .build();
+        userMapper.update(updateUser);
+    }
+
+    /**
      * 根据id查询用户
      * @param id
      * @return
@@ -247,6 +278,12 @@ public class SysAdminServiceImpl implements SysAdminService {
             throw new UserNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
         }
 
+        targetUsers.forEach(targetUser -> {
+           if (StatusConstant.ENABLE.equals(targetUser.getStatus())) {
+               throw new OperationNotAllowedException("用户启用中，不可删除");
+           }
+        });
+
         // 检查是否包含自己
         boolean hasSelf = targetUsers.stream().anyMatch(u -> u.getId().equals(adminUser.getId()));
         if (hasSelf) {
@@ -262,6 +299,7 @@ public class SysAdminServiceImpl implements SysAdminService {
      * @param ids
      */
     @Override
+    @Transactional
     public void delete(List<Long> ids) {
         SysUser adminUser = userMapper.getByUserId(BaseContext.getCurrentId());
 
@@ -275,6 +313,9 @@ public class SysAdminServiceImpl implements SysAdminService {
         if (hasSelf) {
             throw new OperationNotAllowedException(MessageConstant.NOT_DELETE);
         }
+
+        // 清除用户角色关联数据
+        userRoleMapper.deleteByUserIds(ids);
 
         // 批逻彻底删除
         userMapper.deleteBatch(ids);
@@ -322,7 +363,7 @@ public class SysAdminServiceImpl implements SysAdminService {
         }
 
         //删除原有数据
-        userRoleMapper.deleteByUserId(userRoleAssignDTO.getId());
+        userRoleMapper.deleteByUserIds(List.of(userRoleAssignDTO.getId()));
 
         //重新批量插入
         if (roleIdList != null && !roleIdList.isEmpty()) {

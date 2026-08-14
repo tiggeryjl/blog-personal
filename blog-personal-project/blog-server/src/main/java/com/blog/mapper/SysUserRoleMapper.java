@@ -10,8 +10,12 @@ import java.util.List;
 @Mapper
 public interface SysUserRoleMapper {
 
-    // 根据用户id删除角色关联
-    int deleteByUserId(Long userId);
+    // 根据用户id批量删除角色关联
+    int deleteByUserIds(List<Long> ids);
+
+    // 根据角色id删除用户角色关联
+    int deleteByRoleId(Long roleId);
+
     // 批量新增用户角色
     int batchInsert(@Param("list") List<SysUserRole> userRoleList);
 
