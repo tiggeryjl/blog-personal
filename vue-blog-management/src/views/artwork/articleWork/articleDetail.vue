@@ -57,7 +57,7 @@ const loadTagOptions = async () => {
     if (result.code === 200) {
       tagOptions.value = result.data || [];
     }
-  } catch (error) {1 
+  } catch (error) {
     // 忽略：标签选项加载失败不影响文章详情展示
   }
 };

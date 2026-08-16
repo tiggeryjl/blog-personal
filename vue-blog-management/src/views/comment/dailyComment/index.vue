@@ -1,9 +1,9 @@
 <script setup>
-
+import CommentManagement from '@/components/CommentManagement.vue';
 </script>
 
 <template>
-  日常评论
+  <CommentManagement :comment-type="1" page-title="日常评论" :show-source-id="true" />
 </template>
 
 <style scoped></style>

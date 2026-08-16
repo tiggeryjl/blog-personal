@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.blog.mapper.CommentMapper">
+
+    <!-- 评论列表通用查询列(含来源标题、父评论昵称、回复数) -->
+    <sql id="commentSelect">
+        SELECT
+            c.id,
+            c.type,
+            c.source_id,
+            c.msg_type,
+            c.parent_id,
+            parent.user_nickname AS parent_nickname,
+            c.reply_user_id,
+            c.reply_user_nickname,
+            c.user_id,
+            c.user_nickname,
+            c.user_avatar,
+            c.content,
+            c.like_num,
+            c.status,
+            c.is_top,
+            c.ip_address,
+            c.browser,
+            c.os,
+            c.device_type,
+            c.location,
+            c.create_time,
+            c.update_time,
+            CASE
+                WHEN c.type = 0 THEN a.title
+                WHEN c.type = 1 THEN LEFT(d.content, 50)
+                WHEN c.type = 2 THEN '留言板'
+                ELSE NULL
+            END AS source_title,
+            (
+                SELECT COUNT(*)
+                FROM comment r
+                WHERE r.parent_id = c.id AND r.delete_flag = 0
+            ) AS reply_count
+        FROM comment c
+        LEFT JOIN article a ON c.type = 0 AND c.source_id = a.id
+        LEFT JOIN daily d ON c.type = 1 AND c.source_id = d.id
+        LEFT JOIN comment parent ON c.parent_id = parent.id AND parent.delete_flag = 0
+    </sql>
+
+    <!-- 分页查询公共条件 -->
+    <sql id="pageCondition">
+        <where>
+            c.delete_flag = 0
+            <if test="type != null">AND c.type = #{type}</if>
+            <if test="sourceId != null">AND c.source_id = #{sourceId}</if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    c.content LIKE CONCAT('%', #{keyword}, '%')
+                    OR c.user_nickname LIKE CONCAT('%', #{keyword}, '%')
+                    OR c.reply_user_nickname LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+            <if test="msgType != null">AND c.msg_type = #{msgType}</if>
+            <if test="status != null">AND c.status = #{status}</if>
+            <if test="isTop != null">AND c.is_top = #{isTop}</if>
+            <if test="begin != null">AND c.create_time &gt;= #{begin}</if>
+            <if test="end != null">AND c.create_time &lt;= #{end}</if>
+        </where>
+    </sql>
+
+    <!-- 分页查询评论列表 -->
+    <select id="pageQuery" resultType="com.blog.pojo.vo.CommentVo">
+        <include refid="commentSelect"/>
+        <include refid="pageCondition"/>
+        ORDER BY c.is_top DESC, c.create_time DESC
+    </select>
+
+    <!-- 主楼评论分页条件(仅顶级评论) -->
+    <sql id="mainCondition">
+        <where>
+            c.delete_flag = 0
+            AND c.parent_id = 0
+            <if test="type != null">AND c.type = #{type}</if>
+            <if test="sourceId != null">AND c.source_id = #{sourceId}</if>
+            <if test="msgType != null">AND c.msg_type = #{msgType}</if>
+            <if test="status != null">AND c.status = #{status}</if>
+            <if test="isTop != null">AND c.is_top = #{isTop}</if>
+            <if test="begin != null">AND c.create_time &gt;= #{begin}</if>
+            <if test="end != null">AND c.create_time &lt;= #{end}</if>
+        </where>
+    </sql>
+
+    <!-- 分页查询主楼评论ID -->
+    <select id="pageMainIds" resultType="long">
+        SELECT c.id
+        FROM comment c
+        <include refid="mainCondition"/>
+        ORDER BY c.is_top DESC, c.create_time DESC
+    </select>
+
+    <!-- 根据ID集合查询完整评论VO -->
+    <select id="selectByIds" resultType="com.blog.pojo.vo.CommentVo">
+        <include refid="commentSelect"/>
+        WHERE c.id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+        ORDER BY c.is_top DESC, c.create_time DESC
+    </select>
+
+    <!-- 递归查询主楼下的全部回复(多级嵌套) -->
+    <select id="selectRepliesByParentIds" resultType="com.blog.pojo.vo.CommentVo">
+        WITH RECURSIVE reply_tree AS (
+            SELECT c.id
+            FROM comment c
+            WHERE c.delete_flag = 0
+              AND c.parent_id IN
+              <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            UNION ALL
+            SELECT c.id
+            FROM comment c
+            INNER JOIN reply_tree rt ON c.parent_id = rt.id
+            WHERE c.delete_flag = 0
+        )
+        <include refid="commentSelect"/>
+        WHERE c.id IN (SELECT id FROM reply_tree)
+        <if test="status != null">AND c.status = #{status}</if>
+        ORDER BY c.create_time ASC
+    </select>
+
+    <!-- 根据ID查询评论 -->
+    <select id="getById" resultType="com.blog.pojo.entity.Comment">
+        SELECT *
+        FROM comment
+        WHERE id = #{id}
+    </select>
+
+    <!-- 更新评论状态/置顶 -->
+    <update id="update">
+        UPDATE comment
+        <set>
+            <if test="status != null">status = #{status},</if>
+            <if test="isTop != null">is_top = #{isTop},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 新增评论(后台回复) -->
+    <insert id="add" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO comment(
+            type, source_id, msg_type, parent_id, reply_user_id, reply_user_nickname,
+            user_id, user_nickname, user_avatar, content, like_num, status, is_top,
+            delete_flag, create_time, update_time
+        )
+        VALUES (
+            #{type}, #{sourceId}, #{msgType}, #{parentId}, #{replyUserId}, #{replyUserNickname},
+            #{userId}, #{userNickname}, #{userAvatar}, #{content}, #{likeNum}, #{status}, #{isTop},
+            #{deleteFlag}, #{createTime}, #{updateTime}
+        )
+    </insert>
+
+    <!-- 批量逻辑删除(含其下二级回复) -->
+    <update id="logicDelete">
+        UPDATE comment
+        SET delete_flag = 1, update_time = NOW()
+        WHERE delete_flag = 0
+          AND (
+              id IN
+              <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+              OR parent_id IN
+              <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+          )
+    </update>
+
+    <!-- 批量物理删除(含其下二级回复) -->
+    <delete id="delete">
+        DELETE FROM comment
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+           OR parent_id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+
+</mapper>

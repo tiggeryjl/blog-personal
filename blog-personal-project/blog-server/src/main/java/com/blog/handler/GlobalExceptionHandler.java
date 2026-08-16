@@ -8,6 +8,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.sql.SQLIntegrityConstraintViolationException;
@@ -87,6 +88,22 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     public Result<?> authError() {
         return Result.error(401, "认证失败，请重新登录");
+    }
+
+    /**
+     * 参数校验异常
+     *
+     * @param ex 参数校验异常
+     * @return 统一结果
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Result<?> methodArgumentNotValid(MethodArgumentNotValidException ex) {
+        log.error("参数校验失败：{}", ex.getMessage());
+        String msg = ex.getBindingResult().getFieldErrors().stream()
+                .findFirst()
+                .map(fieldError -> fieldError.getDefaultMessage())
+                .orElse("参数校验失败");
+        return Result.error(400, msg);
     }
 
 

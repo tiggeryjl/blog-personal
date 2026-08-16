@@ -4,10 +4,8 @@ import com.alibaba.fastjson.JSON;
 import com.blog.config.SpringContextHolder;
 import com.blog.pojo.dto.SysNoticeDTO;
 import com.blog.service.JwtService;
-import com.blog.utils.JwtUtil;
 import jakarta.websocket.server.ServerEndpoint;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnOpen;
@@ -17,7 +15,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import static org.springframework.ai.model.ModelOptionsUtils.OBJECT_MAPPER;
 
 @Slf4j
 @Component
