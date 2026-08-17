@@ -2,6 +2,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Minus } from '@element-plus/icons-vue'
+import PermissionViewTip from '@/components/PermissionViewTip.vue'
 import { findAllApi, addApi, queryInfoApi, updateApi, updateStatusApi, deleteCategoryApi } from '@/api/category.js'
 import { findAllTagApi, addTagApi, queryInfoTagApi, updateTagApi, updateTagStatusApi, deleteTagApi } from '@/api/tag.js'
 
@@ -305,18 +306,19 @@ onMounted(() => {
 <template>
   <div class="main-container">
     <h1>分类标签管理</h1>
+    <PermissionViewTip :perms="['sys:category:add','sys:category:edit','sys:category:delete']" />
 
     <el-tabs v-model="activeTab">
       <!-- 分类 -->
       <el-tab-pane label="分类管理" name="category">
         <div class="tab-content">
           <div class="top-bar">
-            <el-button type="primary" @click="openAddCate">
+            <el-button v-perm="'sys:category:add'" type="primary" @click="openAddCate">
               <el-icon>
                 <Plus />
               </el-icon> 新增分类
             </el-button>
-            <el-button type="danger" @click="delCates">
+            <el-button v-perm="'sys:category:delete'" type="danger" @click="delCates">
               <el-icon>
                 <Minus />
               </el-icon> 批量删除
@@ -336,10 +338,10 @@ onMounted(() => {
             <el-table-column label="修改时间" prop="updateTime" width="190" align="center" />
             <el-table-column label="操作" width="220" align="center">
               <template #default="{ row }">
-                <el-button link type="primary" @click="openEditCate(row.id)">编辑</el-button>
-                <el-button link type="warning" @click="categoryStatus(row)">{{ row.status ? '禁用' : '启用'
+                <el-button link v-perm="'sys:category:edit'" type="primary" @click="openEditCate(row.id)">编辑</el-button>
+                <el-button link v-perm="'sys:category:edit'" type="warning" @click="categoryStatus(row)">{{ row.status ? '禁用' : '启用'
                 }}</el-button>
-                <el-button link type="danger" @click="delCate(row.id)">删除</el-button>
+                <el-button link v-perm="'sys:category:delete'" type="danger" @click="delCate(row.id)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -350,12 +352,12 @@ onMounted(() => {
       <el-tab-pane label="标签管理" name="tag">
         <div class="tab-content">
           <div class="top-bar">
-            <el-button type="primary" @click="openAddTag">
+            <el-button v-perm="'sys:category:add'" type="primary" @click="openAddTag">
               <el-icon>
                 <Plus />
               </el-icon> 新增标签
             </el-button>
-            <el-button type="danger" @click="delTags">
+            <el-button v-perm="'sys:category:delete'" type="danger" @click="delTags">
               <el-icon>
                 <Minus />
               </el-icon> 批量删除
@@ -374,9 +376,9 @@ onMounted(() => {
             <el-table-column label="修改时间" prop="updateTime" width="180" align="center" />
             <el-table-column label="操作" width="220" align="center">
               <template #default="{ row }">
-                <el-button link type="primary" @click="openEditTag(row.id)">编辑</el-button>
-                <el-button link type="warning" @click="tagStatus(row)">{{ row.status ? '禁用' : '启用' }}</el-button>
-                <el-button link type="danger" @click="delTag(row.id)">删除</el-button>
+                <el-button link v-perm="'sys:category:edit'" type="primary" @click="openEditTag(row.id)">编辑</el-button>
+                <el-button link v-perm="'sys:category:edit'" type="warning" @click="tagStatus(row)">{{ row.status ? '禁用' : '启用' }}</el-button>
+                <el-button link v-perm="'sys:category:delete'" type="danger" @click="delTag(row.id)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>

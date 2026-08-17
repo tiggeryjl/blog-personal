@@ -8,13 +8,17 @@ import com.blog.mapper.ArticleMapper;
 import com.blog.mapper.ArticleTagMapper;
 import com.blog.mapper.TagMapper;
 import com.blog.pojo.dto.CategoryDTO;
+import com.blog.pojo.dto.RecyclePageQueryDTO;
 import com.blog.pojo.dto.TagDTO;
 import com.blog.pojo.entity.Category;
 import com.blog.pojo.entity.Tag;
 import com.blog.pojo.vo.CategoryVo;
 import com.blog.pojo.vo.OptionVO;
 import com.blog.pojo.vo.TagVo;
+import com.blog.result.PageResult;
 import com.blog.service.TagService;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -91,17 +95,54 @@ public class TagServiceImpl implements TagService {
     }
 
     /**
-     * 删除标签
+     * 逻辑删除标签（移入回收站）
      * @param ids
      */
     @Override
     public void delete(List<Long> ids) {
         List<Long> linkedArticleIds=articleTagMapper.selectRelationTagIds(ids);
         if (linkedArticleIds.isEmpty()) {
-            tagMapper.delete(ids);
+            tagMapper.logicDelete(ids);
         } else {
             throw new CategoryException(MessageConstant.ASSOCIATED_TAG_ARTICLES);
         }
+    }
+
+    /**
+     * 分页查询逻辑删除的标签（回收站）
+     * @param params 查询参数
+     */
+    @Override
+    public PageResult recyclePageQuery(RecyclePageQueryDTO params) {
+        PageHelper.startPage(params.getPage(), params.getPageSize());
+        List<TagVo> tagList = tagMapper.recyclePageQuery(params);
+        PageInfo<TagVo> pageInfo = new PageInfo<>(tagList);
+        return new PageResult(pageInfo.getTotal(), pageInfo.getList());
+    }
+
+    /**
+     * 批量恢复（回收站 -> 正常列表）
+     * @param ids 标签ID集合
+     */
+    @Override
+    public void recover(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new CategoryException("请选择要恢复的标签");
+        }
+        tagMapper.recover(ids);
+    }
+
+    /**
+     * 回收站彻底删除标签
+     * @param ids 标签ID集合
+     */
+    @Override
+    public void recycleDelete(List<Long> ids) {
+        List<Long> linkedArticleIds = articleTagMapper.selectRelationTagIds(ids);
+        if (!linkedArticleIds.isEmpty()) {
+            throw new CategoryException(MessageConstant.ASSOCIATED_TAG_ARTICLES);
+        }
+        tagMapper.deleteBatch(ids);
     }
 
     /**

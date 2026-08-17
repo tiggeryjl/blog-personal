@@ -34,6 +34,13 @@ public interface ArticleMapper {
     List<ArticleVo> pageQurey(ArticlePageQueryDTO params);
 
     /**
+     * 分页查询逻辑删除的文章（回收站）
+     * @param params
+     * @return
+     */
+    List<ArticleVo> recyclePageQuery(ArticlePageQueryDTO params);
+
+    /**
      * 统计总数
      * @param params
      * @return
@@ -82,6 +89,12 @@ public interface ArticleMapper {
      * @param ids
      */
     void deleteBatchLogic(List<Long> ids, Integer deleteFlag);
+
+    /**
+     * 批量恢复（逻辑删除 -> 正常）
+     * @param ids
+     */
+    void recoverBatch(@Param("ids") List<Long> ids);
 
     /**
      * 批量永久删除

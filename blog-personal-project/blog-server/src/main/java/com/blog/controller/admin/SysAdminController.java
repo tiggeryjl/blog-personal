@@ -131,7 +131,7 @@ public class SysAdminController {
      * 新增用户
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:user:add')")
+    @PreAuthorize("hasPermission(null,'sys:user:add')")
     @PostMapping("/add")
     public Result<RoleSelectVO> add(@RequestBody UserDTO userDTO){
         log.info("新增用户:{}",userDTO);
@@ -156,7 +156,7 @@ public class SysAdminController {
      * @param userDTO
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:user:edit')")
+    @PreAuthorize("hasPermission(null,'sys:user:edit')")
     @PutMapping("/update")
     public Result update(@RequestBody UserDTO userDTO){
         log.info("修改用户:{}", userDTO);
@@ -170,7 +170,7 @@ public class SysAdminController {
      * @param status
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:user:edit')")
+    @PreAuthorize("hasPermission(null,'sys:user:edit')")
     @PutMapping("/{id}/status/{status}")
     public Result updateStatus(@PathVariable Long id, @PathVariable Integer status){
         log.info("启用禁用用户{}的状态{}",id,status);
@@ -182,6 +182,7 @@ public class SysAdminController {
      * 获取用户角色集合
      * @return
      */
+    @PreAuthorize("hasPermission(null,'sys:user:add') or hasPermission(null,'sys:user:role')")
     @GetMapping("/getRoleList")
     public Result<List<RoleSelectVO>> getRoleList(){
         log.info("获取用户角色集合");
@@ -193,7 +194,7 @@ public class SysAdminController {
      * 分配用户角色
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:user:role')")
+    @PreAuthorize("hasPermission(null,'sys:user:role')")
     @PutMapping("/updateRole")
     public Result updateRole(@RequestBody UserRoleAssignDTO userRoleAssignDTO){
         log.info("分配用户角色:{}", userRoleAssignDTO);
@@ -207,7 +208,7 @@ public class SysAdminController {
      * @param ids
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:user:delete')")
+    @PreAuthorize("hasPermission(null,'sys:user:delete')")
     @DeleteMapping("/logicDelete")
     public Result logicDelete(@RequestParam List<Long> ids){
         log.info("逻辑删除用户的ids{}",ids);
@@ -220,7 +221,7 @@ public class SysAdminController {
      * @param param
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:recycleUser:list')")
+    @PreAuthorize("hasPermission(null,'sys:recycleUser:list')")
     @GetMapping("/getLogicDelete")
     public Result<PageResult> getLogicDelete(UserPageQueryDTO param) {
         log.info("获取逻辑删除用户信息{}", param);
@@ -233,7 +234,7 @@ public class SysAdminController {
      * @param id
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:recycleUser:recycle')")
+    @PreAuthorize("hasPermission(null,'sys:recycleUser:recycle')")
     @PutMapping("/recover")
     public Result recover(@RequestParam Long id) {
         log.info("恢复用户的id{}", id);
@@ -246,7 +247,7 @@ public class SysAdminController {
      * @param ids
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:recycleUser:delete')")
+    @PreAuthorize("hasPermission(null,'sys:recycleUser:delete')")
     @DeleteMapping()
     public Result delete(@RequestParam List<Long> ids){
         log.info("彻底删除用户的ids{}",ids);

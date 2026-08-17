@@ -1,10 +1,12 @@
 package com.blog.service;
 
 import com.blog.pojo.dto.CategoryDTO;
+import com.blog.pojo.dto.RecyclePageQueryDTO;
 import com.blog.pojo.dto.TagDTO;
 import com.blog.pojo.vo.CategoryVo;
 import com.blog.pojo.vo.OptionVO;
 import com.blog.pojo.vo.TagVo;
+import com.blog.result.PageResult;
 
 import java.util.List;
 
@@ -42,10 +44,29 @@ public interface TagService {
     void updateStatus(Long id, Integer status);
 
     /**
-     * 删除标签
+     * 逻辑删除标签（移入回收站）
      * @param ids
      */
     void delete(List<Long> ids);
+
+    /**
+     * 分页查询逻辑删除的标签（回收站）
+     * @param params 查询参数
+     * @return 分页结果
+     */
+    PageResult recyclePageQuery(RecyclePageQueryDTO params);
+
+    /**
+     * 批量恢复（回收站 -> 正常列表）
+     * @param ids 标签ID集合
+     */
+    void recover(List<Long> ids);
+
+    /**
+     * 回收站彻底删除标签
+     * @param ids 标签ID集合
+     */
+    void recycleDelete(List<Long> ids);
 
     /**
      * 获取标签下拉框数据

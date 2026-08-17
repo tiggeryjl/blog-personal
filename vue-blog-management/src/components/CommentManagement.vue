@@ -2,6 +2,7 @@
 import { ref, reactive, watch, computed, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import MyPagination from '@/components/MyPagination.vue';
+import PermissionViewTip from '@/components/PermissionViewTip.vue';
 import {
   Search,
   Refresh,
@@ -357,6 +358,7 @@ onMounted(() => {
         </el-button>
       </div>
     </div>
+    <PermissionViewTip :perms="['sys:comment:audit','sys:comment:delete']" />
 
     <!-- 查询条件区域 -->
     <el-card class="query-card" shadow="hover">

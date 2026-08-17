@@ -1,12 +1,15 @@
 package com.blog.controller.admin;
 
 import com.blog.pojo.dto.TagDTO;
+import com.blog.pojo.dto.RecyclePageQueryDTO;
 import com.blog.pojo.vo.OptionVO;
 import com.blog.pojo.vo.TagVo;
+import com.blog.result.PageResult;
 import com.blog.result.Result;
 import com.blog.service.TagService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,6 +30,7 @@ public class TagController {
      * @param tagDTO
      * @return
      */
+    @PreAuthorize("hasPermission(null,'sys:category:add')")
     @PostMapping("/add")
     public Result add(@RequestBody TagDTO tagDTO){
         log.info("新增标签{}",tagDTO);
@@ -39,6 +43,7 @@ public class TagController {
      * @param id
      * @return
      */
+    @PreAuthorize("hasPermission(null,'sys:category:list')")
     @GetMapping("/{id}")
     public Result<TagVo> getById(@PathVariable Long id){
         log.info("根据标签id查询{}",id);
@@ -50,6 +55,7 @@ public class TagController {
      * 查询所有标签信息
      * @return
      */
+    @PreAuthorize("hasPermission(null,'sys:category:list')")
     @GetMapping()
     public Result<List<TagVo>> findAll(){
         log.info("查询所有标签信息");
@@ -62,6 +68,7 @@ public class TagController {
      * @param tagDTO
      * @return
      */
+    @PreAuthorize("hasPermission(null,'sys:category:edit')")
     @PutMapping("/update")
     public Result update(@RequestBody TagDTO tagDTO){
         log.info("修改标签{}",tagDTO);
@@ -74,6 +81,7 @@ public class TagController {
      * @param id
      * @return
      */
+    @PreAuthorize("hasPermission(null,'sys:category:edit')")
     @PutMapping("/{id}/status/{status}")
     public Result updateStatus( @PathVariable Long id, @PathVariable Integer status){
         log.info("启用禁用标签{}的状态{}",id,status);
@@ -82,14 +90,53 @@ public class TagController {
     }
 
     /**
-     * 删除标签
+     * 逻辑删除标签（移入回收站）
      * @param ids
      * @return
      */
+    @PreAuthorize("hasPermission(null,'sys:category:delete')")
     @DeleteMapping()
     public Result delete(@RequestParam List<Long> ids){
-        log.info("删除标签的ids{}",ids);
+        log.info("逻辑删除标签的ids{}",ids);
         tagService.delete(ids);
+        return Result.success();
+    }
+
+    /**
+     * 分页查询逻辑删除的标签（回收站）
+     * @param param 查询参数
+     * @return 分页结果
+     */
+    @PreAuthorize("hasPermission(null,'sys:recycleCategoryTag:list')")
+    @GetMapping("/recycleList")
+    public Result<PageResult> getRecycleList(RecyclePageQueryDTO param) {
+        log.info("分页查询回收站标签列表:{}", param);
+        return Result.success(tagService.recyclePageQuery(param));
+    }
+
+    /**
+     * 批量恢复标签（回收站 -> 正常列表）
+     * @param ids 标签ID集合
+     * @return 统一结果
+     */
+    @PreAuthorize("hasPermission(null,'sys:recycleCategoryTag:recycle')")
+    @PutMapping("/recover")
+    public Result recover(@RequestParam List<Long> ids) {
+        log.info("恢复回收站标签ids:{}", ids);
+        tagService.recover(ids);
+        return Result.success();
+    }
+
+    /**
+     * 回收站彻底删除标签
+     * @param ids 标签ID集合
+     * @return 统一结果
+     */
+    @PreAuthorize("hasPermission(null,'sys:recycleCategoryTag:delete')")
+    @DeleteMapping("/recycleDelete")
+    public Result recycleDelete(@RequestParam List<Long> ids) {
+        log.info("彻底删除回收站标签ids:{}", ids);
+        tagService.recycleDelete(ids);
         return Result.success();
     }
 
@@ -97,6 +144,7 @@ public class TagController {
      * 获取标签下拉框数据
      * @return
      */
+    @PreAuthorize("hasPermission(null,'sys:category:list') or hasPermission(null,'sys:article:add') or hasPermission(null,'sys:article:edit')")
     @GetMapping("/tagsOptions")
     public Result<List<OptionVO>> getTagOptions(){
         log.info("获取标签下拉框数据");

@@ -64,6 +64,23 @@ public class CommentServiceImpl implements CommentService {
     }
 
     /**
+     * 分页查询逻辑删除的评论（回收站）
+     *
+     * @param commentPageQueryDTO 查询参数
+     * @return 分页结果
+     */
+    @Override
+    public PageResult recyclePageQuery(CommentPageQueryDTO commentPageQueryDTO) {
+        if (commentPageQueryDTO.getType() == null) {
+            throw new CommentException("评论类型不能为空");
+        }
+        PageHelper.startPage(commentPageQueryDTO.getPage(), commentPageQueryDTO.getPageSize());
+        List<CommentVo> commentList = commentMapper.recyclePageQuery(commentPageQueryDTO);
+        PageInfo<CommentVo> pageInfo = new PageInfo<>(commentList);
+        return new PageResult(pageInfo.getTotal(), pageInfo.getList());
+    }
+
+    /**
      * 平铺分页(关键字搜索场景)，并补齐回复对应的主楼上下文
      */
     private PageResult pageQueryFlat(CommentPageQueryDTO dto, Integer page, Integer pageSize) {
@@ -222,5 +239,19 @@ public class CommentServiceImpl implements CommentService {
             throw new CommentException("请选择要删除的评论");
         }
         commentMapper.delete(ids);
+    }
+
+    /**
+     * 批量恢复（回收站 -> 正常列表）
+     *
+     * @param ids 评论ID集合
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void recover(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new CommentException("请选择要恢复的评论");
+        }
+        commentMapper.recover(ids);
     }
 }

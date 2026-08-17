@@ -4,6 +4,7 @@ import com.blog.pojo.dto.CommentPageQueryDTO;
 import com.blog.pojo.entity.Comment;
 import com.blog.pojo.vo.CommentVo;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -20,6 +21,14 @@ public interface CommentMapper {
      * @return 评论列表
      */
     List<CommentVo> pageQuery(CommentPageQueryDTO params);
+
+    /**
+     * 分页查询逻辑删除的评论（回收站）
+     *
+     * @param params 查询参数
+     * @return 评论列表
+     */
+    List<CommentVo> recyclePageQuery(CommentPageQueryDTO params);
 
     /**
      * 分页查询主楼评论ID(仅 parent_id = 0)
@@ -81,4 +90,11 @@ public interface CommentMapper {
      * @param ids 评论ID集合
      */
     void delete(List<Long> ids);
+
+    /**
+     * 批量恢复（逻辑删除 -> 正常）
+     *
+     * @param ids 评论ID集合
+     */
+    void recover(@Param("ids") List<Long> ids);
 }

@@ -69,7 +69,7 @@ CREATE TABLE `sys_user`
 -- Dumping data for table `sys_user`
 --
 
-LOCK TABLES `sys_user` WRITE;
+# LOCK TABLES `sys_user` WRITE;
 /*!40000 ALTER TABLE `sys_user`
     DISABLE KEYS */;
 INSERT INTO `sys_user` (`id`, `nickname`, `username`, `phone`, `email`, `sex`, `password`, `salt`, `avatar`, `intro`,
@@ -86,7 +86,7 @@ VALUES (1, '风起云涌', 'yesir', '18260780529', '2087691050@qq.com', 1, 'd4b1
         '2023-06-01 17:45:40', '2023-06-01 17:45:40', NULL, NULL,NULL);
 /*!40000 ALTER TABLE `sys_user`
     ENABLE KEYS */;
-UNLOCK TABLES;
+# UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `sys_role`;
 /*!40101 SET @saved_cs_client = @@character_set_client */;
@@ -111,7 +111,7 @@ CREATE TABLE `sys_role`
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 -- 初始化3个角色
-LOCK TABLES `sys_role` WRITE;
+# LOCK TABLES `sys_role` WRITE;
 /*!40000 ALTER TABLE `sys_role`
     DISABLE KEYS */;
 INSERT INTO `sys_role` (`role_name`, `role_key`, `sort`, `remark`,`status`,`delete_flag`, `create_time`, `update_time`)
@@ -120,7 +120,7 @@ VALUES ('超级管理员', 'admin', 1, '拥有系统所有模块全部权限', 1
        ('数据分析员', 'viewer', 3, '仅所有模块查看权限，无新增编辑删除操作权限', 1,0,NOW(), NOW());
 /*!40000 ALTER TABLE `sys_role`
     ENABLE KEYS */;
-UNLOCK TABLES;
+# UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `sys_user_role`;
 /*!40101 SET @saved_cs_client = @@character_set_client */;
@@ -142,7 +142,7 @@ CREATE TABLE `sys_user_role`
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 -- 给原有3个用户分配初始角色
-LOCK TABLES `sys_user_role` WRITE;
+# LOCK TABLES `sys_user_role` WRITE;
 /*!40000 ALTER TABLE `sys_user_role`
     DISABLE KEYS */;
 INSERT INTO `sys_user_role` (`user_id`, `role_id`, `create_time`)
@@ -151,7 +151,7 @@ VALUES (1, 1, NOW()), -- yesir 超级管理员
        (3, 3, NOW()); -- wangfang 普通浏览员
 /*!40000 ALTER TABLE `sys_user_role`
     ENABLE KEYS */;
-UNLOCK TABLES;
+# UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `sys_menu`;
 /*!40101 SET @saved_cs_client = @@character_set_client */;
@@ -199,7 +199,7 @@ CREATE TABLE `sys_role_menu`
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 
-LOCK TABLES `sys_menu` WRITE, `sys_role_menu` WRITE;
+# LOCK TABLES `sys_menu` WRITE, `sys_role_menu` WRITE;
 /*!40000 ALTER TABLE `sys_menu` DISABLE KEYS */;
 /*!40000 ALTER TABLE `sys_role_menu` DISABLE KEYS */;
 
@@ -290,12 +290,51 @@ VALUES
 (59,55,'恢复角色', NULL, NULL, 'sys:recycleRole:recycle', 2, NULL, 1, 1,0,NOW(), NOW()),
 (60,55,'彻底删除角色', NULL, NULL, 'sys:recycleRole:delete', 2, NULL, 2, 1,0,NOW(), NOW()),
 (61,58,'恢复用户', NULL, NULL, 'sys:recycleUser:recycle', 2, NULL, 1, 1,0,NOW(), NOW()),
-(62,58,'彻底删除用户', NULL, NULL, 'sys:recycleUser:delete', 2, NULL, 2, 1,0,NOW(), NOW())
+(62,58,'彻底删除用户', NULL, NULL, 'sys:recycleUser:delete', 2, NULL, 2, 1,0,NOW(), NOW()),
+-- 作品回收站（中间层目录，component 留空，不能填 Layout）
+(63,53,'作品回收站', '/recycleBin/artwork', NULL, 'sys:recycleArtwork', 0, 'Folder', 4, 1,0,NOW(), NOW()),
+-- 文章回收站（页面）
+(64,63,'文章回收站', '/recycleBin/artwork/articleWork', 'recycleBin/artwork/articleWork/index', 'sys:recycleArticleWork:list', 1, 'Document', 1, 1,0,NOW(), NOW()),
+-- 日常回收站（页面）
+(65,63,'日常回收站', '/recycleBin/artwork/dailyWork', 'recycleBin/artwork/dailyWork/index', 'sys:recycleDailyWork:list', 1, 'Memo', 2, 1,0,NOW(), NOW()),
+-- 文章回收站按钮权限
+(66,64,'恢复文章', NULL, NULL, 'sys:recycleArticleWork:recycle', 2, NULL, 1, 1,0,NOW(), NOW()),
+(67,64,'彻底删除文章', NULL, NULL, 'sys:recycleArticleWork:delete', 2, NULL, 2, 1,0,NOW(), NOW()),
+-- 日常回收站按钮权限
+(68,65,'恢复日常', NULL, NULL, 'sys:recycleDailyWork:recycle', 2, NULL, 1, 1,0,NOW(), NOW()),
+(69,65,'彻底删除日常', NULL, NULL, 'sys:recycleDailyWork:delete', 2, NULL, 2, 1,0,NOW(), NOW()),
+-- 分类标签回收站（页面）
+(70,63,'分类标签回收站', '/recycleBin/artwork/categoryOrTag', 'recycleBin/artwork/categoryOrTag/index', 'sys:recycleCategoryTag:list', 1, 'Collection', 3, 1,0,NOW(), NOW()),
+(71,70,'恢复分类标签', NULL, NULL, 'sys:recycleCategoryTag:recycle', 2, NULL, 1, 1,0,NOW(), NOW()),
+(72,70,'彻底删除分类标签', NULL, NULL, 'sys:recycleCategoryTag:delete', 2, NULL, 2, 1,0,NOW(), NOW()),
+-- 评论回收站（目录，component 留空）
+(73,53,'评论回收站', '/recycleBin/comment', NULL, 'sys:recycleComment', 0, 'ChatDotRound', 5, 1,0,NOW(), NOW()),
+-- 评论回收站页面
+(74,73,'文章评论回收站', '/recycleBin/comment/articleComment', 'recycleBin/comment/articleComment/index', 'sys:recycleArticleComment:list', 1, 'ChatLineSquare', 1, 1,0,NOW(), NOW()),
+(75,73,'日常评论回收站', '/recycleBin/comment/dailyComment', 'recycleBin/comment/dailyComment/index', 'sys:recycleDailyComment:list', 1, 'ChatDotRound', 2, 1,0,NOW(), NOW()),
+(76,73,'留言评论回收站', '/recycleBin/comment/messageComment', 'recycleBin/comment/messageComment/index', 'sys:recycleMessageComment:list', 1, 'Message', 3, 1,0,NOW(), NOW()),
+-- 评论回收站按钮权限
+(77,74,'恢复评论', NULL, NULL, 'sys:recycleArticleComment:recycle', 2, NULL, 1, 1,0,NOW(), NOW()),
+(78,74,'彻底删除评论', NULL, NULL, 'sys:recycleArticleComment:delete', 2, NULL, 2, 1,0,NOW(), NOW()),
+(79,75,'恢复评论', NULL, NULL, 'sys:recycleDailyComment:recycle', 2, NULL, 1, 1,0,NOW(), NOW()),
+(80,75,'彻底删除评论', NULL, NULL, 'sys:recycleDailyComment:delete', 2, NULL, 2, 1,0,NOW(), NOW()),
+(81,76,'恢复评论', NULL, NULL, 'sys:recycleMessageComment:recycle', 2, NULL, 1, 1,0,NOW(), NOW()),
+(82,76,'彻底删除评论', NULL, NULL, 'sys:recycleMessageComment:delete', 2, NULL, 2, 1,0,NOW(), NOW())
 ;
 
 -- 1、超级管理员(role_id=1)：绑定全部菜单权限
+# INSERT INTO `sys_role_menu` (`role_id`, `menu_id`, `create_time`)
+# SELECT 1, id, NOW() FROM sys_menu;
+
+-- 1.1、幂等兜底：将新增菜单权限自动同步给超级管理员
+-- （防止 SQL 直插菜单后漏绑中间表；存量数据库可直接执行这一段）
 INSERT INTO `sys_role_menu` (`role_id`, `menu_id`, `create_time`)
-SELECT 1, id, NOW() FROM sys_menu;
+SELECT 1, sm.id, NOW()
+FROM `sys_menu` sm
+WHERE NOT EXISTS (
+    SELECT 1 FROM `sys_role_menu` srm
+    WHERE srm.role_id = 1 AND srm.menu_id = sm.id
+);
 
 -- 2、运营管理员(role_id=2)：只绑定内容管理、日常管理模块，排除【系统管理】（用户、角色管理）
 INSERT INTO `sys_role_menu` (`role_id`, `menu_id`, `create_time`)

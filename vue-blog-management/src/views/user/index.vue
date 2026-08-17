@@ -24,7 +24,7 @@ import {
 } from "@/api/admin.js";
 import { usePermissionStore } from "@/stores/permission";
 import { useUserStore } from "@/stores/userloginstatus";
-import { storeToRefs } from "pinia";
+import PermissionViewTip from "@/components/PermissionViewTip.vue";
 
 // 角色标识常量，只保留超管key用于判断
 const ROLE_KEY_SUPER = "admin";
@@ -34,7 +34,6 @@ const loginUser = userStr ? JSON.parse(userStr) : null;
 const loginUserId = ref(loginUser?.userInfo.id ?? null);
 
 const permissionStore = usePermissionStore();
-const { permissionList: permissions } = storeToRefs(permissionStore);
 
 //单独为上传图片功能设置请求头token，从pinia里拿
 const userStore = useUserStore();
@@ -443,6 +442,7 @@ onMounted(() => {
         >
       </div>
     </div>
+    <PermissionViewTip :perms="['sys:user:add','sys:user:edit','sys:user:delete','sys:user:role']" />
     <!-- 查询 -->
     <el-card shadow="hover" style="margin-bottom: 20px">
       <el-form :model="queryForm" :inline="true" @submit.prevent="getUserList">
@@ -604,7 +604,7 @@ onMounted(() => {
               "
             >
               <el-switch
-                v-if="permissions.includes('sys:user:role')"
+                v-if="permissionStore.hasPerm('sys:user:edit')"
                 v-model="row.status"
                 :disabled="row.id === loginUserId || isSuperUser(row)"
                 inline-prompt
@@ -663,7 +663,7 @@ onMounted(() => {
                 <template v-if="row.id === loginUserId && isSuperUser(row)">
                   <el-button
                     link
-                    v-if="permissions.includes('sys:user:edit')"
+                    v-perm="'sys:user:edit'"
                     type="primary"
                     icon="Edit"
                     @click="openEdit(row)"
@@ -676,7 +676,7 @@ onMounted(() => {
               <template v-else>
                 <el-button
                   link
-                  v-if="permissions.includes('sys:user:edit')"
+                  v-perm="'sys:user:edit'"
                   type="primary"
                   icon="Edit"
                   @click="openEdit(row)"
@@ -685,7 +685,7 @@ onMounted(() => {
                 <template v-if="row.id !== loginUserId">
                   <el-button
                     link
-                    v-if="permissions.includes('sys:user:role')"
+                    v-perm="'sys:user:role'"
                     type="warning"
                     icon="Edit"
                     @click="openRoleDialog(row)"
@@ -693,24 +693,13 @@ onMounted(() => {
                   >
                   <el-button
                     link
-                    v-if="permissions.includes('sys:user:delete')"
+                    v-perm="'sys:user:delete'"
                     type="danger"
                     icon="Delete"
                     @click="deleteUser(row.id)"
                     >删除</el-button
                   >
                 </template>
-
-                <span
-                  v-if="
-                    !permissions.includes('sys:user:edit') &&
-                    (row.id === loginUserId ||
-                      (!permissions.includes('sys:user:role') &&
-                        !permissions.includes('sys:user:delete')))
-                  "
-                  style="color: #999; font-size: 13px"
-                  >无操作权限</span
-                >
               </template>
             </div>
           </template>

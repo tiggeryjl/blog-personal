@@ -1,6 +1,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import MyPagination from '@/components/MyPagination.vue'
+import PermissionViewTip from '@/components/PermissionViewTip.vue'
 import { ElMessage } from 'element-plus'
 import {
   Plus, Search, Refresh, View, Edit, Delete,
@@ -325,12 +326,13 @@ onMounted(() => {
     <!-- 页面标题 -->
     <div class="page-header">
       <h1>日常管理</h1>
-      <el-button type="primary" @click="goto('/editInput')">
+      <el-button v-perm="'sys:works:add'" type="primary" @click="goto('/editInput')">
         <el-icon>
           <Plus />
         </el-icon> 发布日常
       </el-button>
     </div>
+    <PermissionViewTip :perms="['sys:works:add','sys:works:edit','sys:works:delete']" />
 
     <!-- 查询条件区域 -->
     <el-card class="query-card" shadow="hover">
@@ -454,35 +456,35 @@ onMounted(() => {
           <template #default="scope">
             <div class="action-buttons">
               <el-button type="primary" link :icon="View" @click="viewArticle(scope.row)">预览</el-button>
-              <el-button link :icon="Edit" @click="editArticle(scope.row)">修改</el-button>
+              <el-button v-perm="'sys:works:edit'" link :icon="Edit" @click="editArticle(scope.row)">修改</el-button>
 
-              <el-button v-if="[0, 3].includes(scope.row.status)" type="success" link :icon="Position"
+              <el-button v-perm="'sys:works:edit'" v-if="[0, 3].includes(scope.row.status)" type="success" link :icon="Position"
                 @click="publishArticle(scope.row.id)">立即发布</el-button>
 
-              <el-button v-if="scope.row.status === 1" type="primary" link :icon="Upload" @click="toggleTop(scope.row)">
+              <el-button v-perm="'sys:works:edit'" v-if="scope.row.status === 1" type="primary" link :icon="Upload" @click="toggleTop(scope.row)">
                 {{ scope.row.isTop ? '取消置顶' : '置顶' }}
               </el-button>
 
-              <el-button v-if="scope.row.status === 1" type="warning" link :icon="Hide"
+              <el-button v-perm="'sys:works:edit'" v-if="scope.row.status === 1" type="warning" link :icon="Hide"
                 @click="setPrivate(scope.row.id)">设为私密</el-button>
 
 
-              <el-button v-if="scope.row.status === 0" type="warning" link :icon="Timer"
+              <el-button v-perm="'sys:works:edit'" v-if="scope.row.status === 0" type="warning" link :icon="Timer"
                 @click="setTimed(scope.row.id)">定时发布</el-button>
 
-              <el-button v-if="scope.row.status === 1" type="danger" link :icon="Close"
+              <el-button v-perm="'sys:works:edit'" v-if="scope.row.status === 1" type="danger" link :icon="Close"
                 @click="offlineArticle(scope.row.id)">下架</el-button>
 
-              <el-button v-if="scope.row.status === 2" type="success" link :icon="Check"
+              <el-button v-perm="'sys:works:edit'" v-if="scope.row.status === 2" type="success" link :icon="Check"
                 @click="onlineArticle(scope.row.id)">上架</el-button>
 
-              <el-button v-if="scope.row.status === 3" type="warning" link :icon="Timer"
+              <el-button v-perm="'sys:works:edit'" v-if="scope.row.status === 3" type="warning" link :icon="Timer"
                 @click="cancelTimed(scope.row.id)">取消定时</el-button>
 
-              <el-button v-if="scope.row.status === 4" type="warning" link :icon="View"
+              <el-button v-perm="'sys:works:edit'" v-if="scope.row.status === 4" type="warning" link :icon="View"
                 @click="cancelPrivate(scope.row.id)">取消私密</el-button>
 
-              <el-button type="danger" link :icon="Delete" @click="deleteArticle(scope.row.id)">删除</el-button>
+              <el-button v-perm="'sys:works:delete'" type="danger" link :icon="Delete" @click="deleteArticle(scope.row.id)">删除</el-button>
             </div>
           </template>
         </el-table-column>

@@ -19,7 +19,39 @@
         WHERE id = #{id}
     </update>
 
-    <delete id="delete">
+    <!-- 批量逻辑删除 -->
+    <update id="logicDelete">
+        update tag set delete_flag = 1, update_time = NOW()
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- 分页查询逻辑删除的标签（回收站） -->
+    <select id="recyclePageQuery" resultType="com.blog.pojo.vo.TagVo">
+        select *
+        from tag
+        <where>
+            delete_flag = 1
+            <if test="keyword != null and keyword != ''">
+                AND name LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+        </where>
+        ORDER BY update_time DESC, create_time DESC
+    </select>
+
+    <!-- 批量恢复（逻辑删除 -> 正常） -->
+    <update id="recover">
+        update tag set delete_flag = 0, update_time = NOW()
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- 批量彻底删除 -->
+    <delete id="deleteBatch">
         delete from tag
         where id in
         <foreach collection="ids" item="id" open="(" separator="," close=")">

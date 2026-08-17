@@ -1,12 +1,8 @@
 <script setup>
 import { ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { usePermissionStore } from '@/stores/permission'
-import { storeToRefs } from 'pinia'
 import { getRoleListApi, addRoleApi, updateRoleApi, deleteRoleApi, getRoleMenuTreeApi, assignRoleMenuApi } from '@/api/system/role'
-
-const permissionStore = usePermissionStore()
-const { permissionList: permissions } = storeToRefs(permissionStore)
+import PermissionViewTip from '@/components/PermissionViewTip.vue'
 
 const loading = ref(false)
 const roleList = ref([])
@@ -208,6 +204,7 @@ onMounted(() => {
 <template>
   <div class="role-container">
     <h1 style="margin: 10px;">角色管理</h1>
+    <PermissionViewTip :perms="['sys:role:add','sys:role:edit','sys:role:assign','sys:role:delete']" />
     <el-card shadow="never">
       <div class="search-bar">
 
@@ -225,7 +222,7 @@ onMounted(() => {
         <el-form-item>
           <el-button type="primary" @click="getRoleList">查询</el-button>
           <el-button @click="resetQuery">重置</el-button>
-          <el-button type="success" @click="openAdd" v-if="permissions.includes('sys:role:add')">新增角色</el-button>
+          <el-button type="success" @click="openAdd" v-perm="'sys:role:add'">新增角色</el-button>
         </el-form-item>
       </div>
 
@@ -249,11 +246,11 @@ onMounted(() => {
               style="color:#606266;background:#f5f7fa;padding:4px 8px;border-radius:4px;font-size:13px;">系统超级管理员，禁止操作</span>
             <template v-else>
               <el-button type="primary" link @click="openEdit(scope.row)"
-                v-if="permissions.includes('sys:role:edit') && scope.row.roleKey !== 'admin'">编辑</el-button>
+                v-perm="'sys:role:edit'">编辑</el-button>
               <el-button type="success" link @click="openAuth(scope.row)"
-                v-if="permissions.includes('sys:role:edit') && scope.row.roleKey !== 'admin'">分配权限</el-button>
+                v-perm="'sys:role:assign'">分配权限</el-button>
               <el-button type="danger" link @click="handleDelete(scope.row.id)"
-                v-if="permissions.includes('sys:role:delete') && scope.row.roleKey !== 'admin'">删除</el-button>
+                v-perm="'sys:role:delete'">删除</el-button>
             </template>
           </template>
         </el-table-column>

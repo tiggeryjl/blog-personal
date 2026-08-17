@@ -68,6 +68,76 @@ public class CommentController {
     }
 
     /**
+     * 分页查询逻辑删除的文章评论（回收站）
+     *
+     * @param param 查询参数
+     * @return 分页结果
+     */
+    @PreAuthorize("hasPermission(null,'sys:recycleArticleComment:list')")
+    @GetMapping("/recycle/article/list")
+    public Result<PageResult> getRecycleArticleCommentList(CommentPageQueryDTO param) {
+        param.setType(0);
+        log.info("分页查询回收站文章评论:{}", param);
+        return Result.success(commentService.recyclePageQuery(param));
+    }
+
+    /**
+     * 分页查询逻辑删除的日常评论（回收站）
+     *
+     * @param param 查询参数
+     * @return 分页结果
+     */
+    @PreAuthorize("hasPermission(null,'sys:recycleDailyComment:list')")
+    @GetMapping("/recycle/daily/list")
+    public Result<PageResult> getRecycleDailyCommentList(CommentPageQueryDTO param) {
+        param.setType(1);
+        log.info("分页查询回收站日常评论:{}", param);
+        return Result.success(commentService.recyclePageQuery(param));
+    }
+
+    /**
+     * 分页查询逻辑删除的留言评论（回收站）
+     *
+     * @param param 查询参数
+     * @return 分页结果
+     */
+    @PreAuthorize("hasPermission(null,'sys:recycleMessageComment:list')")
+    @GetMapping("/recycle/message/list")
+    public Result<PageResult> getRecycleMessageCommentList(CommentPageQueryDTO param) {
+        param.setType(2);
+        log.info("分页查询回收站留言评论:{}", param);
+        return Result.success(commentService.recyclePageQuery(param));
+    }
+
+    /**
+     * 批量恢复评论（回收站 -> 正常列表）
+     *
+     * @param ids 评论ID集合
+     * @return 统一结果
+     */
+    @PreAuthorize("hasAnyAuthority('sys:recycleArticleComment:recycle','sys:recycleDailyComment:recycle','sys:recycleMessageComment:recycle')")
+    @PutMapping("/recover")
+    public Result recover(@RequestParam List<Long> ids) {
+        log.info("恢复回收站评论ids:{}", ids);
+        commentService.recover(ids);
+        return Result.success();
+    }
+
+    /**
+     * 回收站批量彻底删除评论
+     *
+     * @param ids 评论ID集合
+     * @return 统一结果
+     */
+    @PreAuthorize("hasAnyAuthority('sys:recycleArticleComment:delete','sys:recycleDailyComment:delete','sys:recycleMessageComment:delete')")
+    @DeleteMapping("/recycleDelete")
+    public Result recycleDelete(@RequestParam List<Long> ids) {
+        log.info("彻底删除回收站评论ids:{}", ids);
+        commentService.delete(ids);
+        return Result.success();
+    }
+
+    /**
      * 审核/隐藏评论
      *
      * @param commentStatusDTO 评论ID与目标状态

@@ -25,6 +25,13 @@ public class CustomPermissionEvaluator implements PermissionEvaluator {
 
         // 获取登录用户信息
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+
+        // 通配符权限直接放行（超级管理员装载权限时使用）
+        if (loginUser.getPermissionList() != null
+                && loginUser.getPermissionList().contains("*:*:*")) {
+            return true;
+        }
+
         List<SysRole> roleList = loginUser.getSysUser().getRoleList();
 
         // 超级管理员直接放行所有权限

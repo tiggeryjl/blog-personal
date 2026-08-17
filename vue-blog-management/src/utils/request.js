@@ -86,7 +86,11 @@ request.interceptors.response.use(
       }
     } else {
       if (!originalReq.url.includes('refreshToken')) {
-        ElMessage.error('接口访问异常!');
+        if (error.response?.status === 403) {
+          ElMessage.error('权限不足，禁止访问');
+        } else {
+          ElMessage.error('接口访问异常!');
+        }
       }
     }
     return Promise.reject(error);

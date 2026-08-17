@@ -23,6 +23,12 @@ public interface ArticleService {
     PageResult pageQurey(ArticlePageQueryDTO articlePageQueryDTO);
 
     /**
+     * 分页查询逻辑删除的文章（回收站）
+     * @param articlePageQueryDTO
+     */
+    PageResult recyclePageQuery(ArticlePageQueryDTO articlePageQueryDTO);
+
+    /**
      * 根据ID查询文章
      * @param id
      * @return
@@ -57,6 +63,12 @@ public interface ArticleService {
      * @param ids
      */
     void delete(List<Long> ids);
+
+    /**
+     * 批量恢复（回收站 -> 正常列表）
+     * @param ids
+     */
+    void recover(List<Long> ids);
 
     /**
      * 修改文章状态

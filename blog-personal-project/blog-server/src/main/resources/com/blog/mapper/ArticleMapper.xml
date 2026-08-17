@@ -164,6 +164,60 @@
         ORDER BY a.is_top DESC, a.publish_time DESC
     </select>
 
+    <!-- 分页查询逻辑删除的文章（回收站） -->
+    <select id="recyclePageQuery" resultMap="ArticleVoResultMap">
+        SELECT
+            a.id,
+            a.title,
+            a.summary,
+            a.content,
+            a.category_id,
+            a.cover,
+            a.status,
+            a.is_top,
+            a.is_hot,
+            a.view_num,
+            a.like_num,
+            a.comment_num,
+            a.create_time,
+            a.update_time,
+            a.publish_time,
+            a.timed_publish_time,
+            a.user_id,
+            a.sort,
+            u.nickname AS user_nickname,
+            u.avatar   AS user_avatar,
+            c.name     AS category_name,
+            (
+            SELECT GROUP_CONCAT(t.id SEPARATOR ',')
+            FROM tag t
+            INNER JOIN article_tag at ON t.id = at.tag_id
+            WHERE at.article_id = a.id
+            ) AS tags_str
+        from article a
+        LEFT JOIN sys_user u ON a.user_id = u.id
+        LEFT JOIN category c ON a.category_id = c.id
+        <where>
+            a.delete_flag = 1
+            <if test="title != null and title != ''">
+                AND a.title LIKE CONCAT('%', #{title}, '%')
+            </if>
+            <if test="status != null">
+                AND a.status = #{status}
+            </if>
+        </where>
+        ORDER BY a.update_time DESC, a.create_time DESC
+    </select>
+
+    <!-- 批量恢复（逻辑删除 -> 正常） -->
+    <update id="recoverBatch">
+        update article set delete_flag = 0, update_time = NOW()
+        where id in
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
     <!-- 根据ID查询文章完整信息（含分类、作者、标签） -->
     <select id="getArticleVoById" resultMap="ArticleVoResultMap">
         SELECT

@@ -29,6 +29,12 @@ public interface SysMenuMapper {
     List<String> selectPermsByUserId(Long userId);
 
     /**
+     * 查询所有启用的权限标识（超级管理员直接拥有全部菜单权限）
+     * @return 权限标识集合
+     */
+    List<String> selectAllPerms();
+
+    /**
      * 根据状态获取权限集合
      * @param status
      * @return

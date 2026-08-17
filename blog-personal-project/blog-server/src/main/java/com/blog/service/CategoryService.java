@@ -1,8 +1,10 @@
 package com.blog.service;
 
 import com.blog.pojo.dto.CategoryDTO;
+import com.blog.pojo.dto.RecyclePageQueryDTO;
 import com.blog.pojo.vo.CategoryVo;
 import com.blog.pojo.vo.OptionVO;
+import com.blog.result.PageResult;
 
 import java.util.List;
 
@@ -40,10 +42,29 @@ public interface CategoryService {
     void updateStatus(Long id, Integer status);
 
     /**
-     * 删除分类
+     * 逻辑删除分类（移入回收站）
      * @param ids
      */
     void delete(List<Long> ids);
+
+    /**
+     * 分页查询逻辑删除的分类（回收站）
+     * @param params 查询参数
+     * @return 分页结果
+     */
+    PageResult recyclePageQuery(RecyclePageQueryDTO params);
+
+    /**
+     * 批量恢复（回收站 -> 正常列表）
+     * @param ids 分类ID集合
+     */
+    void recover(List<Long> ids);
+
+    /**
+     * 回收站彻底删除分类
+     * @param ids 分类ID集合
+     */
+    void recycleDelete(List<Long> ids);
 
     /**
      * 获取分类下拉框数据

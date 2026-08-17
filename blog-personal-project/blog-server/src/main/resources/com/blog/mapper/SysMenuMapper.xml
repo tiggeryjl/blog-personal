@@ -85,6 +85,14 @@
           AND sm.status = 1
           AND sm.delete_flag = 0
     </select>
+    <select id="selectAllPerms" resultType="java.lang.String">
+        SELECT DISTINCT sm.perms
+        FROM sys_menu sm
+        WHERE sm.perms IS NOT NULL
+          AND sm.perms != ''
+          AND sm.status = 1
+          AND sm.delete_flag = 0
+    </select>
     <select id="getAllChildMenuIds" resultType="java.lang.Long">
         WITH RECURSIVE menu_tree AS (
             SELECT id FROM sys_menu WHERE id = #{id}

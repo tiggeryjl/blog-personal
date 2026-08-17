@@ -21,6 +21,14 @@ public interface CommentService {
     PageResult pageQuery(CommentPageQueryDTO commentPageQueryDTO);
 
     /**
+     * 分页查询逻辑删除的评论（回收站）
+     *
+     * @param commentPageQueryDTO 查询参数
+     * @return 分页结果
+     */
+    PageResult recyclePageQuery(CommentPageQueryDTO commentPageQueryDTO);
+
+    /**
      * 审核/隐藏评论
      *
      * @param commentStatusDTO 评论ID与目标状态
@@ -54,4 +62,11 @@ public interface CommentService {
      * @param ids 评论ID集合
      */
     void delete(List<Long> ids);
+
+    /**
+     * 批量恢复（回收站 -> 正常列表）
+     *
+     * @param ids 评论ID集合
+     */
+    void recover(List<Long> ids);
 }

@@ -30,7 +30,7 @@ public class SysRoleController {
      * @param rolePageQueryDTO
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:role:list')")
+    @PreAuthorize("hasPermission(null,'sys:role:list')")
     @GetMapping("/getRoleList")
     public Result<PageResult> getRoleList(RolePageQueryDTO rolePageQueryDTO) {
         log.info("分页查询角色:{}", rolePageQueryDTO);
@@ -42,7 +42,7 @@ public class SysRoleController {
      * 新增角色
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:role:add')")
+    @PreAuthorize("hasPermission(null,'sys:role:add')")
     @PostMapping("/add")
     public Result addRole(@RequestBody RoleDTO roleDTO){
         log.info("新增角色:{}", roleDTO);
@@ -55,7 +55,7 @@ public class SysRoleController {
      * @param roleDTO
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:role:edit')")
+    @PreAuthorize("hasPermission(null,'sys:role:edit')")
     @PutMapping("/update")
     public Result update(@RequestBody RoleDTO roleDTO){
         log.info("修改角色:{}", roleDTO);
@@ -68,7 +68,7 @@ public class SysRoleController {
      * @param id
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:role:delete')")
+    @PreAuthorize("hasPermission(null,'sys:role:delete')")
     @DeleteMapping("/logicDelete")
     public Result logicDelete(@RequestParam Long id){
         log.info("逻辑删除角色的id{}",id);
@@ -80,7 +80,7 @@ public class SysRoleController {
      * 查询逻辑删除的角色列表
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:recycleRole:list')")
+    @PreAuthorize("hasPermission(null,'sys:recycleRole:list')")
     @GetMapping("/getLogicDelete")
     public Result<List<SysRoleVo>> getLogicDelete() {
         log.info("查询逻辑删除的角色列表");
@@ -93,7 +93,7 @@ public class SysRoleController {
      * @param id
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:recycleRole:recycle')")
+    @PreAuthorize("hasPermission(null,'sys:recycleRole:recycle')")
     @PutMapping("/recover")
     public Result recover(@RequestParam Long id) {
         log.info("恢复角色的id{}", id);
@@ -107,7 +107,7 @@ public class SysRoleController {
      * @param id
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:recycleRole:delete')")
+    @PreAuthorize("hasPermission(null,'sys:recycleRole:delete')")
     @DeleteMapping()
     public Result delete(@RequestParam Long id){
         log.info("彻底删除角色的id{}",id);
@@ -119,7 +119,7 @@ public class SysRoleController {
      * 获取角色权限树
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:role:assign')")
+    @PreAuthorize("hasPermission(null,'sys:role:assign')")
     @GetMapping("/menuTreeSelect/{id}")
     public Result<RoleMenuTreeVO> getRoleMenuTree(@PathVariable Long id) {
         log.info("获取角色权限树的角色id为:{}",id);
@@ -131,7 +131,7 @@ public class SysRoleController {
      * 分配权限
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:role:assign')")
+    @PreAuthorize("hasPermission(null,'sys:role:assign')")
     @PutMapping("/assignPermission")
     public Result<UserInfoVO> assignRoleMenu(@RequestBody RoleMenuAssignDTO roleMenuAssignDTO) {
         log.info("分配权限:{}",roleMenuAssignDTO);

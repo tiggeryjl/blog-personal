@@ -18,5 +18,17 @@ export const updateStatusApi = (id, status) => request.put(`/admin/categorys/${i
 //删除
 export const deleteCategoryApi = (ids) => request.delete(`/admin/categorys?ids=${ids}`);
 
+//分页查询回收站分类
+export const getRecycleCategoryListApi = (data) =>
+  request.get(`/admin/categorys/recycleList`, { params: data });
+
+//恢复回收站分类（回收站 -> 正常列表）
+export const recoverCategoryApi = (ids) =>
+  request.put(`/admin/categorys/recover?ids=${ids}`);
+
+//彻底删除回收站分类
+export const recycleDeleteCategoryApi = (ids) =>
+  request.delete(`/admin/categorys/recycleDelete?ids=${ids}`);
+
 // 获取分类下拉选项
 export const getCategoryOptionsApi = () => request.get(`/admin/categorys/categoryOptions`);

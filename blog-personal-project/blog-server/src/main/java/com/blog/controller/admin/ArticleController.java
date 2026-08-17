@@ -38,10 +38,50 @@ public class ArticleController {
     }
 
     /**
+     * 分页查询逻辑删除的文章（回收站）
+     * @param param
+     * @return
+     */
+    @PreAuthorize("hasPermission(null,'sys:recycleArticleWork:list')")
+    @GetMapping("/recycleList")
+    public Result<PageResult> getRecycleList(ArticlePageQueryDTO param){
+        log.info("分页查询回收站文章列表:{}",param);
+        PageResult pageResult=articleService.recyclePageQuery(param);
+        return Result.success(pageResult);
+    }
+
+    /**
+     * 批量恢复文章（回收站 -> 正常列表）
+     * @param ids
+     * @return
+     */
+    @PreAuthorize("hasPermission(null,'sys:recycleArticleWork:recycle')")
+    @PutMapping("/recover")
+    public Result recover(@RequestParam List<Long> ids){
+        log.info("恢复回收站文章ids:{}",ids);
+        articleService.recover(ids);
+        return Result.success();
+    }
+
+    /**
+     * 回收站彻底删除文章
+     * @param ids
+     * @return
+     */
+    @PreAuthorize("hasPermission(null,'sys:recycleArticleWork:delete')")
+    @DeleteMapping("/recycleDelete")
+    public Result recycleDelete(@RequestParam List<Long> ids){
+        log.info("彻底删除回收站文章ids:{}",ids);
+        articleService.delete(ids);
+        return Result.success();
+    }
+
+    /**
      * 新增文章
      * @param articleDTO
      * @return
      */
+    @PreAuthorize("hasPermission(null,'sys:article:add')")
     @PostMapping("/add")
     public Result add(@RequestBody ArticleDTO articleDTO){
         log.info("新增文章:{}",articleDTO);
@@ -54,6 +94,7 @@ public class ArticleController {
      * @param id
      * @return
      */
+    @PreAuthorize("hasPermission(null,'sys:article:list')")
     @GetMapping("/{id}")
     public Result<ArticleVo> getArticleById(@PathVariable Long id){
         log.info("查询id为{}的文章",id);
@@ -66,6 +107,7 @@ public class ArticleController {
      * @param articleDTO
      * @return
      */
+    @PreAuthorize("hasPermission(null,'sys:article:edit')")
     @PutMapping("/update")
     public Result update(@RequestBody ArticleDTO articleDTO){
         log.info("修改文章:{}",articleDTO);
@@ -76,6 +118,7 @@ public class ArticleController {
     /**
      * 设置定时发布
      */
+    @PreAuthorize("hasPermission(null,'sys:article:edit')")
     @PostMapping("/setTimed")
     public Result setTimed(@RequestBody ArticleDTO articleDTO) {
         log.info("设置定时发布:{}",articleDTO);
@@ -86,6 +129,7 @@ public class ArticleController {
     /**
      * 取消定时发布
      */
+    @PreAuthorize("hasPermission(null,'sys:article:edit')")
     @PostMapping("/cancelTimed/{id}")
     public Result cancelTimed(@PathVariable Long id) {
         log.info("取消定时发布id为:{}",id);
@@ -120,6 +164,7 @@ public class ArticleController {
      * @param articleDTO
      * @return
      */
+    @PreAuthorize("hasPermission(null,'sys:article:edit')")
     @PutMapping("/status")
     public Result updateStatus(@RequestBody ArticleDTO articleDTO){
         log.info("修改文章状态:{}",articleDTO);
@@ -132,6 +177,7 @@ public class ArticleController {
      * @param id
      * @return
      */
+    @PreAuthorize("hasPermission(null,'sys:article:edit')")
     @PutMapping("/{id}")
     public Result updateTop(@PathVariable Long id){
         log.info("设置置顶文章id:{}",id);

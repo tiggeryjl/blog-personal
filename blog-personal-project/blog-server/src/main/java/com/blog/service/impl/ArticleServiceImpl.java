@@ -102,6 +102,19 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     /**
+     * 分页查询逻辑删除的文章（回收站）
+     *
+     * @param articlePageQueryDTO
+     */
+    @Override
+    public PageResult recyclePageQuery(ArticlePageQueryDTO articlePageQueryDTO) {
+        PageHelper.startPage(articlePageQueryDTO.getPage(), articlePageQueryDTO.getPageSize());
+        List<ArticleVo> articleList = articleMapper.recyclePageQuery(articlePageQueryDTO);
+        PageInfo<ArticleVo> pageInfo = new PageInfo<>(articleList);
+        return new PageResult(pageInfo.getTotal(), pageInfo.getList());
+    }
+
+    /**
      * 根据ID查询文章
      *
      * @param id
@@ -269,6 +282,19 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public void delete(List<Long> ids) {
         articleMapper.deleteBatch(ids);
+    }
+
+    /**
+     * 批量恢复（回收站 -> 正常列表）
+     *
+     * @param ids
+     */
+    @Override
+    public void recover(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new ArticleException("请选择要恢复的文章");
+        }
+        articleMapper.recoverBatch(ids);
     }
 
     /**

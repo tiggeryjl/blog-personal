@@ -1,6 +1,7 @@
 package com.blog.mapper;
 
 import com.blog.pojo.entity.Category;
+import com.blog.pojo.dto.RecyclePageQueryDTO;
 import com.blog.pojo.vo.CategoryVo;
 import com.blog.pojo.vo.OptionVO;
 import org.apache.ibatis.annotations.Mapper;
@@ -21,7 +22,7 @@ public interface CategoryMapper {
      * 查询所有分类信息
      * @return
      */
-    @Select("select * from category order by create_time desc")
+    @Select("select * from category where delete_flag = 0 order by create_time desc")
     List<CategoryVo> findAll();
 
     /**
@@ -39,10 +40,29 @@ public interface CategoryMapper {
     void update(Category category);
 
     /**
-     * 删除分类
+     * 逻辑删除分类（移入回收站）
      * @param ids
      */
-    void delete(@Param("ids") List<Long> ids);
+    void logicDelete(@Param("ids") List<Long> ids);
+
+    /**
+     * 分页查询逻辑删除的分类（回收站）
+     * @param params 查询参数
+     * @return 分类列表
+     */
+    List<CategoryVo> recyclePageQuery(RecyclePageQueryDTO params);
+
+    /**
+     * 批量恢复（逻辑删除 -> 正常）
+     * @param ids 分类ID集合
+     */
+    void recover(@Param("ids") List<Long> ids);
+
+    /**
+     * 批量彻底删除
+     * @param ids 分类ID集合
+     */
+    void deleteBatch(@Param("ids") List<Long> ids);
 
     /**
      * 获取分类下拉框数据

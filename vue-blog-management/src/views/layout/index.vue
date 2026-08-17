@@ -8,6 +8,7 @@ import { editPwdApi, getRefreshTokenApi } from '@/api/admin';
 import { getInitUnreadApi, markReadSingleApi } from '@/api/notice';
 import { useNoticeStore } from '@/stores/notice';
 import { useNoticePopup } from '@/utils/useNoticePopup';
+import SidebarMenuItem from '@/components/SidebarMenuItem.vue';
 import { ElMessage, ElMessageBox, ElNotification } from 'element-plus';
 import {
   EditPen,
@@ -42,11 +43,6 @@ const loginAvatar = ref(userInfo.value?.avatar || '');
 const filterDynamicRoutes = computed(() => {
   return (dynamicRoutes.value || []).filter((route) => !route.meta?.hidden);
 });
-
-// 子路由过滤
-const getFilterChildren = (children) => {
-  return children?.filter((child) => !child.meta?.hidden) || [];
-};
 
 //修改密码
 const update = async () => {
@@ -288,9 +284,11 @@ onUnmounted(() => {
         <el-aside width="200px" class="aside">
           <el-menu router :default-active="$route.path">
             <template v-for="route in filterDynamicRoutes" :key="route.path">
-              <!-- 没有子菜单 或者 只有1个子菜单：都渲染成普通菜单项（首页走这里） -->
+              <!-- 多个子菜单：交给递归组件渲染，支持任意层级 -->
+              <SidebarMenuItem v-if="route.children?.length > 1" :item="route" />
+              <!-- 没有/只有一个子菜单：保持单菜单项效果（如“布局设置”） -->
               <el-menu-item
-                v-if="!route.children?.length || route.children.length === 1"
+                v-else
                 :index="route.children?.length ? route.children[0].path : route.path"
               >
                 <el-icon>
@@ -298,22 +296,6 @@ onUnmounted(() => {
                 </el-icon>
                 <span>{{ route.meta.title }}</span>
               </el-menu-item>
-
-              <!-- 多个子菜单才展示下拉 -->
-              <el-sub-menu v-else :index="route.path">
-                <template #title>
-                  <el-icon>
-                    <component :is="route.meta.icon" />
-                  </el-icon>
-                  <span>{{ route.meta.title }}</span>
-                </template>
-                <el-menu-item v-for="child in getFilterChildren(route.children)" :key="child.path" :index="child.path">
-                  <el-icon>
-                    <component :is="child.meta.icon" />
-                  </el-icon>
-                  <span>{{ child.meta.title }}</span>
-                </el-menu-item>
-              </el-sub-menu>
             </template>
           </el-menu>
         </el-aside>

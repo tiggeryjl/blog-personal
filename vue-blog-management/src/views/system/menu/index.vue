@@ -1,6 +1,7 @@
 <script setup>
 import { ref, reactive, onMounted, nextTick, watch, computed } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import PermissionViewTip from "@/components/PermissionViewTip.vue";
 import {
   getMenuTree,
   addMenuApi,
@@ -228,10 +229,11 @@ onMounted(() => {
 
 <template>
   <h1 style="margin: 10px">菜单管理</h1>
+  <PermissionViewTip :perms="['sys:menu:add','sys:menu:edit','sys:menu:delete']" />
   <el-card>
     <div class="mb-3">
       <el-form-item>
-        <el-button type="primary" @click="openAddDialog">新增菜单</el-button>
+        <el-button type="primary" v-perm="'sys:menu:add'" @click="openAddDialog">新增菜单</el-button>
         <el-button @click="toggleExpand">{{
           isExpandAll ? "折叠全部" : "展开全部"
         }}</el-button>
@@ -278,13 +280,13 @@ onMounted(() => {
       </el-table-column>
       <el-table-column label="操作" width="240" align="center">
         <template #default="{ row }">
-          <el-button size="small" type="primary" @click="openEditDialog(row)"
+          <el-button size="small" type="primary" v-perm="'sys:menu:edit'" @click="openEditDialog(row)"
             >编辑</el-button
           >
-          <el-button size="small" type="success" @click="openAddChild(row)"
+          <el-button size="small" type="success" v-perm="'sys:menu:add'" @click="openAddChild(row)"
             >新增下级</el-button
           >
-          <el-button size="small" type="danger" @click="handleDelete(row)"
+          <el-button size="small" type="danger" v-perm="'sys:menu:delete'" @click="handleDelete(row)"
             >删除</el-button
           >
         </template>

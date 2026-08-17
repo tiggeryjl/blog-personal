@@ -31,6 +31,18 @@ export const logicDeleteArticleApi = (ids) =>
 export const deleteArticleApi = (ids) =>
   request.delete(`/admin/article?ids=${ids}`);
 
+//分页查询回收站文章
+export const getRecycleArticleListApi = (data) =>
+  request.get(`/admin/article/recycleList`, { params: data });
+
+//恢复回收站文章（回收站 -> 正常列表）
+export const recoverArticleApi = (ids) =>
+  request.put(`/admin/article/recover?ids=${ids}`);
+
+//彻底删除回收站文章
+export const recycleDeleteArticleApi = (ids) =>
+  request.delete(`/admin/article/recycleDelete?ids=${ids}`);
+
 //修改文章状态
 export const updateArticleStatusApi = (article) =>
   request.put("/admin/article/status", article);

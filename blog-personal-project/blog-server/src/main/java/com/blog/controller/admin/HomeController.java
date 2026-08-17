@@ -32,7 +32,7 @@ public class HomeController {
      *
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:index:list')")
+    @PreAuthorize("hasPermission(null,'sys:index:list')")
     @GetMapping("/getStatistics")
     public Result<HomeStatisticsVO> getStatistics() {
         log.info("获取首页网站统计数据");
@@ -46,7 +46,7 @@ public class HomeController {
      * @param rangeType 时间范围：today=今天 yesterday=昨天 week=近7天 month=近30天
      * @return
      */
-    @PreAuthorize("hasAuthority('sys:index:list')")
+    @PreAuthorize("hasPermission(null,'sys:index:list')")
     @GetMapping("/getTrend")
     public Result<List<HomeTrendVO>> getTrend(@RequestParam(defaultValue = "week") String rangeType) {
         log.info("获取首页趋势数据:{}", rangeType);
@@ -60,7 +60,7 @@ public class HomeController {
      * @param response  响应对象
      * @param rangeType 时间范围：today=今天 yesterday=昨天 week=近7天 month=近30天
      */
-    @PreAuthorize("hasAuthority('sys:index:list')")
+    @PreAuthorize("hasPermission(null,'sys:index:list')")
     @GetMapping("/exportTrend")
     public void exportTrend(HttpServletResponse response,
                             @RequestParam(defaultValue = "week") String rangeType) throws IOException {

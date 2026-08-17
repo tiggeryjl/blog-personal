@@ -73,6 +73,28 @@
         ORDER BY c.is_top DESC, c.create_time DESC
     </select>
 
+    <!-- 分页查询逻辑删除的评论（回收站） -->
+    <select id="recyclePageQuery" resultType="com.blog.pojo.vo.CommentVo">
+        <include refid="commentSelect"/>
+        <where>
+            c.delete_flag = 1
+            <if test="type != null">AND c.type = #{type}</if>
+            <if test="sourceId != null">AND c.source_id = #{sourceId}</if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    c.content LIKE CONCAT('%', #{keyword}, '%')
+                    OR c.user_nickname LIKE CONCAT('%', #{keyword}, '%')
+                    OR c.reply_user_nickname LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+            <if test="msgType != null">AND c.msg_type = #{msgType}</if>
+            <if test="status != null">AND c.status = #{status}</if>
+            <if test="begin != null">AND c.create_time &gt;= #{begin}</if>
+            <if test="end != null">AND c.create_time &lt;= #{end}</if>
+        </where>
+        ORDER BY c.update_time DESC, c.create_time DESC
+    </select>
+
     <!-- 主楼评论分页条件(仅顶级评论) -->
     <sql id="mainCondition">
         <where>
@@ -177,5 +199,18 @@
            OR parent_id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
     </delete>
+
+    <!-- 批量恢复（逻辑删除 -> 正常） -->
+    <update id="recover">
+        UPDATE comment
+        SET delete_flag = 0, update_time = NOW()
+        WHERE delete_flag = 1
+          AND (
+              id IN
+              <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+              OR parent_id IN
+              <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+          )
+    </update>
 
 </mapper>

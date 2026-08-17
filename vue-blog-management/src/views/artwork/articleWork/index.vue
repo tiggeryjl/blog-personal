@@ -2,6 +2,7 @@
 import { ref, watch, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import MyPagination from '@/components/MyPagination.vue';
+import PermissionViewTip from '@/components/PermissionViewTip.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   Plus,
@@ -421,6 +422,7 @@ onMounted(() => {
         >
       </div>
     </div>
+    <PermissionViewTip :perms="['sys:article:add','sys:article:edit','sys:article:delete']" />
 
     <!-- 查询条件区域 -->
     <el-card class="query-card" shadow="hover">
@@ -573,9 +575,10 @@ onMounted(() => {
             <div class="action-buttons">
               <el-button type="primary" link :icon="View" @click="viewArticle(scope.row)">预览</el-button>
 
-              <el-button link :icon="Edit" @click="editArticle(scope.row)">修改</el-button>
+              <el-button v-perm="'sys:article:edit'" link :icon="Edit" @click="editArticle(scope.row)">修改</el-button>
 
               <el-button
+                v-perm="'sys:article:edit'"
                 v-if="[ARTICLE_STATUS.DRAFT, ARTICLE_STATUS.SCHEDULED].includes(scope.row.status)"
                 type="success"
                 link
@@ -585,6 +588,7 @@ onMounted(() => {
               >
 
               <el-button
+                v-perm="'sys:article:edit'"
                 v-if="[ARTICLE_STATUS.PUBLISHED, ARTICLE_STATUS.ARCHIVED].includes(scope.row.status)"
                 type="primary"
                 link
@@ -595,6 +599,7 @@ onMounted(() => {
               </el-button>
 
               <el-button
+                v-perm="'sys:article:edit'"
                 v-if="
                   [ARTICLE_STATUS.PUBLISHED, ARTICLE_STATUS.ARCHIVED, ARTICLE_STATUS.PRIVATE].includes(scope.row.status)
                 "
@@ -612,6 +617,7 @@ onMounted(() => {
               </el-button>
 
               <el-button
+                v-perm="'sys:article:edit'"
                 v-if="scope.row.status === ARTICLE_STATUS.DRAFT"
                 type="warning"
                 link
@@ -621,6 +627,7 @@ onMounted(() => {
               >
 
               <el-button
+                v-perm="'sys:article:edit'"
                 v-if="scope.row.status === ARTICLE_STATUS.SCHEDULED"
                 type="warning"
                 link
@@ -630,6 +637,7 @@ onMounted(() => {
               >
 
               <el-button
+                v-perm="'sys:article:edit'"
                 v-if="[ARTICLE_STATUS.PUBLISHED, ARTICLE_STATUS.OFFLINE].includes(scope.row.status)"
                 :type="scope.row.status === ARTICLE_STATUS.PUBLISHED ? 'danger' : 'success'"
                 link
@@ -645,6 +653,7 @@ onMounted(() => {
               </el-button>
 
               <el-button
+                v-perm="'sys:article:edit'"
                 v-if="[ARTICLE_STATUS.PUBLISHED, ARTICLE_STATUS.ARCHIVED].includes(scope.row.status)"
                 type="info"
                 link
@@ -659,7 +668,7 @@ onMounted(() => {
                 {{ scope.row.status === ARTICLE_STATUS.ARCHIVED ? '取消归档' : '归档' }}
               </el-button>
 
-              <el-button type="danger" link :icon="Delete" @click="deleteArticle(scope.row.id)">删除</el-button>
+              <el-button v-perm="'sys:article:delete'" type="danger" link :icon="Delete" @click="deleteArticle(scope.row.id)">删除</el-button>
             </div>
           </template>
         </el-table-column>

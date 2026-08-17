@@ -27,3 +27,23 @@ export const updateCommentTopApi = (id) =>
 // 批量逻辑删除评论
 export const logicDeleteCommentApi = (ids) =>
   request.delete(`/admin/comment/logicDelete?ids=${ids}`);
+
+// 分页查询回收站文章评论
+export const getRecycleArticleCommentListApi = (data) =>
+  request.get(`/admin/comment/recycle/article/list`, { params: data });
+
+// 分页查询回收站日常评论
+export const getRecycleDailyCommentListApi = (data) =>
+  request.get(`/admin/comment/recycle/daily/list`, { params: data });
+
+// 分页查询回收站留言评论
+export const getRecycleMessageCommentListApi = (data) =>
+  request.get(`/admin/comment/recycle/message/list`, { params: data });
+
+// 批量恢复评论（回收站 -> 正常列表）
+export const recoverCommentApi = (ids) =>
+  request.put(`/admin/comment/recover?ids=${ids}`);
+
+// 彻底删除回收站评论
+export const recycleDeleteCommentApi = (ids) =>
+  request.delete(`/admin/comment/recycleDelete?ids=${ids}`);
