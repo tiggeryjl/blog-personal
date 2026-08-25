@@ -14,6 +14,13 @@ const total = ref(0);
 const list = ref([]);
 const finished = ref(false);
 
+// 通知类型映射
+const noticeTypeMap = {
+  comment: { text: '评论', type: 'success' },
+  like: { text: '点赞', type: 'warning' },
+  link: { text: '友链', type: 'warning' },
+};
+
 const scrollDisabled = computed(() => loading.value || finished.value);
 
 // 滚动加载：每次请求下一页并追加到列表
@@ -78,8 +85,8 @@ onMounted(() => fetchList());
       <el-table :data="list" border v-loading="loading && list.length === 0">
         <el-table-column label="类型" width="100" align="center">
           <template #default="scope">
-            <el-tag :type="scope.row.type === 'comment' ? 'success' : 'warning'">
-              {{ scope.row.type === 'comment' ? '评论' : '点赞' }}
+            <el-tag :type="noticeTypeMap[scope.row.type]?.type || 'info'">
+              {{ noticeTypeMap[scope.row.type]?.text || '未知' }}
             </el-tag>
           </template>
         </el-table-column>

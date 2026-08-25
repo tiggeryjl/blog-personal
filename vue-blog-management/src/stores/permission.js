@@ -1,8 +1,8 @@
-import { defineStore } from 'pinia'
-import { getUserInfoApi } from '@/api/admin'
-import { useUserStore } from '@/stores/userloginstatus'
-import router from '@/router'
-import { filterAsyncRoutes } from '@/utils/route'
+import { defineStore } from 'pinia';
+import { getUserInfoApi } from '@/api/admin';
+import { useUserStore } from '@/stores/userloginstatus';
+import router from '@/router';
+import { filterAsyncRoutes } from '@/utils/route';
 
 export const usePermissionStore = defineStore('permission', {
   state: () => ({
@@ -13,43 +13,44 @@ export const usePermissionStore = defineStore('permission', {
     // 已挂载的动态路由记录，防止重复添加
     addRouteNames: [],
     isFetchPermission: false,
-    roles: []
+    roles: [],
   }),
   actions: {
     /**
-     * 拉取用户权限、菜单 
+     * 拉取用户权限、菜单
      */
     async getUserPermission() {
       // this.addRouteNames.forEach(name => {
       //   router.removeRoute(name)
       // })
       // this.addRouteNames = []
-      const oldNames = [...this.addRouteNames]
-      this.addRouteNames = []
-      oldNames.forEach(name => {
+      const oldNames = [...this.addRouteNames];
+      this.addRouteNames = [];
+      oldNames.forEach((name) => {
         try {
-          router.removeRoute(name)
-        } catch (e) { }
-      })
-      console.log('开始获取权限...')
-      const result = await getUserInfoApi()
-      console.log(result.data.permissions)
-      this.permissionList = result.data.permissions || []
-      const routes = filterAsyncRoutes(result.data.routers || [])
-      this.dynamicRoutes = routes
-      routes.forEach(route => {
-        router.addRoute(route)
-        this.addRouteNames.push(route.name)
-      })
+          router.removeRoute(name);
+        } catch (e) {}
+      });
+      console.log('开始获取权限...');
+      const result = await getUserInfoApi();
+      console.log(result.data.permissions);
+      useUserStore().updateUserInfo(result.data.user);
+      this.permissionList = result.data.permissions || [];
+      const routes = filterAsyncRoutes(result.data.routers || []);
+      this.dynamicRoutes = routes;
+      routes.forEach((route) => {
+        router.addRoute(route);
+        this.addRouteNames.push(route.name);
+      });
       router.addRoute({
         path: '/:pathMatch(.*)*',
         name: 'NotFound',
-        component: () => import('@/views/error/404.vue')
-      })
+        component: () => import('@/views/error/404.vue'),
+      });
 
-      this.isFetchPermission = true
-      this.roles = result.data.roles || []
-      return result
+      this.isFetchPermission = true;
+      this.roles = result.data.roles || [];
+      return result;
     },
 
     /**
@@ -58,10 +59,10 @@ export const usePermissionStore = defineStore('permission', {
      * @returns boolean
      */
     hasPerm(perm) {
-      if (!perm) return true
+      if (!perm) return true;
       // 超级管理员直接放行
-      if (this.roles.includes('admin')) return true
-      return this.permissionList.includes(perm)
+      if (this.roles.includes('admin')) return true;
+      return this.permissionList.includes(perm);
     },
 
     /**
@@ -69,11 +70,11 @@ export const usePermissionStore = defineStore('permission', {
      */
     resetPermission() {
       // 删除已挂载的动态路由
-      this.addRouteNames.forEach(name => {
-        router.removeRoute(name)
-      })
-      this.$reset()
-    }
+      this.addRouteNames.forEach((name) => {
+        router.removeRoute(name);
+      });
+      this.$reset();
+    },
   },
-  persist: false
-})
+  persist: false,
+});

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.blog.mapper.LinkMapper">
+
+    <!-- 新增友链 -->
+    <insert id="add" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO link(
+            link_name, link_url, link_avatar, link_desc, link_email, sort,
+            audit_status, status, delete_flag, create_time, update_time
+        )
+        VALUES (
+            #{linkName}, #{linkUrl}, #{linkAvatar}, #{linkDesc}, #{linkEmail}, #{sort},
+            #{auditStatus}, #{status}, #{deleteFlag}, #{createTime}, #{updateTime}
+        )
+    </insert>
+
+    <!-- 更新友链 -->
+    <update id="update">
+        UPDATE link
+        <set>
+            <if test="linkName != null and linkName != ''">link_name = #{linkName},</if>
+            <if test="linkUrl != null and linkUrl != ''">link_url = #{linkUrl},</if>
+            <if test="linkAvatar != null">link_avatar = #{linkAvatar},</if>
+            <if test="linkDesc != null">link_desc = #{linkDesc},</if>
+            <if test="linkEmail != null">link_email = #{linkEmail},</if>
+            <if test="sort != null">sort = #{sort},</if>
+            <if test="auditStatus != null">audit_status = #{auditStatus},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="deleteFlag != null">delete_flag = #{deleteFlag},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 分页查询友链 -->
+    <select id="pageQuery" resultType="com.blog.pojo.vo.LinkVo">
+        SELECT id, link_name, link_url, link_avatar, link_desc, link_email, sort,
+               audit_status, status, delete_flag, create_time, update_time
+        FROM link
+        <where>
+            delete_flag = 0
+            <if test="auditStatus != null">AND audit_status = #{auditStatus}</if>
+            <if test="status != null">AND status = #{status}</if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    link_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR link_url LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY audit_status ASC, sort ASC, create_time DESC
+    </select>
+
+    <!-- 统计各审核状态数量 -->
+    <select id="countByAuditStatus" resultType="java.util.Map">
+        SELECT
+            COUNT(*) AS total,
+            CAST(SUM(CASE WHEN audit_status = 0 THEN 1 ELSE 0 END) AS SIGNED) AS pending,
+            CAST(SUM(CASE WHEN audit_status = 1 THEN 1 ELSE 0 END) AS SIGNED) AS approved,
+            CAST(SUM(CASE WHEN audit_status = 2 THEN 1 ELSE 0 END) AS SIGNED) AS rejected
+        FROM link
+        WHERE delete_flag = 0
+    </select>
+
+    <!-- 校验网站链接是否已存在 -->
+    <select id="countByUrl" resultType="int">
+        SELECT COUNT(*)
+        FROM link
+        WHERE link_url = #{linkUrl} AND delete_flag = 0
+    </select>
+
+    <!-- 根据网站链接查询未删除的友链 -->
+    <select id="getByUrl" resultType="com.blog.pojo.vo.LinkVo">
+        SELECT id, link_name, link_url, link_avatar, link_desc, link_email, sort,
+               audit_status, status, delete_flag, create_time, update_time
+        FROM link
+        WHERE link_url = #{linkUrl} AND delete_flag = 0
+        LIMIT 1
+    </select>
+
+    <!-- 批量逻辑删除 -->
+    <update id="logicDelete">
+        UPDATE link
+        SET delete_flag = 1, update_time = NOW()
+        WHERE delete_flag = 0
+          AND id IN
+          <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <!-- 查询已通过且启用的友链 -->
+    <select id="listPublic" resultType="com.blog.pojo.vo.LinkVo">
+        SELECT id, link_name, link_url, link_avatar, link_desc, link_email, sort,
+               audit_status, status, create_time
+        FROM link
+        WHERE delete_flag = 0
+          AND audit_status = 1
+          AND status = 1
+        ORDER BY sort ASC, create_time DESC
+    </select>
+
+    <!-- 查询全部待审核/已拒绝的友链申请 -->
+    <select id="listApplications" resultType="com.blog.pojo.vo.LinkVo">
+        SELECT id, link_name, link_url, link_avatar, link_desc, link_email, sort,
+               audit_status, status, create_time
+        FROM link
+        WHERE delete_flag = 0
+          AND audit_status IN (0, 2)
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

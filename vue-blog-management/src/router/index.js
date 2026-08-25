@@ -109,7 +109,7 @@ router.beforeEach(async (to, from, next) => {
       ElMessage.info('登录过期，请重新登录');
       next('/login');
     } finally {
-      routerIsRefreshing = false;
+      isRefreshing = false;
     }
   }
 });

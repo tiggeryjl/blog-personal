@@ -198,7 +198,6 @@ const loadOfflineNotice = async () => {
       setTimeout(() => {
         ElNotification({
           title: '通知汇总',
-          // message: `共${result.data.unreadTotal}条未读通知，前往消息中心查看全部`,
           message: h('p', null, [
             h('span', { style: 'color: #606266' }, '共'),
             h('strong', { style: 'color: #0279da' }, `${result.data.unreadTotal}`),
@@ -287,10 +286,7 @@ onUnmounted(() => {
               <!-- 多个子菜单：交给递归组件渲染，支持任意层级 -->
               <SidebarMenuItem v-if="route.children?.length > 1" :item="route" />
               <!-- 没有/只有一个子菜单：保持单菜单项效果（如“布局设置”） -->
-              <el-menu-item
-                v-else
-                :index="route.children?.length ? route.children[0].path : route.path"
-              >
+              <el-menu-item v-else :index="route.children?.length ? route.children[0].path : route.path">
                 <el-icon>
                   <component :is="route.meta.icon" />
                 </el-icon>

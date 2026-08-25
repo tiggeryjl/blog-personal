@@ -66,7 +66,7 @@ public class JwtTokenUserFilter extends OncePerRequestFilter {
 
             // 3. 校验 token 是否合法
             if (!jwtService.validateToken(token)) {
-                filterChain.doFilter(request, response);
+//                filterChain.doFilter(request, response);
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write(objectMapper.writeValueAsString(Result.error(401, MessageConstant.LOGIN_EXPIRED_NOT_FOUND)));
                 return;

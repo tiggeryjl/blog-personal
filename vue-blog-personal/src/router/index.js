@@ -1,29 +1,30 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import { getRefreshTokenApi } from '@/api/auth.js'
-import { ElMessage } from 'element-plus'
-import LayoutView from '@/views/layout/index.vue'
-import IndexLayoutView from '@/views/layout/indexLayout.vue'
-import SettingLayoutView from '@/views/layout/settingLayout.vue'
-import IndexView from '@/views/index/index.vue'
-import LoginView from '@/views/login/index.vue'
-import ArticleView from '@/views/article/article.vue'
-import ArticleDetailView from '@/views/article/articleDetail.vue'
-import editInputView from '@/views/article/editInput.vue'
-import DailyDetailView from '@/views/daily/dailyDetail.vue'
-import DailyView from '@/views/daily/daily.vue'
-import FriendLinkView from '@/views/friendlink/friendlink.vue'
-import FeedbackView from '@/views/feedback/feedback.vue'
-import AboutView from '@/views/about/about.vue'
-import BaseView from '@/views/setting/base.vue'
-import RepwdView from '@/views/setting/repwd.vue'
-import AccountView from '@/views/setting/account.vue'
+import { createRouter, createWebHistory } from 'vue-router';
+import { getRefreshTokenApi } from '@/api/auth.js';
+import { ElMessage } from 'element-plus';
+import LayoutView from '@/views/layout/index.vue';
+import IndexLayoutView from '@/views/layout/indexLayout.vue';
+import SettingLayoutView from '@/views/layout/settingLayout.vue';
+import IndexView from '@/views/index/index.vue';
+import ArticleView from '@/views/article/article.vue';
+import ArticleDetailView from '@/views/article/articleDetail.vue';
+import editInputView from '@/views/article/editInput.vue';
+import DailyDetailView from '@/views/daily/dailyDetail.vue';
+import DailyView from '@/views/daily/daily.vue';
+import FriendLinkView from '@/views/friendlink/friendlink.vue';
+import FeedbackView from '@/views/feedback/feedback.vue';
+import AboutView from '@/views/about/about.vue';
+import BaseView from '@/views/setting/base.vue';
+import RepwdView from '@/views/setting/repwd.vue';
+import AccountView from '@/views/setting/account.vue';
+import { useUserStore } from '@/store/userloginstatus.js';
+import { queryUserInfoApi } from '@/api/auth.js';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   scrollBehavior(to, from, savedPosition) {
     // 保留浏览器前进/后退的滚动位置
-    if (savedPosition) return savedPosition
-    else return { top: 0 }
+    if (savedPosition) return savedPosition;
+    else return { top: 0 };
   },
   routes: [
     {
@@ -65,35 +66,38 @@ const router = createRouter({
     { path: '/login', name: 'login', component: () => import('@/views/login/index.vue') },
     { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/components/404.vue') },
   ],
-})
+});
 
-let isRefreshing = false
+let isRefreshing = false;
 
 router.beforeEach(async (to, from, next) => {
-  const whiteList = ['/login', '/404']
-  if (whiteList.includes(to.path)) return next()
+  const whiteList = ['/login', '/404'];
+  if (whiteList.includes(to.path)) return next();
 
-  const localToken = localStorage.getItem('user_token')
+  const localToken = localStorage.getItem('user_token');
   if (localToken) {
     // 已有token直接放行
-    next()
+    next();
   } else {
     // 无本地token，静默刷新
-    if (isRefreshing) return next()
-    isRefreshing = true
+    if (isRefreshing) return next();
+    isRefreshing = true;
     try {
-      const res = await getRefreshTokenApi()
-      const newToken = res.data.token
-      localStorage.setItem('user_token', newToken)
+      const res = await getRefreshTokenApi();
+      const newToken = res.data.token;
+      localStorage.setItem('user_token', newToken);
+      const result = await queryUserInfoApi();
+      console.log('刷新token成功，获取用户信息', result.data);
+      useUserStore().updateUserInfo(result.data);
       // 刷新路由上下文
-      next({ ...to, replace: true })
+      next({ ...to, replace: true });
     } catch (err) {
-      ElMessage.info('登录过期，请重新登录')
-      next('/login')
+      ElMessage.info('登录过期，请重新登录');
+      next('/login');
     } finally {
-      isRefreshing = false
+      isRefreshing = false;
     }
   }
-})
+});
 
-export default router
+export default router;

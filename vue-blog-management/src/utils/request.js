@@ -71,7 +71,6 @@ request.interceptors.response.use(
         waitRequestQueue = [];
         // 重试当前报错接口
         return request(originalReq);
-        // return service(originalReq)
       } catch (refreshErr) {
         // refreshToken失效/过期，彻底登出
         userStore.logout();

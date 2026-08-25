@@ -162,7 +162,8 @@ public class HomeServiceImpl implements HomeService {
 
             // 明细数据
             int dataStart = 10;
-            for (int i = 0; i < trendList.size() && i < 30; i++) {
+            int dataCount = Math.min(trendList.size(), 30);
+            for (int i = 0; i < dataCount; i++) {
                 HomeTrendVO vo = trendList.get(i);
                 XSSFRow row = getOrCreateRow(sheet, dataStart + i);
                 setNumericCell(row, 1, vo.getPeriod());
@@ -175,8 +176,21 @@ public class HomeServiceImpl implements HomeService {
                 setNumericCell(row, 8, vo.getRejectedLinkCount());
             }
 
-            // 合计行（第41行，索引40）
-            XSSFRow totalRow = getOrCreateRow(sheet, 40);
+            // 合计行：紧跟最后一条明细数据之后动态添加（模板中已删除固定合计行）
+            int totalRowIdx = dataStart + dataCount;
+            XSSFRow totalRow = getOrCreateRow(sheet, totalRowIdx);
+            // 复用最后一条明细行的单元格样式，保持表格外观一致
+            XSSFRow lastDataRow = sheet.getRow(dataStart + dataCount - 1);
+            if (lastDataRow != null) {
+                totalRow.setHeight(lastDataRow.getHeight());
+                for (int col = 1; col <= 8; col++) {
+                    XSSFCell srcCell = lastDataRow.getCell(col);
+                    if (srcCell != null) {
+                        getOrCreateCell(totalRow, col).setCellStyle(srcCell.getCellStyle());
+                    }
+                }
+            }
+            setNumericCell(totalRow, 1, "合计");
             setNumericCell(totalRow, 2, sumTrend(trendList, HomeTrendVO::getArticleCount));
             setNumericCell(totalRow, 3, sumTrend(trendList, HomeTrendVO::getDailyCount));
             setNumericCell(totalRow, 4, sumTrend(trendList, HomeTrendVO::getUserCount));

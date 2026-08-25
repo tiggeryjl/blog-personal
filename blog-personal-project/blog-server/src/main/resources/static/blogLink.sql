@@ -39,6 +39,7 @@ CREATE TABLE `link`
     `link_url`     varchar(255)    NOT NULL COMMENT '网站链接',
     `link_avatar`  varchar(500) DEFAULT NULL COMMENT '站点头像图标',
     `link_desc`    varchar(200) DEFAULT NULL COMMENT '站点简介',
+    `link_email`   varchar(100) DEFAULT NULL COMMENT '申请邮箱',
     `sort`         int          DEFAULT 0 COMMENT '排序权重',
     `audit_status` tinyint      DEFAULT 0 COMMENT '审核状态 0待审核 1审核通过 2审核拒绝',
     `status`       tinyint      DEFAULT 0 COMMENT '展示状态 0禁用 1正常展示',
@@ -60,17 +61,17 @@ CREATE TABLE `link`
 LOCK TABLES `link` WRITE;
 /*!40000 ALTER TABLE `link`
     DISABLE KEYS */;
-INSERT INTO `link` (`id`, `link_name`, `link_url`, `link_avatar`, `link_desc`, `sort`, `audit_status`, `status`,
+INSERT INTO `link` (`id`, `link_name`, `link_url`, `link_avatar`, `link_desc`, `link_email`, `sort`, `audit_status`, `status`,
                     `delete_flag`, `create_time`, `update_time`)
-VALUES (1, '技术小屋', 'https://demo1.com', 'https://picsum.photos/80/80', '专注后端与前端技术分享', 1, 1, 1, 0,
+VALUES (1, '技术小屋', 'https://demo1.com', 'https://picsum.photos/80/80', '专注后端与前端技术分享', 'demo1@qq.com', 1, 1, 1, 0,
         '2025-05-01 10:20:15', '2025-05-02 09:10:22'),
-       (2, '日常随笔', 'https://demo2.com', 'https://picsum.photos/81/81', '记录生活点滴与学习感悟', 2, 1, 1, 0,
+       (2, '日常随笔', 'https://demo2.com', 'https://picsum.photos/81/81', '记录生活点滴与学习感悟', 'demo2@qq.com', 2, 1, 1, 0,
         '2025-05-03 14:30:08', '2025-05-03 14:30:08'),
-       (3, '开源分享站', 'https://demo3.com', 'https://picsum.photos/82/82', '各类开源项目教程汇总', 3, 0, 0, 0,
+       (3, '开源分享站', 'https://demo3.com', 'https://picsum.photos/82/82', '各类开源项目教程汇总', 'test1@qq.com', 3, 0, 0, 0,
         '2025-05-20 08:15:36', '2025-05-20 08:15:36'),
-       (4, '设计美学馆', 'https://demo4.com', 'https://picsum.photos/83/83', 'UI设计与视觉创意展示', 4, 2, 0, 0,
+       (4, '设计美学馆', 'https://demo4.com', 'https://picsum.photos/83/83', 'UI设计与视觉创意展示', 'test2@qq.com', 4, 2, 0, 0,
         '2025-05-22 16:40:52', '2025-05-22 16:40:52'),
-       (5, '编程知识库', 'https://demo5.com', 'https://picsum.photos/84/84', '零基础编程入门教学', 5, 1, 0, 0,
+       (5, '编程知识库', 'https://demo5.com', 'https://picsum.photos/84/84', '零基础编程入门教学', 'demo5@qq.com', 5, 1, 0, 0,
         '2025-05-23 11:05:18', '2025-05-23 11:05:18');
 /*!40000 ALTER TABLE `link`
     ENABLE KEYS */;

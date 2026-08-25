@@ -66,7 +66,7 @@ public class UserController {
                 }
             }
         }
-        // 修复：取反！!validateToken代表token失效/不存在返回401
+        // !validateToken代表token失效/不存在返回401
         if(refreshToken == null || !jwtService.validateToken(refreshToken)) {
             return Result.error(401, "登录失效，请重新登录");
         }
