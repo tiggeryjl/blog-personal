@@ -100,6 +100,11 @@ public class Daily implements Serializable {
     private LocalDateTime publishTime;
 
     /**
+     * 定时发布时间
+     */
+    private LocalDateTime timedPublishTime;
+
+    /**
      * 修改时间
      */
     private LocalDateTime updateTime;

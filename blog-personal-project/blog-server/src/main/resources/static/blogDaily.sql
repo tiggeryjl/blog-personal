@@ -25,6 +25,12 @@ CREATE DATABASE /*!32312 IF NOT EXISTS */ `blog`
 
 USE `blog`;
 
+-- ============================================================
+-- ALTER TABLE `daily`
+--     ADD COLUMN `timed_publish_time` datetime DEFAULT NULL COMMENT '定时发布时间' AFTER `publish_time`,
+--     ADD KEY `idx_timed_publish_time` (`timed_publish_time`);
+-- ============================================================
+
 --
 -- Table structure for table `daily`
 --
@@ -55,12 +61,14 @@ CREATE TABLE `daily`
 
     `create_time`   datetime      DEFAULT NULL COMMENT '创建时间',
     `publish_time`  datetime      DEFAULT NULL COMMENT '发布时间',
+    `timed_publish_time` datetime DEFAULT NULL COMMENT '定时发布时间',
     `update_time`   datetime      DEFAULT NULL COMMENT '修改时间',
 
     PRIMARY KEY (`id`),
     KEY `idx_status_del_top_pubtime` (`status`, `delete_flag`, `is_top`, `publish_time`),
     KEY `idx_user_del_pubtime` (`user_id`, `delete_flag`, `publish_time`),
-    KEY `idx_status_pubtime` (`status`, `publish_time`)
+    KEY `idx_status_pubtime` (`status`, `publish_time`),
+    KEY `idx_timed_publish_time` (`timed_publish_time`)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4

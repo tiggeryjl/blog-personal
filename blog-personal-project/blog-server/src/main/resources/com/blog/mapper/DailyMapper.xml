@@ -3,6 +3,34 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.blog.mapper.DailyMapper">
 
+    <!-- 分页查询正常列表的日常 -->
+    <select id="pageQuery" resultType="com.blog.pojo.entity.Daily">
+        SELECT *
+        FROM daily
+        <where>
+            delete_flag = 0
+            <if test="content != null and content != ''">
+                AND content LIKE CONCAT('%', #{content}, '%')
+            </if>
+            <if test="type != null">
+                AND type = #{type}
+            </if>
+            <if test="isTop != null">
+                AND is_top = #{isTop}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="begin != null">
+                AND create_time &gt;= #{begin}
+            </if>
+            <if test="end != null">
+                AND create_time &lt;= #{end}
+            </if>
+        </where>
+        ORDER BY is_top DESC, publish_time DESC, create_time DESC
+    </select>
+
     <!-- 分页查询逻辑删除的日常（回收站） -->
     <select id="recyclePageQuery" resultType="com.blog.pojo.entity.Daily">
         SELECT *
@@ -30,6 +58,96 @@
         </where>
         ORDER BY update_time DESC, create_time DESC
     </select>
+
+    <!-- 根据ID查询日常（正常列表） -->
+    <select id="getById" resultType="com.blog.pojo.entity.Daily">
+        SELECT *
+        FROM daily
+        WHERE id = #{id}
+          AND delete_flag = 0
+    </select>
+
+    <!-- 新增日常 -->
+    <insert id="add" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO daily(content, images, files, user_id, user_nickname, user_avatar,
+                          type, is_top, status, delete_flag, sort, like_num, comment_num,
+                          create_time, publish_time, timed_publish_time, update_time)
+        VALUES (#{content}, #{images}, #{files}, #{userId}, #{userNickname}, #{userAvatar},
+                #{type}, #{isTop}, #{status}, #{deleteFlag}, #{sort}, #{likeNum}, #{commentNum},
+                #{createTime}, #{publishTime}, #{timedPublishTime}, #{updateTime})
+    </insert>
+
+    <!-- 修改日常内容 -->
+    <update id="update">
+        UPDATE daily
+        <set>
+            <if test="content != null">
+                content = #{content},
+            </if>
+            <if test="images != null">
+                images = #{images},
+            </if>
+            <if test="files != null">
+                files = #{files},
+            </if>
+            <if test="type != null">
+                type = #{type},
+            </if>
+            <if test="isTop != null">
+                is_top = #{isTop},
+            </if>
+            <if test="sort != null">
+                sort = #{sort},
+            </if>
+            <if test="updateTime != null">
+                update_time = #{updateTime},
+            </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 修改日常状态：发布时更新发布时间并清空定时时间，其它非定时状态清空定时时间 -->
+    <update id="updateStatus">
+        UPDATE daily
+        <set>
+            status = #{status},
+            update_time = #{updateTime},
+            <if test="status == 1">
+                publish_time = #{publishTime},
+                timed_publish_time = NULL,
+            </if>
+            <if test="status != 1 and status != 3">
+                timed_publish_time = NULL,
+            </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 切换置顶 -->
+    <update id="updateTop">
+        UPDATE daily
+        SET is_top = #{isTop},
+            update_time = #{updateTime}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 设置定时发布 -->
+    <update id="updateTimedPublish">
+        UPDATE daily
+        SET status = #{status},
+            timed_publish_time = #{timedPublishTime},
+            update_time = #{updateTime}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 取消定时发布 -->
+    <update id="cancelTimedPublish">
+        UPDATE daily
+        SET status = #{status},
+            timed_publish_time = NULL,
+            update_time = #{updateTime}
+        WHERE id = #{id}
+    </update>
 
     <!-- 批量恢复（逻辑删除 -> 正常） -->
     <update id="recoverBatch">
@@ -59,5 +177,17 @@
             #{id}
         </foreach>
     </delete>
+
+    <!-- 批量发布到期的定时日常 -->
+    <update id="batchPublishExpiredTimed">
+        UPDATE daily
+        SET status = 1,
+            publish_time = #{now},
+            timed_publish_time = NULL,
+            update_time = #{now}
+        WHERE status = 3
+          AND timed_publish_time IS NOT NULL
+          AND timed_publish_time &lt; #{now}
+    </update>
 
 </mapper>
