@@ -29,6 +29,8 @@ USE `blog`;
 -- ALTER TABLE `daily`
 --     ADD COLUMN `timed_publish_time` datetime DEFAULT NULL COMMENT '定时发布时间' AFTER `publish_time`,
 --     ADD KEY `idx_timed_publish_time` (`timed_publish_time`);
+-- ALTER TABLE `daily`
+--     ADD COLUMN `view_num` int DEFAULT 0 COMMENT '浏览数' AFTER `comment_num`;
 -- ============================================================
 
 --
@@ -58,6 +60,7 @@ CREATE TABLE `daily`
     `sort`          int           DEFAULT 0 COMMENT '排序权重',
     `like_num`      int           DEFAULT 0 COMMENT '点赞数',
     `comment_num`   int           DEFAULT 0 COMMENT '评论数',
+    `view_num`      int           DEFAULT 0 COMMENT '浏览数',
 
     `create_time`   datetime      DEFAULT NULL COMMENT '创建时间',
     `publish_time`  datetime      DEFAULT NULL COMMENT '发布时间',

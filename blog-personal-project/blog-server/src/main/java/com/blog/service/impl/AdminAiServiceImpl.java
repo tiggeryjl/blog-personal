@@ -21,11 +21,11 @@ public class AdminAiServiceImpl implements AdminAiService {
         String prompt = String.format(
                 "你是一名数据分析师。基于以下博客本周数据，生成一份简洁的周报（包含：总览、亮点、问题、建议）：\n" +
                         "📊 数据总览：\n" +
-                        "- 总阅读量：%d\n" +
-                        "- 总评论数：%d\n" +
-                        "- 新增文章：%d\n" +
-                        "- 新增订阅：%d\n\n" +
-                        "🔥 热门文章TOP5：\n%s\n\n" +
+                        "- 本周阅读量：%d\n" +
+                        "- 本周新增评论：%d\n" +
+                        "- 本周新增文章：%d\n" +
+                        "- 本周新增用户：%d\n\n" +
+                        "🔥 热门文章TOP5（按本周阅读量）：\n%s\n\n" +
                         "请用轻松友好的语气输出，开头加一句鼓励的话。",
                 stats.getViews(),
                 stats.getComments(),

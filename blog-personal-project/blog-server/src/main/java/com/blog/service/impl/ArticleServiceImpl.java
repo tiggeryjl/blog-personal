@@ -219,7 +219,7 @@ public class ArticleServiceImpl implements ArticleService {
 
         // 2. 校验状态：只允许草稿、已下架设置定时
         Integer status = oldArticle.getStatus();
-        if (status != 0 && status != 2) {
+        if (status != 0 && status != 2 && status != 4) {
             throw new ArticleException("仅草稿和已下架状态的文章可设置定时发布");
         }
 

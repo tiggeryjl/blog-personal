@@ -1,34 +1,34 @@
 <script setup>
-import { ref, nextTick, watch } from "vue";
-import { fetchStream } from "@/api/AIChat.js";
+import { ref, nextTick, watch } from 'vue';
+import { fetchStream } from '@/api/AIChat.js';
 
 // ========== 状态 ==========
 const dialogVisible = ref(false);
-const userInput = ref("");
+const userInput = ref('');
 const deepThink = ref(false);
 const isStreaming = ref(false);
 const messages = ref([]);
 const totalTokens = ref(0);
 const messagesContainer = ref(null);
-const currentModel = ref("Flash");
+const currentModel = ref('Flash');
 
 // ========== 快捷指令 ==========
 const quickCommands = [
   {
-    label: "写文章",
-    icon: "✍️",
-    prompt: "请帮我写一篇关于 [主题] 的技术文章，要求结构清晰、有代码示例",
+    label: '写文章',
+    icon: '✍️',
+    prompt: '请帮我写一篇关于 [主题] 的技术文章，要求结构清晰、有代码示例',
   },
-  { label: "润色", icon: "✨", prompt: "请润色以下内容，使表达更专业、流畅" },
+  { label: '润色', icon: '✨', prompt: '请润色以下内容，使表达更专业、流畅' },
   {
-    label: "总结",
-    icon: "📝",
-    prompt: "请用 150 字以内总结以下内容的核心观点",
+    label: '总结',
+    icon: '📝',
+    prompt: '请用 150 字以内总结以下内容的核心观点',
   },
   {
-    label: "分析",
-    icon: "🔍",
-    prompt: "请分析以下内容的逻辑结构，并给出改进建议",
+    label: '分析',
+    icon: '🔍',
+    prompt: '请分析以下内容的逻辑结构，并给出改进建议',
   },
 ];
 
@@ -43,7 +43,7 @@ function closeDialog() {
 
 function clearConversation() {
   if (messages.value.length === 0) return;
-  if (confirm("确定要清除所有对话记录吗？")) {
+  if (confirm('确定要清除所有对话记录吗？')) {
     messages.value = [];
     totalTokens.value = 0;
   }
@@ -52,9 +52,9 @@ function clearConversation() {
 function formatMessage(content) {
   // 简单 Markdown 处理（可扩展）
   return content
-    .replace(/\n/g, "<br>")
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-    .replace(/`(.*?)`/g, "<code>$1</code>");
+    .replace(/\n/g, '<br>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`(.*?)`/g, '<code>$1</code>');
 }
 
 function scrollToBottom() {
@@ -70,40 +70,40 @@ async function sendQuickCommand(cmd) {
   userInput.value = cmd.prompt;
   // 聚焦输入框
   await nextTick();
-  document.querySelector(".ai-input")?.focus();
+  document.querySelector('.ai-input')?.focus();
   // 选中全部文字方便替换
-  document.querySelector(".ai-input")?.select();
+  document.querySelector('.ai-input')?.select();
 }
 
 async function sendMessage() {
   const content = userInput.value.trim();
   if (!content || isStreaming.value) return;
 
-  messages.value.push({ role: "user", content });
-  userInput.value = "";
+  messages.value.push({ role: 'user', content });
+  userInput.value = '';
   scrollToBottom();
 
   const aiIndex = messages.value.length;
-  messages.value.push({ role: "assistant", content: "" });
+  messages.value.push({ role: 'assistant', content: '' });
 
   isStreaming.value = true;
-  let localFullText = "";
+  let localFullText = '';
 
   try {
     await fetchStream(content, deepThink.value, (newChunk) => {
-      const lines = newChunk.split("\n");
+      const lines = newChunk.split('\n');
       const cleanLines = lines.map((line) => {
         const trimmed = line.trim();
-        if (trimmed.startsWith("data:")) {
+        if (trimmed.startsWith('data:')) {
           let content = trimmed.substring(5).trim();
-          while (content.startsWith("data:")) {
+          while (content.startsWith('data:')) {
             content = content.substring(5).trim();
           }
           return content;
         }
         return trimmed;
       });
-      const cleanChunk = cleanLines.join("\n");
+      const cleanChunk = cleanLines.join('\n');
 
       if (!cleanChunk) return;
 
@@ -116,16 +116,16 @@ async function sendMessage() {
     });
 
     // 🔥 流结束后，localFullText 就是完整内容
-    console.log("✅ 完整内容:", localFullText);
+    console.log('✅ 完整内容:', localFullText);
     // 可以在这里做最终处理（比如更新数据库）
 
     // 如果流结束后内容为空，可设置提示
     if (!localFullText) {
-      messages.value[aiIndex].content = "（收到空响应）";
+      messages.value[aiIndex].content = '（收到空响应）';
     }
   } catch (error) {
-    console.error("流式请求失败:", error);
-    messages.value[aiIndex].content = "❌ 出错了，请重试";
+    console.error('流式请求失败:', error);
+    messages.value[aiIndex].content = '❌ 出错了，请重试';
   } finally {
     isStreaming.value = false;
     scrollToBottom();
@@ -139,11 +139,7 @@ watch(messages, () => scrollToBottom(), { deep: true });
 <template>
   <div class="ai-assistant">
     <!-- ========== 悬浮图标 ========== -->
-    <div
-      class="ai-float-btn"
-      @click="toggleDialog"
-      :class="{ active: dialogVisible }"
-    >
+    <div class="ai-float-btn" @click="toggleDialog" :class="{ active: dialogVisible }">
       <div class="light-1"></div>
       <div class="light-2"></div>
       <div class="cloud">
@@ -156,11 +152,7 @@ watch(messages, () => scrollToBottom(), { deep: true });
     <!-- ========== 弹窗 ========== -->
     <Teleport to="body">
       <Transition name="fade">
-        <div
-          v-if="dialogVisible"
-          class="ai-dialog-overlay"
-          @click.self="closeDialog"
-        >
+        <div v-if="dialogVisible" class="ai-dialog-overlay" @click.self="closeDialog">
           <div class="ai-dialog">
             <!-- 标题栏 -->
             <div class="dialog-header">
@@ -176,33 +168,13 @@ watch(messages, () => scrollToBottom(), { deep: true });
                 <span class="model-badge">{{ currentModel }}</span>
               </div>
               <div class="header-actions">
-                <button
-                  class="header-btn"
-                  @click="clearConversation"
-                  title="清除对话"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path
-                      d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"
-                    />
+                <button class="header-btn" @click="clearConversation" title="清除对话">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
                   </svg>
                 </button>
                 <button class="header-btn" @click="closeDialog">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M18 6L6 18M6 6l12 12" />
                   </svg>
                 </button>
@@ -220,17 +192,10 @@ watch(messages, () => scrollToBottom(), { deep: true });
                   </div>
                 </div>
                 <div class="empty-title">你好！我是你的 AI 写作助手</div>
-                <div class="empty-desc">
-                  我可以帮你写文章、润色、总结、分析日志等
-                </div>
+                <div class="empty-desc">我可以帮你写文章、润色、总结、分析日志等</div>
               </div>
               <div v-else class="messages-list">
-                <div
-                  v-for="(msg, idx) in messages"
-                  :key="idx"
-                  class="message-item"
-                  :class="msg.role"
-                >
+                <div v-for="(msg, idx) in messages" :key="idx" class="message-item" :class="msg.role">
                   <div class="message-avatar">
                     <span v-if="msg.role === 'user'">👤</span>
                     <div v-else class="message-cloud-avatar">
@@ -241,10 +206,7 @@ watch(messages, () => scrollToBottom(), { deep: true });
                       </div>
                     </div>
                   </div>
-                  <div
-                    class="message-content"
-                    v-html="formatMessage(msg.content)"
-                  ></div>
+                  <div class="message-content" v-html="formatMessage(msg.content)"></div>
                 </div>
                 <!-- 流式加载动画 -->
                 <div v-if="isStreaming" class="message-item assistant">
@@ -264,12 +226,7 @@ watch(messages, () => scrollToBottom(), { deep: true });
 
             <!-- 快捷指令 -->
             <div class="quick-actions">
-              <button
-                v-for="cmd in quickCommands"
-                :key="cmd.label"
-                class="quick-btn"
-                @click="sendQuickCommand(cmd)"
-              >
+              <button v-for="cmd in quickCommands" :key="cmd.label" class="quick-btn" @click="sendQuickCommand(cmd)">
                 {{ cmd.icon }} {{ cmd.label }}
               </button>
             </div>
@@ -287,19 +244,18 @@ watch(messages, () => scrollToBottom(), { deep: true });
                 />
                 <div class="input-toolbar">
                   <div class="toolbar-left">
-                    <label class="toggle-label">
-                      <input type="checkbox" v-model="deepThink" />
-                      <span>🧠 深度思考</span>
-                    </label>
-                    <span class="token-counter"
-                      >已用 {{ totalTokens }} Token</span
+                    <button
+                      type="button"
+                      class="deep-think-btn"
+                      :class="{ active: deepThink }"
+                      @click="deepThink = !deepThink"
                     >
+                      <span class="deep-think-dot"></span>
+                      深度思考
+                    </button>
+                    <span class="token-counter">已用 {{ totalTokens }} Token</span>
                   </div>
-                  <button
-                    class="send-btn"
-                    @click="sendMessage"
-                    :disabled="!userInput.trim() || isStreaming"
-                  >
+                  <button class="send-btn" @click="sendMessage" :disabled="!userInput.trim() || isStreaming">
                     发送 →
                   </button>
                 </div>
@@ -336,11 +292,7 @@ watch(messages, () => scrollToBottom(), { deep: true });
   position: absolute;
   inset: -10px;
   border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(100, 190, 255, 0.28) 0%,
-    transparent 70%
-  );
+  background: radial-gradient(circle, rgba(100, 190, 255, 0.28) 0%, transparent 70%);
   animation: glow 2.8s infinite ease-in-out;
   filter: blur(6px);
 }
@@ -348,11 +300,7 @@ watch(messages, () => scrollToBottom(), { deep: true });
   position: absolute;
   inset: -4px;
   border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(200, 140, 255, 0.22) 0%,
-    transparent 70%
-  );
+  background: radial-gradient(circle, rgba(200, 140, 255, 0.22) 0%, transparent 70%);
   animation: glow 2.8s infinite ease-in-out reverse;
   filter: blur(4px);
 }
@@ -467,6 +415,7 @@ watch(messages, () => scrollToBottom(), { deep: true });
   background: #ffffff;
   border-radius: 50px;
   border-bottom-right-radius: 10px;
+  border: 1px solid #e6e9ff;
   box-shadow: 0 4px 12px rgba(110, 161, 255, 0.45);
   display: flex;
   align-items: center;
@@ -528,13 +477,25 @@ watch(messages, () => scrollToBottom(), { deep: true });
   max-width: 92vw;
   height: 580px;
   max-height: 85vh;
-  background: #1e1e2f;
+  background: #ffffff;
   border-radius: 20px;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid #e4e7ed;
+  animation: dialogIn 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@keyframes dialogIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 /* ========== 标题栏 ========== */
@@ -543,7 +504,8 @@ watch(messages, () => scrollToBottom(), { deep: true });
   justify-content: space-between;
   align-items: center;
   padding: 14px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid #ebeef5;
+  background: linear-gradient(180deg, #fbfcff, #ffffff);
   flex-shrink: 0;
 }
 
@@ -556,13 +518,13 @@ watch(messages, () => scrollToBottom(), { deep: true });
 .ai-title {
   font-size: 16px;
   font-weight: 600;
-  color: #e4e4e7;
+  color: #303133;
 }
 
 .model-badge {
   font-size: 11px;
-  background: rgba(99, 102, 241, 0.2);
-  color: #a5b4fc;
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
   padding: 2px 10px;
   border-radius: 12px;
 }
@@ -575,7 +537,7 @@ watch(messages, () => scrollToBottom(), { deep: true });
 .header-btn {
   background: transparent;
   border: none;
-  color: #a1a1aa;
+  color: #909399;
   cursor: pointer;
   padding: 6px 8px;
   border-radius: 6px;
@@ -583,8 +545,8 @@ watch(messages, () => scrollToBottom(), { deep: true });
 }
 
 .header-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #e4e4e7;
+  background: #f5f7fa;
+  color: #303133;
 }
 
 /* ========== 对话区域 ========== */
@@ -592,7 +554,7 @@ watch(messages, () => scrollToBottom(), { deep: true });
   flex: 1;
   overflow-y: auto;
   padding: 16px 20px;
-  background: #181825;
+  background: #e9eaec;
 }
 
 .messages-list {
@@ -613,14 +575,17 @@ watch(messages, () => scrollToBottom(), { deep: true });
 }
 
 .message-item.user .message-content {
-  background: #6366f1;
-  color: #fff;
+  background: linear-gradient(135deg, #eef0ff, #e3e8ff);
+  color: #303133;
+  border: 1px solid #e0e4ff;
   border-radius: 16px 4px 16px 16px;
 }
 
 .message-item.assistant .message-content {
-  background: #27273a;
-  color: #d4d4d8;
+  background: #ffffff;
+  color: #303133;
+  border: 1px solid #e4e7ed;
+  box-shadow: 0 1px 4px rgba(31, 35, 41, 0.06);
   border-radius: 4px 16px 16px 16px;
 }
 
@@ -633,7 +598,7 @@ watch(messages, () => scrollToBottom(), { deep: true });
   justify-content: center;
   font-size: 16px;
   flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.05);
+  background: #f0f2f5;
 }
 
 .message-content {
@@ -645,19 +610,19 @@ watch(messages, () => scrollToBottom(), { deep: true });
 }
 
 .message-content code {
-  background: rgba(0, 0, 0, 0.3);
+  background: #f0f2f5;
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 13px;
 }
 
 .message-content strong {
-  color: #e4e4e7;
+  color: #303133;
 }
 
 .cursor-blink {
   animation: blink 1s infinite;
-  color: #818cf8;
+  color: #6366f1;
 }
 
 @keyframes blink {
@@ -682,7 +647,7 @@ watch(messages, () => scrollToBottom(), { deep: true });
   align-items: center;
   gap: 14px;
   padding: 20px;
-  color: #71717a;
+  color: #909399;
 }
 
 .empty-icon {
@@ -700,7 +665,7 @@ watch(messages, () => scrollToBottom(), { deep: true });
 .empty-title {
   font-size: 19px;
   font-weight: 600;
-  color: #e4e4e7;
+  color: #303133;
   margin: 0;
 }
 
@@ -716,15 +681,15 @@ watch(messages, () => scrollToBottom(), { deep: true });
   display: flex;
   gap: 8px;
   padding: 10px 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid #ebeef5;
   flex-shrink: 0;
   flex-wrap: wrap;
 }
 
 .quick-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #a1a1aa;
+  background: #f5f7fa;
+  border: 1px solid #bec3ce;
+  color: #606266;
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 13px;
@@ -733,17 +698,19 @@ watch(messages, () => scrollToBottom(), { deep: true });
 }
 
 .quick-btn:hover {
-  background: rgba(99, 102, 241, 0.15);
-  border-color: rgba(99, 102, 241, 0.3);
-  color: #e4e4e7;
+  background: #eef0ff;
+  border-color: #c7cdff;
+  color: #303133;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.12);
 }
 
 /* ========== 输入区域 ========== */
 .dialog-footer {
-  padding: 12px 20px 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 12px 22px 16px;
+  border-top: 1px solid #ebeef5;
   flex-shrink: 0;
-  background: #1e1e2f;
+  background: #ffffff;
 }
 
 .input-wrapper {
@@ -754,23 +721,25 @@ watch(messages, () => scrollToBottom(), { deep: true });
 
 .ai-input {
   width: 100%;
-  background: #27273a;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-sizing: border-box;
+  background: #e1e3e6;
+  border: 1px solid #e4e7ed;
   border-radius: 12px;
-  padding: 12px 14px;
-  color: #e4e4e7;
+  padding: 12px;
+  color: #303133;
   font-size: 14px;
   line-height: 1.6;
   resize: vertical;
   min-height: 52px;
   max-height: 150px;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
   font-family: inherit;
 }
 
 .ai-input:focus {
   outline: none;
   border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
 }
 
 .ai-input:disabled {
@@ -778,14 +747,14 @@ watch(messages, () => scrollToBottom(), { deep: true });
 }
 
 .ai-input::placeholder {
-  color: #52525b;
+  color: #a8abb2;
 }
 
 .input-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 4px;
+  padding: 0 6px 0 2px;
 }
 
 .toolbar-left {
@@ -794,25 +763,48 @@ watch(messages, () => scrollToBottom(), { deep: true });
   gap: 16px;
 }
 
-.toggle-label {
-  display: flex;
+.deep-think-btn {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #a1a1aa;
+  color: #606266;
+  background: #f5f7fa;
+  border: 1px solid #bec3ce;
+  border-radius: 8px;
+  padding: 5px 12px;
   cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
 }
 
-.toggle-label input[type="checkbox"] {
-  accent-color: #6366f1;
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
+.deep-think-btn:hover {
+  border-color: #c7cdff;
+  color: #303133;
+}
+
+.deep-think-btn.active {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+}
+
+.deep-think-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #c0c4cc;
+  transition: background 0.2s;
+}
+
+.deep-think-btn.active .deep-think-dot {
+  background: #ffffff;
 }
 
 .token-counter {
   font-size: 12px;
-  color: #52525b;
+  color: #a8abb2;
 }
 
 .send-btn {
@@ -858,11 +850,11 @@ watch(messages, () => scrollToBottom(), { deep: true });
 }
 
 .dialog-body::-webkit-scrollbar-thumb {
-  background: #3f3f5a;
+  background: #dcdfe6;
   border-radius: 4px;
 }
 
 .dialog-body::-webkit-scrollbar-thumb:hover {
-  background: #52527a;
+  background: #c0c4cc;
 }
 </style>

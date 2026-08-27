@@ -103,6 +103,14 @@ public class DailyServiceImpl implements DailyService {
     }
 
     /**
+     * 日常浏览数 +1
+     */
+    @Override
+    public void incrementView(Long id) {
+        dailyMapper.incrementView(id);
+    }
+
+    /**
      * 修改日常
      */
     @Override

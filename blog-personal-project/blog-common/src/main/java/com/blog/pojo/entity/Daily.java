@@ -90,6 +90,11 @@ public class Daily implements Serializable {
     private Integer commentNum;
 
     /**
+     * 浏览数
+     */
+    private Integer viewNum;
+
+    /**
      * 创建时间
      */
     private LocalDateTime createTime;

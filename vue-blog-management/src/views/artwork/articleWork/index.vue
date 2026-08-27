@@ -21,7 +21,10 @@ import {
   FolderRemove,
   ZoomOut,
   ZoomIn,
+  Star,
+  ChatDotRound,
 } from '@element-plus/icons-vue';
+import { formatCount } from '@/utils/format';
 import { getStatusText, getStatusType, getStatusOptions } from '@/constants/articleConstants';
 import { getCategoryOptionsApi } from '@/api/category.js';
 import { getTagOptionsApi } from '@/api/tag.js';
@@ -236,13 +239,28 @@ ${htmlContent}
 const timedDialogVisible = ref(false);
 const currentTimedId = ref(null);
 const timedPublishTime = ref('');
+const timedDialogMode = ref('set'); // set=设置定时 modify=修改定时
+
+// 后端时间转日期选择器格式
+const toDateTimeStr = (value) => (value ? String(value).replace('T', ' ').slice(0, 19) : '');
+
+const timedDialogTitle = () => (timedDialogMode.value === 'modify' ? '修改定时发布' : '设置定时发布');
 // 禁用今天之前的日期
 const disabledDate = (time) => {
   return time.getTime() < Date.now() - 86400000;
 };
 const setTimed = (id) => {
+  timedDialogMode.value = 'set';
   currentTimedId.value = id;
   timedPublishTime.value = '';
+  timedDialogVisible.value = true;
+};
+
+// 打开修改定时弹窗，预填当前定时时间
+const openModifyTimed = (row) => {
+  timedDialogMode.value = 'modify';
+  currentTimedId.value = row.id;
+  timedPublishTime.value = toDateTimeStr(row.timedPublishTime);
   timedDialogVisible.value = true;
 };
 
@@ -270,17 +288,18 @@ const submitSetTimed = async () => {
   }
 };
 
-// 取消定时
-const cancelTimed = (id) => {
+// 弹窗内取消定时
+const cancelTimedInDialog = () => {
   ElMessageBox.confirm('确定要取消定时发布吗？', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '再想想',
     type: 'warning',
   })
     .then(async () => {
-      const res = await cancelTimedApi(id);
+      const res = await cancelTimedApi(currentTimedId.value);
       if (res.code === 200) {
         ElMessage.success('已取消定时发布');
+        timedDialogVisible.value = false;
         getArticleList();
       } else {
         ElMessage.error(res.msg);
@@ -422,7 +441,7 @@ onMounted(() => {
         >
       </div>
     </div>
-    <PermissionViewTip :perms="['sys:article:add','sys:article:edit','sys:article:delete']" />
+    <PermissionViewTip :perms="['sys:article:add', 'sys:article:edit', 'sys:article:delete']" />
 
     <!-- 查询条件区域 -->
     <el-card class="query-card" shadow="hover">
@@ -487,7 +506,7 @@ onMounted(() => {
       <el-table :data="articleList" style="width: 100%" border @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" align="center" />
 
-        <el-table-column label="封面" width="140" align="center">
+        <el-table-column label="封面" width="150" align="center">
           <template #default="scope">
             <div class="cover-box">
               <img :src="scope.row.cover" class="cover-img" alt="封面" @click="openPreview(scope.row.cover)" />
@@ -503,10 +522,24 @@ onMounted(() => {
               </el-tooltip>
               {{ row.title }}
             </div>
+            <div class="row-stats">
+              <span class="stat-item" title="浏览">
+                <el-icon><View /></el-icon>
+                {{ formatCount(row.viewNum) }}
+              </span>
+              <span class="stat-item" title="点赞">
+                <el-icon><Star /></el-icon>
+                {{ formatCount(row.likeNum) }}
+              </span>
+              <span class="stat-item" title="评论">
+                <el-icon><ChatDotRound /></el-icon>
+                {{ formatCount(row.commentNum) }}
+              </span>
+            </div>
           </template>
         </el-table-column>
 
-        <el-table-column prop="category" label="分类" width="70" align="center" />
+        <el-table-column prop="category" label="分类" width="120" align="center" />
 
         <el-table-column label="标签" width="105" align="center">
           <template #default="{ row }">
@@ -632,8 +665,8 @@ onMounted(() => {
                 type="warning"
                 link
                 :icon="Timer"
-                @click="cancelTimed(scope.row.id)"
-                >取消定时</el-button
+                @click="openModifyTimed(scope.row)"
+                >修改定时</el-button
               >
 
               <el-button
@@ -668,7 +701,14 @@ onMounted(() => {
                 {{ scope.row.status === ARTICLE_STATUS.ARCHIVED ? '取消归档' : '归档' }}
               </el-button>
 
-              <el-button v-perm="'sys:article:delete'" type="danger" link :icon="Delete" @click="deleteArticle(scope.row.id)">删除</el-button>
+              <el-button
+                v-perm="'sys:article:delete'"
+                type="danger"
+                link
+                :icon="Delete"
+                @click="deleteArticle(scope.row.id)"
+                >删除</el-button
+              >
             </div>
           </template>
         </el-table-column>
@@ -722,7 +762,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <el-dialog v-model="timedDialogVisible" title="设置定时发布" width="400px">
+    <el-dialog v-model="timedDialogVisible" :title="timedDialogTitle()" width="400px" :close-on-click-modal="false">
       <el-form label-width="80px">
         <el-form-item label="发布时间">
           <el-date-picker
@@ -736,6 +776,9 @@ onMounted(() => {
         </el-form-item>
       </el-form>
       <template #footer>
+        <el-button v-if="timedDialogMode === 'modify'" type="danger" plain @click="cancelTimedInDialog">
+          取消定时
+        </el-button>
         <el-button @click="timedDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="submitSetTimed">确认设置</el-button>
       </template>
@@ -1028,5 +1071,33 @@ onMounted(() => {
 
 .preview-footer {
   text-align: center;
+}
+
+/* 标题下方的浏览/点赞/评论统计行 */
+.row-stats {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1;
+}
+
+.stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: default;
+  transition: color 0.2s;
+}
+
+.stat-item:hover {
+  color: #409eff;
+}
+
+.stat-item .el-icon {
+  font-size: 13px;
 }
 </style>

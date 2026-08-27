@@ -57,4 +57,13 @@ public class HomeStatisticsVO implements Serializable {
 
     //总阅读量
     private Long viewTotal;
+
+    //今日浏览
+    private Long todayView;
+
+    //今日访客（去重IP）
+    private Long todayVisitor;
+
+    //总访客（去重IP）
+    private Long totalVisitor;
 }

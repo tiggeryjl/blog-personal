@@ -19,7 +19,10 @@
             (SELECT COUNT(*) FROM category WHERE delete_flag = 0)                                                                  AS categoryTotal,
             (SELECT COUNT(*) FROM tag WHERE delete_flag = 0)                                                                       AS tagTotal,
             (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0 AND status = 0)                                                  AS commentPending,
-            (SELECT IFNULL(SUM(view_num), 0) FROM article WHERE delete_flag = 0)                                                   AS viewTotal
+            (SELECT IFNULL(SUM(view_num), 0) FROM article WHERE delete_flag = 0)                                                   AS viewTotal,
+            (SELECT COUNT(*) FROM article_view_record WHERE create_time &gt;= CURDATE())                                            AS todayView,
+            (SELECT COUNT(DISTINCT ip_address) FROM article_view_record WHERE create_time &gt;= CURDATE())                          AS todayVisitor,
+            (SELECT COUNT(DISTINCT ip_address) FROM article_view_record)                                                            AS totalVisitor
     </select>
 
     <!-- 文章增量趋势 -->

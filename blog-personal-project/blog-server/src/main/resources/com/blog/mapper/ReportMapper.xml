@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.blog.mapper.ReportMapper">
+
+    <!-- ==================== 作品统计 ==================== -->
+
+    <select id="selectWorksSummary" resultType="map">
+        SELECT
+            (SELECT COUNT(*) FROM article WHERE delete_flag = 0) AS articleTotal,
+            (SELECT COUNT(*) FROM daily WHERE delete_flag = 0) AS dailyTotal,
+            (SELECT IFNULL(SUM(view_num), 0) FROM article WHERE delete_flag = 0) AS viewTotal,
+            (SELECT COUNT(*) FROM user_like WHERE delete_flag = 0) AS likeTotal,
+            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0) AS commentTotal,
+            (SELECT COUNT(*) FROM category WHERE delete_flag = 0) AS categoryTotal,
+            (SELECT COUNT(*) FROM tag WHERE delete_flag = 0) AS tagTotal,
+            (SELECT COUNT(*) FROM article WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newArticle,
+            (SELECT COUNT(*) FROM daily WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newDaily,
+            (SELECT COUNT(*) FROM article_view_record WHERE create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newView,
+            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newComment
+    </select>
+
+    <select id="selectArticleTrend" resultType="com.blog.pojo.vo.HomeTrendItemVO">
+        SELECT DATE_FORMAT(create_time, #{format}) AS period, COUNT(*) AS count
+        FROM article
+        WHERE delete_flag = 0
+          AND create_time &gt;= #{begin}
+          AND create_time &lt; #{end}
+        GROUP BY period
+        ORDER BY period
+    </select>
+
+    <select id="selectDailyTrend" resultType="com.blog.pojo.vo.HomeTrendItemVO">
+        SELECT DATE_FORMAT(create_time, #{format}) AS period, COUNT(*) AS count
+        FROM daily
+        WHERE delete_flag = 0
+          AND create_time &gt;= #{begin}
+          AND create_time &lt; #{end}
+        GROUP BY period
+        ORDER BY period
+    </select>
+
+    <select id="selectViewTrend" resultType="com.blog.pojo.vo.HomeTrendItemVO">
+        SELECT DATE_FORMAT(create_time, #{format}) AS period, COUNT(*) AS count
+        FROM article_view_record
+        WHERE create_time &gt;= #{begin}
+          AND create_time &lt; #{end}
+        GROUP BY period
+        ORDER BY period
+    </select>
+
+    <select id="selectArticleCategoryDistribution" resultType="com.blog.pojo.vo.ReportDistributionVO">
+        SELECT IFNULL(c.name, '未分类') AS name, COUNT(a.id) AS value
+        FROM article a
+        LEFT JOIN category c ON a.category_id = c.id
+        WHERE a.delete_flag = 0
+        GROUP BY c.id, c.name
+        ORDER BY value DESC
+    </select>
+
+    <select id="selectArticleStatusDistribution" resultType="com.blog.pojo.vo.ReportDistributionVO">
+        SELECT CASE status
+            WHEN 0 THEN '草稿'
+            WHEN 1 THEN '已发布'
+            WHEN 2 THEN '已下架'
+            WHEN 3 THEN '已归档'
+            WHEN 4 THEN '定时发布'
+            WHEN 5 THEN '私密'
+            ELSE '其他'
+        END AS name, COUNT(*) AS value
+        FROM article
+        WHERE delete_flag = 0
+        GROUP BY status
+        ORDER BY value DESC
+    </select>
+
+    <select id="selectTopArticleByViews" resultType="map">
+        SELECT a.id, a.title, c.name AS categoryName, a.view_num AS viewNum,
+               a.like_num AS likeNum, a.comment_num AS commentNum, a.publish_time AS publishTime
+        FROM article a
+        LEFT JOIN category c ON a.category_id = c.id
+        WHERE a.delete_flag = 0
+        ORDER BY a.view_num DESC, a.id ASC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectTopDailyByLikes" resultType="map">
+        SELECT d.id, LEFT(d.content, 50) AS content, d.like_num AS likeNum,
+               d.comment_num AS commentNum, d.publish_time AS publishTime
+        FROM daily d
+        WHERE d.delete_flag = 0
+        ORDER BY d.like_num DESC, d.id ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- ==================== 评论统计 ==================== -->
+
+    <select id="selectCommentSummary" resultType="map">
+        SELECT
+            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0) AS commentTotal,
+            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newComment,
+            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0 AND status = 1) AS normalCount,
+            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0 AND status = 0) AS hiddenCount,
+            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0 AND type = 0) AS articleCommentCount,
+            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0 AND type = 1) AS dailyCommentCount,
+            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0 AND type = 2) AS messageCommentCount
+    </select>
+
+    <select id="selectCommentTrend" resultType="com.blog.pojo.vo.HomeTrendItemVO">
+        SELECT DATE_FORMAT(create_time, #{format}) AS period, COUNT(*) AS count
+        FROM `comment`
+        WHERE delete_flag = 0
+          AND create_time &gt;= #{begin}
+          AND create_time &lt; #{end}
+        GROUP BY period
+        ORDER BY period
+    </select>
+
+    <select id="selectCommentTypeDistribution" resultType="com.blog.pojo.vo.ReportDistributionVO">
+        SELECT CASE type
+            WHEN 0 THEN '文章评论'
+            WHEN 1 THEN '日常评论'
+            WHEN 2 THEN '留言板'
+            ELSE '其他'
+        END AS name, COUNT(*) AS value
+        FROM `comment`
+        WHERE delete_flag = 0
+          AND create_time &gt;= #{begin}
+          AND create_time &lt; #{end}
+        GROUP BY type
+        ORDER BY value DESC
+    </select>
+
+    <select id="selectCommentStatusDistribution" resultType="com.blog.pojo.vo.ReportDistributionVO">
+        SELECT CASE status
+            WHEN 1 THEN '正常'
+            WHEN 0 THEN '隐藏'
+            ELSE '其他'
+        END AS name, COUNT(*) AS value
+        FROM `comment`
+        WHERE delete_flag = 0
+          AND create_time &gt;= #{begin}
+          AND create_time &lt; #{end}
+        GROUP BY status
+        ORDER BY value DESC
+    </select>
+
+    <select id="selectTopCommentArticle" resultType="map">
+        SELECT a.id, a.title, COUNT(c.id) AS commentCount, MAX(c.create_time) AS lastTime
+        FROM `comment` c
+        INNER JOIN article a ON c.source_id = a.id AND c.type = 0
+        WHERE c.delete_flag = 0
+          AND a.delete_flag = 0
+          AND c.create_time &gt;= #{begin}
+          AND c.create_time &lt; #{end}
+        GROUP BY a.id, a.title
+        ORDER BY commentCount DESC, a.id ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- ==================== 用户统计 ==================== -->
+
+    <select id="selectUserSummary" resultType="map">
+        SELECT
+            (SELECT COUNT(*) FROM sys_user WHERE delete_flag = 0) AS userTotal,
+            (SELECT COUNT(*) FROM sys_user WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newUser,
+            (SELECT COUNT(*) FROM sys_user WHERE delete_flag = 0 AND create_time &gt;= CURDATE()) AS todayNewUser,
+            (SELECT COUNT(*) FROM (
+                SELECT user_id FROM article WHERE delete_flag = 0 AND user_id IS NOT NULL AND create_time &gt;= #{begin} AND create_time &lt; #{end}
+                UNION
+                SELECT user_id FROM `comment` WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}
+            ) t) AS activeUserCount,
+            (SELECT COUNT(*) FROM sys_user WHERE delete_flag = 0 AND status = 1) AS disabledCount
+    </select>
+
+    <select id="selectUserTrend" resultType="com.blog.pojo.vo.HomeTrendItemVO">
+        SELECT DATE_FORMAT(create_time, #{format}) AS period, COUNT(*) AS count
+        FROM sys_user
+        WHERE delete_flag = 0
+          AND create_time &gt;= #{begin}
+          AND create_time &lt; #{end}
+        GROUP BY period
+        ORDER BY period
+    </select>
+
+    <select id="selectUserActivityDistribution" resultType="com.blog.pojo.vo.ReportDistributionVO">
+        SELECT '发文' AS name, COUNT(DISTINCT user_id) AS value
+        FROM article
+        WHERE delete_flag = 0 AND user_id IS NOT NULL
+        UNION ALL
+        SELECT '仅评论', COUNT(DISTINCT user_id)
+        FROM `comment`
+        WHERE delete_flag = 0
+          AND user_id NOT IN (SELECT user_id FROM article WHERE delete_flag = 0 AND user_id IS NOT NULL)
+        UNION ALL
+        SELECT '纯注册', COUNT(*)
+        FROM sys_user u
+        WHERE u.delete_flag = 0
+          AND u.id NOT IN (SELECT user_id FROM article WHERE delete_flag = 0 AND user_id IS NOT NULL)
+          AND u.id NOT IN (SELECT user_id FROM `comment` WHERE delete_flag = 0)
+    </select>
+
+    <select id="selectTopActiveUsers" resultType="map">
+        SELECT u.id, u.nickname, u.avatar,
+               IFNULL(a.cnt, 0) AS articleCount,
+               IFNULL(c.cnt, 0) AS commentCount,
+               (IFNULL(a.cnt, 0) + IFNULL(c.cnt, 0)) AS activityCount
+        FROM sys_user u
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) AS cnt
+            FROM article
+            WHERE delete_flag = 0 AND user_id IS NOT NULL
+              AND create_time &gt;= #{begin} AND create_time &lt; #{end}
+            GROUP BY user_id
+        ) a ON a.user_id = u.id
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) AS cnt
+            FROM `comment`
+            WHERE delete_flag = 0
+              AND create_time &gt;= #{begin} AND create_time &lt; #{end}
+            GROUP BY user_id
+        ) c ON c.user_id = u.id
+        WHERE u.delete_flag = 0
+        ORDER BY activityCount DESC, u.id ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- ==================== 友链统计 ==================== -->
+
+    <select id="selectLinkSummary" resultType="map">
+        SELECT
+            (SELECT COUNT(*) FROM link WHERE delete_flag = 0) AS linkTotal,
+            (SELECT COUNT(*) FROM link WHERE delete_flag = 0 AND audit_status = 0) AS pendingCount,
+            (SELECT COUNT(*) FROM link WHERE delete_flag = 0 AND audit_status = 1) AS approvedCount,
+            (SELECT COUNT(*) FROM link WHERE delete_flag = 0 AND audit_status = 2) AS rejectedCount,
+            (SELECT COUNT(*) FROM link WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newApply,
+            (SELECT COUNT(*) FROM link WHERE delete_flag = 0 AND status = 1 AND audit_status = 1) AS displayCount
+    </select>
+
+    <select id="selectLinkTrend" resultType="com.blog.pojo.vo.HomeTrendItemVO">
+        SELECT DATE_FORMAT(create_time, #{format}) AS period, COUNT(*) AS count
+        FROM link
+        WHERE delete_flag = 0
+          AND create_time &gt;= #{begin}
+          AND create_time &lt; #{end}
+        GROUP BY period
+        ORDER BY period
+    </select>
+
+    <select id="selectLinkAuditDistribution" resultType="com.blog.pojo.vo.ReportDistributionVO">
+        SELECT CASE audit_status
+            WHEN 0 THEN '待审核'
+            WHEN 1 THEN '已通过'
+            WHEN 2 THEN '已拒绝'
+            ELSE '其他'
+        END AS name, COUNT(*) AS value
+        FROM link
+        WHERE delete_flag = 0
+        GROUP BY audit_status
+        ORDER BY value DESC
+    </select>
+
+    <select id="selectTopPendingLinks" resultType="map">
+        SELECT id, link_name AS linkName, link_url AS linkUrl,
+               link_email AS linkEmail, create_time AS createTime
+        FROM link
+        WHERE delete_flag = 0 AND audit_status = 0
+        ORDER BY create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- ==================== AI 周报 ==================== -->
+
+    <select id="selectWeeklyReportData" resultType="map">
+        SELECT
+            (SELECT COUNT(*) FROM article_view_record WHERE create_time &gt;= #{begin} AND create_time &lt; #{end}) AS views,
+            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS comments,
+            (SELECT COUNT(*) FROM article WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newArticles,
+            (SELECT COUNT(*) FROM sys_user WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newUsers
+    </select>
+
+    <select id="selectTopArticlesByWeeklyViews" resultType="map">
+        SELECT a.id, a.title, COUNT(v.id) AS viewCount
+        FROM article_view_record v
+        INNER JOIN article a ON v.article_id = a.id
+        WHERE v.create_time &gt;= #{begin}
+          AND v.create_time &lt; #{end}
+          AND a.delete_flag = 0
+        GROUP BY a.id, a.title
+        ORDER BY viewCount DESC, a.id ASC
+        LIMIT #{limit}
+    </select>
+</mapper>

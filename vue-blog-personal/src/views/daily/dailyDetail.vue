@@ -5,6 +5,7 @@ import { ElMessage } from 'element-plus'
 import Emoji from '@/components/Emoji.vue'
 import CommentList from '@/components/Comment.vue'
 import { ZoomIn, ZoomOut, ChatDotRound, DArrowLeft } from '@element-plus/icons-vue'
+import { addDailyViewApi } from '@/api/daily'
 
 const router = useRouter()
 const route = useRoute()
@@ -270,6 +271,8 @@ watch(() => route.params.id, () => {
 
 onMounted(() => {
   fetchDailyDetail()
+  // 浏览数 +1（失败静默，不影响页面）
+  addDailyViewApi(route.params.id).catch(() => {})
   document.addEventListener('click', closeEmojiOutside)
 })
 

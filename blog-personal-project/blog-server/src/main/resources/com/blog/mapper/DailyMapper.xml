@@ -67,6 +67,14 @@
           AND delete_flag = 0
     </select>
 
+    <!-- 浏览数 +1 -->
+    <update id="incrementView">
+        UPDATE daily
+        SET view_num = IFNULL(view_num, 0) + 1
+        WHERE id = #{id}
+          AND delete_flag = 0
+    </update>
+
     <!-- 新增日常 -->
     <insert id="add" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO daily(content, images, files, user_id, user_nickname, user_avatar,

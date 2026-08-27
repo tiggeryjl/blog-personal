@@ -18,6 +18,18 @@ const stats = ref({});
 // 统计卡片分组配置：按业务模块归类，key 对应后端返回字段，label 展示名称
 const cardGroups = [
   {
+    name: '访问统计',
+    icon: 'DataLine',
+    color: '#409EFF',
+    fullWidth: true,
+    cards: [
+      { key: 'todayView', label: '今日浏览', icon: 'View', color: '#409EFF' },
+      { key: 'todayVisitor', label: '今日访客', icon: 'UserFilled', color: '#E6A23C' },
+      { key: 'totalVisitor', label: '总访客', icon: 'Avatar', color: '#7C4DFF' },
+      { key: 'viewTotal', label: '总阅读量', icon: 'DataLine', color: '#F56C6C' },
+    ],
+  },
+  {
     name: '作品管理',
     icon: 'Document',
     color: '#409EFF',
@@ -26,7 +38,6 @@ const cardGroups = [
       { key: 'dailyTotal', label: '日常总数', icon: 'Notebook', color: '#67C23A' },
       { key: 'categoryTotal', label: '分类总数', icon: 'Discount', color: '#409EFF' },
       { key: 'tagTotal', label: '标签总数', icon: 'PriceTag', color: '#67C23A' },
-      { key: 'viewTotal', label: '总阅读量', icon: 'View', color: '#F56C6C' },
     ],
   },
   {
@@ -241,7 +252,12 @@ onMounted(() => {
 
     <!-- 统计卡片分组 -->
     <div v-loading="loading" class="stat-groups">
-      <div v-for="group in statGroups" :key="group.name" class="stat-group">
+      <div
+        v-for="group in statGroups"
+        :key="group.name"
+        class="stat-group"
+        :class="{ 'stat-group-full': group.fullWidth }"
+      >
         <div class="group-header">
           <span class="group-icon" :style="{ background: group.color }">
             <el-icon :size="16">
@@ -386,6 +402,15 @@ onMounted(() => {
   align-content: start;
 }
 
+/* 全宽分组（访问统计）：四列展示 */
+.stat-group-full {
+  grid-column: 1 / -1;
+}
+
+.stat-group-full .group-cards {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .stat-card {
   display: flex;
   align-items: center;
@@ -486,10 +511,18 @@ onMounted(() => {
   .group-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .stat-group-full .group-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 768px) {
   .group-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-group-full .group-cards {
     grid-template-columns: 1fr;
   }
 }

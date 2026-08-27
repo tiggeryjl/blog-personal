@@ -6,8 +6,9 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus, Search, Refresh, View, Edit, Delete,
   Upload, Hide, Position, Timer, Close, Check, ZoomIn, ZoomOut,
-  Document, WarningFilled
+  Document, WarningFilled, Star, ChatDotRound
 } from '@element-plus/icons-vue'
+import { formatCount } from '@/utils/format'
 import { uploadApi } from '@/api/upload'
 import {
   getDailyListApi,
@@ -431,14 +432,29 @@ const timedDialogVisible = ref(false)
 const currentTimedId = ref(null)
 const timedPublishTime = ref('')
 const timedSubmitLoading = ref(false)
+const timedDialogMode = ref('set') // set=设置定时 modify=修改定时
+
+// 后端时间转日期选择器格式
+const toDateTimeStr = (value) => (value ? String(value).replace('T', ' ').slice(0, 19) : '')
+
+const timedDialogTitle = () => (timedDialogMode.value === 'modify' ? '修改定时发布' : '设置定时发布')
 
 const disabledDate = (time) => {
   return time.getTime() < Date.now() - 86400000
 }
 
-const openTimedDialog = (id) => {
-  currentTimedId.value = id
+const openTimedDialog = (row) => {
+  timedDialogMode.value = 'set'
+  currentTimedId.value = row.id
   timedPublishTime.value = ''
+  timedDialogVisible.value = true
+}
+
+// 打开修改定时弹窗，预填当前定时时间
+const openModifyTimed = (row) => {
+  timedDialogMode.value = 'modify'
+  currentTimedId.value = row.id
+  timedPublishTime.value = toDateTimeStr(row.timedPublishTime)
   timedDialogVisible.value = true
 }
 
@@ -468,13 +484,15 @@ const submitSetTimed = async () => {
   }
 }
 
-const cancelTimed = (id) => {
+// 弹窗内取消定时
+const cancelTimedInDialog = () => {
   confirmAction('确认取消该日常的定时发布？取消后将恢复为草稿。')
     .then(() =>
-      withActionGuard(id, async () => {
-        const result = await cancelDailyTimedApi(id)
+      withActionGuard(currentTimedId.value, async () => {
+        const result = await cancelDailyTimedApi(currentTimedId.value)
         if (result.code === 200) {
           ElMessage.success('已取消定时发布')
+          timedDialogVisible.value = false
           getDailyList()
         } else {
           ElMessage.error(result.msg || '取消失败')
@@ -668,9 +686,23 @@ onMounted(() => {
       >
         <el-table-column type="selection" width="55" align="center" />
 
-        <el-table-column prop="content" label="内容" min-width="200" align="center">
+        <el-table-column prop="content" label="内容" min-width="220" align="center">
           <template #default="{ row }">
             <div class="wrap-title" :title="row.content">{{ row.content || '——' }}</div>
+            <div class="row-stats">
+              <span class="stat-item" title="浏览">
+                <el-icon><View /></el-icon>
+                {{ formatCount(row.viewNum) }}
+              </span>
+              <span class="stat-item" title="点赞">
+                <el-icon><Star /></el-icon>
+                {{ formatCount(row.likeNum) }}
+              </span>
+              <span class="stat-item" title="评论">
+                <el-icon><ChatDotRound /></el-icon>
+                {{ formatCount(row.commentNum) }}
+              </span>
+            </div>
           </template>
         </el-table-column>
 
@@ -792,8 +824,8 @@ onMounted(() => {
                 type="warning"
                 link
                 :icon="Timer"
-                @click="cancelTimed(scope.row.id)"
-              >取消定时</el-button>
+                @click="openModifyTimed(scope.row)"
+              >修改定时</el-button>
 
               <el-button
                 v-perm="'sys:works:edit'"
@@ -909,7 +941,7 @@ onMounted(() => {
     </el-dialog>
 
     <!-- 定时发布弹窗 -->
-    <el-dialog v-model="timedDialogVisible" title="设置定时发布" width="420px" :close-on-click-modal="false">
+    <el-dialog v-model="timedDialogVisible" :title="timedDialogTitle()" width="420px" :close-on-click-modal="false">
       <el-form label-width="80px">
         <el-form-item label="发布时间">
           <el-date-picker
@@ -923,6 +955,9 @@ onMounted(() => {
         </el-form-item>
       </el-form>
       <template #footer>
+        <el-button v-if="timedDialogMode === 'modify'" type="danger" plain @click="cancelTimedInDialog">
+          取消定时
+        </el-button>
         <el-button @click="timedDialogVisible = false" :disabled="timedSubmitLoading">取消</el-button>
         <el-button type="primary" :loading="timedSubmitLoading" @click="submitSetTimed">确认设置</el-button>
       </template>
@@ -1345,5 +1380,33 @@ onMounted(() => {
 :deep(.el-table__cell) {
   overflow-x: auto;
   padding: 0 8px;
+}
+
+/* 内容下方的点赞/评论统计行 */
+.row-stats {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1;
+}
+
+.stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: default;
+  transition: color 0.2s;
+}
+
+.stat-item:hover {
+  color: #409eff;
+}
+
+.stat-item .el-icon {
+  font-size: 13px;
 }
 </style>

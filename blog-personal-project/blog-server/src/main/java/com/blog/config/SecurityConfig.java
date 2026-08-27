@@ -71,6 +71,7 @@ public class SecurityConfig {
                                 "/link/apply",
                                 "/link/list",
                                 "/link/applications",
+                                "/user/daily/**",
                                 "/AiChat/ai/stream-chat",
                                 "/ws/admin/notice",
                                 "/error",

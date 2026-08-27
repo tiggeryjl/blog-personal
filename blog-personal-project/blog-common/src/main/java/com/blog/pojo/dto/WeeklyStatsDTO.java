@@ -29,7 +29,7 @@ public class WeeklyStatsDTO implements Serializable {
     private Integer newArticles;
 
     /**
-     * 新增订阅
+     * 新增用户（原字段名保留，语义为新增用户）
      */
     private Integer newSubscribers;
 

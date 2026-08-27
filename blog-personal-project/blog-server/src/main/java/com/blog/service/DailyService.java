@@ -33,6 +33,12 @@ public interface DailyService {
     Daily getById(Long id);
 
     /**
+     * 日常浏览数 +1
+     * @param id 日常ID
+     */
+    void incrementView(Long id);
+
+    /**
      * 修改日常
      * @param dailyDTO 日常信息
      */

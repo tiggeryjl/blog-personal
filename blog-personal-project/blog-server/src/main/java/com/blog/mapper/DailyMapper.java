@@ -36,6 +36,12 @@ public interface DailyMapper {
     Daily getById(Long id);
 
     /**
+     * 浏览数 +1
+     * @param id 日常ID
+     */
+    void incrementView(Long id);
+
+    /**
      * 新增日常
      * @param daily 日常信息
      */
