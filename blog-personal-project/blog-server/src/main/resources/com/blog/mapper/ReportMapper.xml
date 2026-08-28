@@ -4,21 +4,63 @@
 <mapper namespace="com.blog.mapper.ReportMapper">
 
     <!-- ==================== 作品统计 ==================== -->
+    <select id="selectWorksSummary1" resultType="map">
+        SELECT
+            (SELECT COUNT(*) FROM article WHERE delete_flag = 0) AS articleTotal,
+            (SELECT COUNT(*) FROM article WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newArticle,
+            (SELECT IFNULL(SUM(view_num), 0) FROM article WHERE delete_flag = 0) AS viewTotal,
+            (SELECT COUNT(*) FROM article_view_record WHERE create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newView,
+            (SELECT COUNT(*) FROM daily WHERE delete_flag = 0) AS dailyTotal,
+            (SELECT COUNT(*) FROM daily WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newDaily,
+            (SELECT COUNT(*) FROM user_like WHERE delete_flag = 0) AS likeTotal,
+            (SELECT COUNT(*) FROM category WHERE delete_flag = 0) AS categoryTotal,
+            (SELECT COUNT(*) FROM tag WHERE delete_flag = 0) AS tagTotal,
+            (SELECT COUNT(*) FROM comment WHERE delete_flag = 0) AS commentTotal,
+            (SELECT COUNT(*) FROM comment WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newComment
+    </select>
 
     <select id="selectWorksSummary" resultType="map">
         SELECT
-            (SELECT COUNT(*) FROM article WHERE delete_flag = 0) AS articleTotal,
-            (SELECT COUNT(*) FROM daily WHERE delete_flag = 0) AS dailyTotal,
-            (SELECT IFNULL(SUM(view_num), 0) FROM article WHERE delete_flag = 0) AS viewTotal,
-            (SELECT COUNT(*) FROM user_like WHERE delete_flag = 0) AS likeTotal,
-            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0) AS commentTotal,
-            (SELECT COUNT(*) FROM category WHERE delete_flag = 0) AS categoryTotal,
-            (SELECT COUNT(*) FROM tag WHERE delete_flag = 0) AS tagTotal,
-            (SELECT COUNT(*) FROM article WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newArticle,
-            (SELECT COUNT(*) FROM daily WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newDaily,
-            (SELECT COUNT(*) FROM article_view_record WHERE create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newView,
-            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newComment
+            -- 全部总量
+            a.articleTotal,
+            d.dailyTotal,
+            a.viewTotal,
+            ul.likeTotal,
+            c.commentTotal,
+            cat.categoryTotal,
+            t.tagTotal,
+            -- 区间新增
+            a.newArticle,
+            d.newDaily,
+            avr.newView,
+            c.newComment
+        FROM
+            (SELECT
+                 COUNT(*) articleTotal,
+                 IFNULL(SUM(view_num),0) viewTotal,
+                 SUM(IF(create_time &gt;= #{begin} AND create_time &lt; #{end}, 1, 0)) newArticle
+             FROM article WHERE delete_flag = 0) a,
+
+            (SELECT
+                 COUNT(*) dailyTotal,
+                 SUM(IF(create_time &gt;= #{begin} AND create_time &lt; #{end}, 1, 0)) newDaily
+             FROM daily WHERE delete_flag = 0) d,
+
+            (SELECT COUNT(*) likeTotal FROM user_like WHERE delete_flag = 0) ul,
+
+            (SELECT
+                 COUNT(*) commentTotal,
+                 SUM(IF(create_time &gt;= #{begin} AND create_time &lt; #{end}, 1, 0)) newComment
+             FROM `comment` WHERE delete_flag = 0) c,
+
+            (SELECT COUNT(*) categoryTotal FROM category WHERE delete_flag = 0) cat,
+
+            (SELECT COUNT(*) tagTotal FROM tag WHERE delete_flag = 0) t,
+
+            (SELECT COUNT(*) newView FROM article_view_record
+             WHERE create_time &gt;= #{begin} AND create_time &lt; #{end}) avr;
     </select>
+
 
     <select id="selectArticleTrend" resultType="com.blog.pojo.vo.HomeTrendItemVO">
         SELECT DATE_FORMAT(create_time, #{format}) AS period, COUNT(*) AS count
@@ -97,13 +139,13 @@
 
     <select id="selectCommentSummary" resultType="map">
         SELECT
-            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0) AS commentTotal,
-            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newComment,
-            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0 AND status = 1) AS normalCount,
-            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0 AND status = 0) AS hiddenCount,
-            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0 AND type = 0) AS articleCommentCount,
-            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0 AND type = 1) AS dailyCommentCount,
-            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0 AND type = 2) AS messageCommentCount
+            (SELECT COUNT(*) FROM comment WHERE delete_flag = 0) AS commentTotal,
+            (SELECT COUNT(*) FROM comment WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newComment,
+            (SELECT COUNT(*) FROM comment WHERE delete_flag = 0 AND status = 1) AS normalCount,
+            (SELECT COUNT(*) FROM comment WHERE delete_flag = 0 AND status = 0) AS hiddenCount,
+            (SELECT COUNT(*) FROM comment WHERE delete_flag = 0 AND type = 0) AS articleCommentCount,
+            (SELECT COUNT(*) FROM comment WHERE delete_flag = 0 AND type = 1) AS dailyCommentCount,
+            (SELECT COUNT(*) FROM comment WHERE delete_flag = 0 AND type = 2) AS messageCommentCount
     </select>
 
     <select id="selectCommentTrend" resultType="com.blog.pojo.vo.HomeTrendItemVO">
@@ -170,7 +212,7 @@
                 UNION
                 SELECT user_id FROM `comment` WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}
             ) t) AS activeUserCount,
-            (SELECT COUNT(*) FROM sys_user WHERE delete_flag = 0 AND status = 1) AS disabledCount
+            (SELECT COUNT(*) FROM sys_user WHERE delete_flag = 0 AND status = 0) AS disabledCount
     </select>
 
     <select id="selectUserTrend" resultType="com.blog.pojo.vo.HomeTrendItemVO">

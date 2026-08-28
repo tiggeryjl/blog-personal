@@ -95,11 +95,7 @@ public class DailyServiceImpl implements DailyService {
      */
     @Override
     public Daily getById(Long id) {
-        Daily daily = dailyMapper.getById(id);
-        if (daily == null) {
-            throw new CustomException("日常不存在或已被删除");
-        }
-        return daily;
+        return dailyMapper.getById(id);
     }
 
     /**

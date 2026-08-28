@@ -49,7 +49,7 @@ export const fetchStream = async (userMessage, deepThink, onChunk) => {
           content = content.substring(5).trim();
         }
 
-        // 尝试解析 JSON（如果数据是 JSON 字符串）
+        // 尝试解析 JSON
         let finalText = content;
         if (content.startsWith('"') && content.endsWith('"')) {
           try {
@@ -66,12 +66,11 @@ export const fetchStream = async (userMessage, deepThink, onChunk) => {
           }
         }
 
-        // 传递最终干净的数据
+        // 传递最终的数据
         if (onChunk) {
           onChunk(finalText);
         }
       }
-      // 其他行（如空行、注释等）直接忽略
     }
   }
 

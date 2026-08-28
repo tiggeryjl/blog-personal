@@ -73,7 +73,7 @@ public interface ArticleMapper {
      */
     int updateTimedPublish(Article article);
 
-    /** 2  1
+    /**
      * 取消定时,改回草稿,清空定时时间
      */
     int cancelTimedPublish(Article article);
@@ -91,7 +91,7 @@ public interface ArticleMapper {
     void deleteBatchLogic(List<Long> ids, Integer deleteFlag);
 
     /**
-     * 批量恢复（逻辑删除 -> 正常）
+     * 批量恢复
      * @param ids
      */
     void recoverBatch(@Param("ids") List<Long> ids);

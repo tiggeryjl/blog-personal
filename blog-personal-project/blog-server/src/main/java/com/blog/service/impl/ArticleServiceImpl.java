@@ -250,7 +250,7 @@ public class ArticleServiceImpl implements ArticleService {
             throw new ArticleException("文章不存在");
         }
 
-        // 2. 校验状态：只有定时发布状态才能取消
+        // 2. 只有定时发布状态才能取消
         if (!ArticleStatusConstant.SCHEDULED.equals(oldArticle.getStatus())) {
             throw new ArticleException("当前文章不是定时发布状态，无法取消");
         }

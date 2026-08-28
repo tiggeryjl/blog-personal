@@ -1,5 +1,4 @@
-// 数字友好格式化
-// 小于1万显示千分位（1,234），大于等于1万显示 x.x万（1.2万），整数万不带小数
+// 小于1万显示千分位（1,234），大于等于1万显示 x.x万
 export const formatCount = (value) => {
   const num = Number(value) || 0;
   if (num >= 10000) {

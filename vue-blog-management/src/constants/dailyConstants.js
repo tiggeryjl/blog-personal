@@ -27,8 +27,8 @@ export const DAILY_STATUS_TYPE = {
   [DAILY_STATUS.DRAFT]: 'info',
   [DAILY_STATUS.PUBLISHED]: 'success',
   [DAILY_STATUS.OFFLINE]: 'danger',
-  [DAILY_STATUS.SCHEDULED]: 'warning',
-  [DAILY_STATUS.PRIVATE]: 'primary',
+  [DAILY_STATUS.SCHEDULED]: 'primary',
+  [DAILY_STATUS.PRIVATE]: 'default',
 };
 
 /**
