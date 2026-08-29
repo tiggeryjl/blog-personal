@@ -16,6 +16,9 @@ public class SpringContextHolder implements ApplicationContextAware {
     }
 
     public static <T> T getBean(Class<T> clazz) {
+        if(applicationContext == null){
+            throw new RuntimeException("Spring上下文未初始化");
+        }
         return applicationContext.getBean(clazz);
     }
 }

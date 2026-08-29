@@ -1,21 +1,22 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { DArrowLeft, DArrowRight, ZoomIn, ZoomOut } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { useRoute, useRouter } from 'vue-router'
-import CommentList from '@/components/Comment.vue'
-import Emoji from '@/components/Emoji.vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { DArrowLeft, DArrowRight, ZoomIn, ZoomOut } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
+import { useRoute, useRouter } from 'vue-router';
+import CommentList from '@/components/Comment.vue';
+import Emoji from '@/components/Emoji.vue';
+import { getArticleListApi, getArticleDetailApi } from '@/api/article.js';
 
-const router = useRouter()
-const route = useRoute()
+const router = useRouter();
+const route = useRoute();
 
-const prevArticle = ref(null)
-const nextArticle = ref(null)
+const prevArticle = ref(null);
+const nextArticle = ref(null);
 
 // 评论表单
 const commentForm = ref({
-  content: ''
-})
+  content: '',
+});
 
 const getDefaultComments = (articleId) => {
   if (articleId === '1') {
@@ -28,51 +29,51 @@ const getDefaultComments = (articleId) => {
         time: '2025-01-01 12:00',
         isAdmin: true,
         like: 7,
-        replies: []
-      }
-    ]
+        replies: [],
+      },
+    ];
   }
-  return []
-}
+  return [];
+};
 // 点赞主评论
 const likeComment = (commentId) => {
-  const list = currentCommentList.value
-  const comment = list.find(c => c.id === commentId)
-  if (comment) comment.like++
-  ElMessage.success('点赞成功！')
-}
+  const list = currentCommentList.value;
+  const comment = list.find((c) => c.id === commentId);
+  if (comment) comment.like++;
+  ElMessage.success('点赞成功！');
+};
 
 // 点赞回复
 const likeReply = (commentId, replyId) => {
-  const list = currentCommentList.value
-  const comment = list.find(c => c.id === commentId)
-  if (!comment) return
-  const reply = comment.replies.find(r => r.id === replyId)
-  if (reply) reply.like++
-  ElMessage.success('点赞成功！')
-}
+  const list = currentCommentList.value;
+  const comment = list.find((c) => c.id === commentId);
+  if (!comment) return;
+  const reply = comment.replies.find((r) => r.id === replyId);
+  if (reply) reply.like++;
+  ElMessage.success('点赞成功！');
+};
 
 // 存储所有文章的评论，key: 文章id, value: 评论数组
-const commentsStore = ref({})
+const commentsStore = ref({});
 
 // 当前文章ID
-const currentArticleId = computed(() => route.params.id)
+const currentArticleId = computed(() => route.params.id);
 
 // 当前文章的评论列表（计算属性，自动响应）
 const currentCommentList = computed(() => {
-  const id = currentArticleId.value
+  const id = currentArticleId.value;
   if (!commentsStore.value[id]) {
-    commentsStore.value[id] = getDefaultComments(id)
+    commentsStore.value[id] = getDefaultComments(id);
   }
-  return commentsStore.value[id]
-})
+  return commentsStore.value[id];
+});
 
 const publishComment = (commentId, replyId, content) => {
   // 发布新评论（无参数）
   if (commentId === undefined && replyId === undefined && content === undefined) {
     if (!commentForm.value.content.trim()) {
-      ElMessage.warning('评论内容不能为空~')
-      return
+      ElMessage.warning('评论内容不能为空~');
+      return;
     }
     const newComment = {
       id: Date.now(),
@@ -82,23 +83,23 @@ const publishComment = (commentId, replyId, content) => {
       time: new Date().toLocaleString(),
       isAdmin: false,
       like: 0,
-      replies: []
-    }
+      replies: [],
+    };
     // 注意：要修改当前文章的评论数组（直接操作 commentsStore 中对应的数组）
-    commentsStore.value[currentArticleId.value].unshift(newComment)
-    ElMessage.success('评论发布成功！')
-    commentForm.value.content = ''
-    return
+    commentsStore.value[currentArticleId.value].unshift(newComment);
+    ElMessage.success('评论发布成功！');
+    commentForm.value.content = '';
+    return;
   }
 
   // 回复评论
-  const parentComment = currentCommentList.value.find(c => c.id === commentId)
-  if (!parentComment) return
+  const parentComment = currentCommentList.value.find((c) => c.id === commentId);
+  if (!parentComment) return;
 
-  let replyToName = parentComment.nickname
+  let replyToName = parentComment.nickname;
   if (replyId) {
-    const targetReply = parentComment.replies.find(r => r.id === replyId)
-    if (targetReply) replyToName = targetReply.nickname
+    const targetReply = parentComment.replies.find((r) => r.id === replyId);
+    if (targetReply) replyToName = targetReply.nickname;
   }
 
   parentComment.replies.unshift({
@@ -108,230 +109,225 @@ const publishComment = (commentId, replyId, content) => {
     content: content,
     replyTo: replyToName,
     time: new Date().toLocaleString(),
-    like: 0
-  })
-  ElMessage.success('回复成功！')
-}
-
-// 跳转方法
-const goToArticle = (id) => {
-  router.push(`/article/${id}`)
-}
+    like: 0,
+  });
+  ElMessage.success('回复成功！');
+};
 
 // ========== 图片预览（循环轮播 + 预加载 + loading） ==========
-const showImageModal = ref(false)
-const previewImageUrl = ref('')
-const scale = ref(1)
-const imageList = ref([])
-const currentImageIndex = ref(0)
-const imageLoading = ref(false)   // 加载状态
+const showImageModal = ref(false);
+const previewImageUrl = ref('');
+const scale = ref(1);
+const imageList = ref([]);
+const currentImageIndex = ref(0);
+const imageLoading = ref(false); // 加载状态
 
 // 预加载单张图片
 const preloadImage = (url) => {
   return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(url)
-    img.onerror = (err) => reject(err)
-    img.src = url
-  })
-}
+    const img = new Image();
+    img.onload = () => resolve(url);
+    img.onerror = (err) => reject(err);
+    img.src = url;
+  });
+};
 
 // 预加载当前图片的相邻两张（循环）
 const preloadAdjacent = (list, currentIdx) => {
-  if (!list.length) return
-  const len = list.length
-  const prevIdx = (currentIdx - 1 + len) % len
-  const nextIdx = (currentIdx + 1) % len
-  if (list[prevIdx]) preloadImage(list[prevIdx]).catch(() => { })
-  if (list[nextIdx]) preloadImage(list[nextIdx]).catch(() => { })
-}
+  if (!list.length) return;
+  const len = list.length;
+  const prevIdx = (currentIdx - 1 + len) % len;
+  const nextIdx = (currentIdx + 1) % len;
+  if (list[prevIdx]) preloadImage(list[prevIdx]).catch(() => {});
+  if (list[nextIdx]) preloadImage(list[nextIdx]).catch(() => {});
+};
 
 // 切换到指定索引的图片（带loading）
 const switchToImage = async (newIndex) => {
-  if (imageLoading.value) return
-  const len = imageList.value.length
-  if (len === 0) return
+  if (imageLoading.value) return;
+  const len = imageList.value.length;
+  if (len === 0) return;
   // 确保索引在合法范围（实际上调用前已处理循环，但防御一下）
-  const safeIndex = (newIndex + len) % len
-  const targetUrl = imageList.value[safeIndex]
-  if (!targetUrl) return
+  const safeIndex = (newIndex + len) % len;
+  const targetUrl = imageList.value[safeIndex];
+  if (!targetUrl) return;
 
-  imageLoading.value = true
+  imageLoading.value = true;
   try {
-    await preloadImage(targetUrl)
-    currentImageIndex.value = safeIndex
-    previewImageUrl.value = targetUrl
-    scale.value = 1
+    await preloadImage(targetUrl);
+    currentImageIndex.value = safeIndex;
+    previewImageUrl.value = targetUrl;
+    scale.value = 1;
     // 预加载新的相邻图片
-    preloadAdjacent(imageList.value, safeIndex)
+    preloadAdjacent(imageList.value, safeIndex);
   } catch (err) {
-    console.warn('图片加载失败', err)
-    currentImageIndex.value = safeIndex
-    previewImageUrl.value = targetUrl
+    console.warn('图片加载失败', err);
+    currentImageIndex.value = safeIndex;
+    previewImageUrl.value = targetUrl;
   } finally {
-    imageLoading.value = false
+    imageLoading.value = false;
   }
-}
+};
 
 // 点击图片打开预览
 const handleImageClick = async (e) => {
-  if (e.target.tagName !== 'IMG') return
-  const imgs = document.querySelectorAll('.article-body img')
-  imageList.value = Array.from(imgs).map(img => img.src)
-  const clickedIndex = Array.from(imgs).findIndex(img => img === e.target)
-  if (clickedIndex === -1) return
+  if (e.target.tagName !== 'IMG') return;
+  const imgs = document.querySelectorAll('.article-body img');
+  imageList.value = Array.from(imgs).map((img) => img.src);
+  const clickedIndex = Array.from(imgs).findIndex((img) => img === e.target);
+  if (clickedIndex === -1) return;
 
-  currentImageIndex.value = clickedIndex
-  previewImageUrl.value = imageList.value[clickedIndex]
-  scale.value = 1
-  showImageModal.value = true
-  imageLoading.value = true
+  currentImageIndex.value = clickedIndex;
+  previewImageUrl.value = imageList.value[clickedIndex];
+  scale.value = 1;
+  showImageModal.value = true;
+  imageLoading.value = true;
   try {
-    await preloadImage(imageList.value[clickedIndex])
-    preloadAdjacent(imageList.value, clickedIndex)
+    await preloadImage(imageList.value[clickedIndex]);
+    preloadAdjacent(imageList.value, clickedIndex);
   } catch (err) {
-    console.warn('初始图片加载失败', err)
+    console.warn('初始图片加载失败', err);
   } finally {
-    imageLoading.value = false
+    imageLoading.value = false;
   }
-}
+};
 
 // 上一张（循环）
 const prevImage = () => {
-  if (imageLoading.value) return
-  const len = imageList.value.length
-  if (len === 0) return
-  const newIndex = (currentImageIndex.value - 1 + len) % len
-  switchToImage(newIndex)
-}
+  if (imageLoading.value) return;
+  const len = imageList.value.length;
+  if (len === 0) return;
+  const newIndex = (currentImageIndex.value - 1 + len) % len;
+  switchToImage(newIndex);
+};
 
 // 下一张（循环）
 const nextImage = () => {
-  if (imageLoading.value) return
-  const len = imageList.value.length
-  if (len === 0) return
-  const newIndex = (currentImageIndex.value + 1) % len
-  switchToImage(newIndex)
-}
+  if (imageLoading.value) return;
+  const len = imageList.value.length;
+  if (len === 0) return;
+  const newIndex = (currentImageIndex.value + 1) % len;
+  switchToImage(newIndex);
+};
 
 // 放大/缩小
-const zoomIn = () => { scale.value = Math.min(scale.value + 0.2, 3) }
-const zoomOut = () => { scale.value = Math.max(scale.value - 0.2, 0.6) }
+const zoomIn = () => {
+  scale.value = Math.min(scale.value + 0.2, 3);
+};
+const zoomOut = () => {
+  scale.value = Math.max(scale.value - 0.2, 0.6);
+};
 
 // 关闭弹窗
 const closeModal = () => {
-  showImageModal.value = false
-  previewImageUrl.value = ''
-  scale.value = 1
-  imageLoading.value = false
-}
+  showImageModal.value = false;
+  previewImageUrl.value = '';
+  scale.value = 1;
+  imageLoading.value = false;
+};
+
+//点赞文章
+const like = () => {
+  const articleId = route.params.id;
+  const storageKey = `liked_article_${articleId}`;
+  if (localStorage.getItem(storageKey)) {
+    ElMessage.warning('你已经点过赞了');
+    return;
+  }
+  article.value.like++;
+  localStorage.setItem(storageKey, '1');
+  ElMessage.success('点赞成功！');
+};
 
 const article = ref({
   title: '',
-  author: '',
+  userNickname: '',
   createTime: '',
   category: '',
-  view: 0,
-  like: 0,
-  // 核心：文章内容（带 <p> <img> 标签）
-  content: ''
-})
-//点赞文章
-const like = () => {
-  const articleId = route.params.id
-  const storageKey = `liked_article_${articleId}`
-  if (localStorage.getItem(storageKey)) {
-    ElMessage.warning('你已经点过赞了')
-    return
-  }
-  article.value.like++
-  localStorage.setItem(storageKey, '1')
-  ElMessage.success('点赞成功！')
-}
+  viewNum: 0,
+  likeNum: 0,
+  content: '',
+});
+const articleList = ref([]);
+const loadArticle = async () => {
+  try {
+    const articleId = route.params.id;
+    const result = await getArticleDetailApi(articleId);
+    const articleListResult = await getArticleListApi();
 
-const loadArticle = () => {
-  const currentId = route.params.id
-  article.value = {
-    title: '我的第一篇文章',
-    author: '张三',
-    createTime: '2025-12-20 12:00',
-    category: '技术',
-    view: 100,
-    like: 10,
-    content: `
-      <p>大家好，这是文章第一段。大家好，这是文章第一段。大家好，这是文章第一段。大家好，这是文章第一段。大家好，这是文章第一段。大家好，这是文章第一段。</p>
-      <p>这是文章第二段，用来展示段落。这是文章第二段，用来展示段落。这是文章第二段，用来展示段落。这是文章第二段，用来展示段落。这是文章第二段，用来展示段落。这是文章第二段，用来展示段落。这是文章第二段，用来展示段落。这是文章第二段，用来展示段落。</p>
-      <img src="https://picsum.photos/800/450" />
-      <p>这是图片下面的文字。这是图片下面的文字。这是图片下面的文字。这是图片下面的文字。这是图片下面的文字。这是图片下面的文字。这是图片下面的文字。这是图片下面的文字。这是图片下面的文字。这是图片下面的文字。</p>
-      <h3>这是小标题</h3>
-      <p>这是小标题下面的内容。这是小标题下面的内容。这是小标题下面的内容。这是小标题下面的内容。这是小标题下面的内容。这是小标题下面的内容。这是小标题下面的内容。这是小标题下面的内容。这是小标题下面的内容。这是小标题下面的内容。</p>
-    `
+    if (result.code === 200 && articleListResult.code === 200) {
+      article.value = result.data;
+      articleList.value = articleListResult.data.rows;
+    }
+
+    const currentIndex = articleList.value.findIndex((item) => item.id === articleId);
+    prevArticle.value = currentIndex > 0 ? articleList.value[currentIndex - 1] : null;
+    nextArticle.value = currentIndex < articleList.value.length - 1 ? articleList.value[currentIndex + 1] : null;
+  } catch (error) {
+    ElMessage.error('加载文章详情失败，请稍后重试');
   }
-  const articleList = [
-    { id: '1', title: '第一篇文章' },
-    { id: '2', title: '第二篇文章' },
-    { id: '3', title: '第三篇文章' },
-    { id: '4', title: '第四篇文章' }
-  ]
-  const currentIndex = articleList.findIndex(item => item.id === currentId)
-  prevArticle.value = currentIndex > 0 ? articleList[currentIndex - 1] : null
-  nextArticle.value = currentIndex < articleList.length - 1 ? articleList[currentIndex + 1] : null
-}
+};
+
+// 上一页下一页跳转
+const goToArticle = (id) => {
+  router.push(`/article/${id}`);
+};
 
 // 表情相关
-const showEmoji = ref(false)
+const showEmoji = ref(false);
 const closeEmojiOutside = (e) => {
-  const emojiBox = document.querySelector('.emoji-panel')
-  const emojiBtn = document.querySelector('.emoji-btn')
+  const emojiBox = document.querySelector('.emoji-panel');
+  const emojiBtn = document.querySelector('.emoji-btn');
 
   if (emojiBox && !emojiBox.contains(e.target) && !emojiBtn.contains(e.target)) {
-    showEmoji.value = false
+    showEmoji.value = false;
     // hoverEmoji.value = null
   }
-}
+};
 
 const insertEmoji = (code) => {
   if (showEmoji.value) {
-    commentForm.value.content += code
-    closeEmoji()
+    commentForm.value.content += code;
+    closeEmoji();
   }
-}
+};
 const closeEmoji = () => {
-  showEmoji.value = false
-}
+  showEmoji.value = false;
+};
 
-watch(() => route.params.id, () => {
-  loadArticle()
-  commentForm.value.content = ''  // 清空评论输入框
-})
+watch(
+  () => route.params.id,
+  () => {
+    loadArticle();
+    commentForm.value.content = '';
+  }
+);
 
-// 页面加载时监听点击
 onMounted(() => {
-  loadArticle()
-  document.addEventListener('click', closeEmojiOutside)
-})
+  loadArticle();
+  document.addEventListener('click', closeEmojiOutside);
+});
 
-// 页面离开时清除监听
 onUnmounted(() => {
-  document.removeEventListener('click', closeEmojiOutside)
-})
+  document.removeEventListener('click', closeEmojiOutside);
+});
 </script>
 <template>
   <div class="common-article-detail">
     <div class="article-detail">
-      <button class="button-return" @click="$router.go(-1)"><el-icon>
-          <DArrowLeft />
-        </el-icon>返回</button>
+      <button class="button-return" @click="$router.go(-1)">
+        <el-icon> <DArrowLeft /> </el-icon>返回
+      </button>
       <div class="divider"></div>
 
       <!-- 文章头部 -->
       <div class="article-header">
         <h1 class="title">{{ article.title }}--{{ $route.params.id }}</h1>
         <div class="meta">
-          <span>作者：{{ article.author }}</span>
+          <span>作者：{{ article.userNickname }}</span>
           <span>{{ article.createTime }}</span>
           <span>分类：{{ article.category }}</span>
-          <span>浏览 {{ article.view }}</span>
+          <span>浏览 {{ article.viewNum }}</span>
         </div>
       </div>
 
@@ -343,7 +339,7 @@ onUnmounted(() => {
       <div class="article-actions">
         <el-button type="primary" @click="like">
           <font-awesome-icon icon="fa-solid fa-thumbs-up" />
-          点赞 {{ article.like }}
+          点赞 {{ article.likeNum }}
         </el-button>
       </div>
 
@@ -368,11 +364,14 @@ onUnmounted(() => {
         <div class="comment-publish-box">
           <h3>留下你的想法~</h3>
           <div class="publish-form">
-
             <!-- 核心：用 div 模拟输入框容器 -->
             <div class="comment-textarea-container">
-              <textarea v-model="commentForm.content" placeholder="请输入评论内容..." maxlength="500"
-                class="comment-textarea"></textarea>
+              <textarea
+                v-model="commentForm.content"
+                placeholder="请输入评论内容..."
+                maxlength="500"
+                class="comment-textarea"
+              ></textarea>
 
               <div class="emoji-btn" @click.stop="showEmoji = !showEmoji">
                 <font-awesome-icon :icon="['fa', 'face-smile']" />
@@ -387,8 +386,12 @@ onUnmounted(() => {
           </div>
         </div>
         <h3>评论</h3>
-        <CommentList :comment-list="currentCommentList" @like-comment="likeComment" @like-reply="likeReply"
-          @send-reply="publishComment" />
+        <CommentList
+          :comment-list="currentCommentList"
+          @like-comment="likeComment"
+          @like-reply="likeReply"
+          @send-reply="publishComment"
+        />
       </div>
     </div>
 
@@ -405,27 +408,35 @@ onUnmounted(() => {
       </div>
 
       <!-- 图片 -->
-      <img :src="previewImageUrl" alt="预览" class="preview-image" :style="{ transform: `scale(${scale})` }" @click.stop
-        draggable="false" user-select="none" />
+      <img
+        :src="previewImageUrl"
+        alt="预览"
+        class="preview-image"
+        :style="{ transform: `scale(${scale})` }"
+        @click.stop
+        draggable="false"
+        user-select="none"
+      />
 
       <!-- 下一张 -->
       <div class="img-next" @click="nextImage">›</div>
 
       <!-- 缩放按钮 -->
       <div class="img-zoom">
-        <div @click="zoomOut"><el-icon>
+        <div @click="zoomOut">
+          <el-icon>
             <ZoomOut />
-          </el-icon></div>
-        <div @click="zoomIn"><el-icon>
-            <ZoomIn />
-          </el-icon></div>
-        <!-- 图片计数器（循环时提示当前位置） -->
-        <div class="image-counter" v-if="imageList.length">
-          {{ currentImageIndex + 1 }} / {{ imageList.length }}
+          </el-icon>
         </div>
+        <div @click="zoomIn">
+          <el-icon>
+            <ZoomIn />
+          </el-icon>
+        </div>
+        <!-- 图片计数器（循环时提示当前位置） -->
+        <div class="image-counter" v-if="imageList.length">{{ currentImageIndex + 1 }} / {{ imageList.length }}</div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -449,7 +460,6 @@ onUnmounted(() => {
   border-radius: 8px;
   padding: 20px 12px;
 }
-
 
 .button-return {
   display: inline-flex;
@@ -767,7 +777,7 @@ img {
 }
 
 .card h3::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   top: 4px;
@@ -791,7 +801,7 @@ img {
 }
 
 .comment-publish-box h3::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   top: 4px;
@@ -813,7 +823,6 @@ img {
 
 /* 模拟输入框容器，完全控制边框和内边距 */
 .comment-textarea-container {
-
   position: relative;
   width: 100%;
   border: 1px solid var(--border-color);

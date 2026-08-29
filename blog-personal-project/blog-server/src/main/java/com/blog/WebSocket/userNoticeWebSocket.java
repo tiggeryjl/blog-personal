@@ -17,15 +17,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Component
-@ServerEndpoint("/ws/admin/notice")
-public class AdminNoticeWebSocket {
+@ServerEndpoint("/ws/user/notice")
+public class userNoticeWebSocket {
 
     //存放所有WebSocket握手成功的会话对象
     private static final Map<Long, Session> ONLINE_SESSIONS = new ConcurrentHashMap<>();
 
     private Session session;
 
-    private Long adminId;
+    private Long userId;
 
     /**
      * 连接建立成功调用的方法
@@ -51,10 +51,10 @@ public class AdminNoticeWebSocket {
             closeSession(session);
             return;
         }
-        adminId = jwtService.getUserId(token);
-        session.getUserProperties().put("adminId", adminId);
-        ONLINE_SESSIONS.put(adminId, session);
-        log.info("【WS】管理员{}连接建立成功，当前在线数量：{}", adminId, ONLINE_SESSIONS.size());
+        userId = jwtService.getUserId(token);
+        session.getUserProperties().put("userId", userId);
+        ONLINE_SESSIONS.put(userId, session);
+        log.info("【WS】管理员id:【{}】连接建立成功，当前在线数量：{}", userId, ONLINE_SESSIONS.size());
     }
 
     /**
@@ -62,10 +62,10 @@ public class AdminNoticeWebSocket {
      */
     @OnClose
     public void onClose() {
-        if(adminId != null){
-            ONLINE_SESSIONS.remove(adminId);
+        if(userId != null){
+            ONLINE_SESSIONS.remove(userId);
         }
-        log.info("【WS】管理员{}连接断开，当前在线数量：{}", adminId, ONLINE_SESSIONS.size());
+        log.info("【WS】管理员{}连接断开，当前在线数量：{}", userId, ONLINE_SESSIONS.size());
     }
 
     /**
@@ -80,8 +80,8 @@ public class AdminNoticeWebSocket {
     @OnError
     public void onError(Session session,Throwable throwable){
         log.error("【WS】异常",throwable);
-        if(adminId != null){
-            ONLINE_SESSIONS.remove(adminId);
+        if(userId != null){
+            ONLINE_SESSIONS.remove(userId);
         }
     }
 

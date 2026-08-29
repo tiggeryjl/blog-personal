@@ -17,7 +17,7 @@ import java.util.List;
  * 文章管理
  */
 @Slf4j
-@RestController
+@RestController("adminArticleController")
 @RequestMapping("/admin/article")
 public class ArticleController {
 

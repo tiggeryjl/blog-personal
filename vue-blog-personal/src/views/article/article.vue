@@ -1,176 +1,98 @@
 <script setup>
-import { useRouter } from 'vue-router'
-import MyPagination from '@/components/MyPagination.vue'
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { Expand, Menu, Grid, Edit, ChatLineSquare, Document, View } from '@element-plus/icons-vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { Expand, Menu, Grid, Edit, ChatLineSquare, Document, View } from '@element-plus/icons-vue';
+import MyPagination from '@/components/MyPagination.vue';
+import { getArticleListApi } from '@/api/article.js';
 
-const router = useRouter()
-const articleList = ref([
-  {
-    id: 1,
-    nickname: '小叶同学',
-    avatar: 'https://picsum.photos/64/64',
-    title: "新起点 新动力！",
-    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
-    category: "心得",
-    date: "2026-02-21 14:03",
-    cover: "https://picsum.photos/400/250",
-    view: 636,
-    like: 7,
-    comment: 12,
-    words: 1077
-  },
-  {
-    id: 2,
-    nickname: '小叶同学',
-    avatar: 'https://picsum.photos/64/64',
-    title: "新起点 新动力！",
-    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
-    category: "心得",
-    date: "2026-02-21 14:03",
-    cover: "https://picsum.photos/400/250",
-    view: 636,
-    like: 7,
-    comment: 12,
-    words: 1077
-  },
-  {
-    id: 3,
-    nickname: '小叶同学',
-    avatar: 'https://picsum.photos/64/64',
-    title: "新起点 新动力！",
-    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
-    category: "心得",
-    date: "2026-02-21 14:03",
-    cover: "https://picsum.photos/400/250",
-    view: 636,
-    like: 7,
-    comment: 12,
-    words: 1077
-  },
-  {
-    id: 4,
-    nickname: '小叶同学',
-    avatar: 'https://picsum.photos/64/64',
-    title: "新起点 新动力！",
-    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
-    category: "心得",
-    date: "2026-02-21 14:03",
-    cover: "https://picsum.photos/400/250",
-    view: 636,
-    like: 7,
-    comment: 12,
-    words: 1077
-  },
-  {
-    id: 5,
-    nickname: '小叶同学',
-    avatar: 'https://picsum.photos/64/64',
-    title: "新起点 新动力！",
-    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
-    category: "心得",
-    date: "2026-02-21 14:03",
-    cover: "https://picsum.photos/400/250",
-    view: 636,
-    like: 7,
-    comment: 12,
-    words: 1077
-  },
-  {
-    id: 6,
-    nickname: '小叶同学',
-    avatar: 'https://picsum.photos/64/64',
-    title: "新起点 新动力！",
-    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
-    category: "心得",
-    date: "2026-02-21 14:03",
-    cover: "https://picsum.photos/400/250",
-    view: 636,
-    like: 7,
-    comment: 12,
-    words: 1077
-  },
-])
+const router = useRouter();
 
-// 模拟数据
-const total = ref(186)
-const currentPage = ref(1)
-const pageSize = ref(10)
+const articleList = ref([]);
+const total = ref(0);
+const currentPage = ref(1);
+const pageSize = ref(10);
+const getArticleList = async () => {
+  try {
+    const result = await getArticleListApi();
+    if (result.code === 200) {
+      articleList.value = result.data.rows;
+      total.value = result.data.total;
+    }
+  } catch (error) {
+    console.error('获取文章列表异常', error);
+  }
+};
 
 const goDetail = (id) => {
-  router.push('/article/' + id)
-}
+  router.push('/article/' + id);
+};
 
-const layoutMode = ref(localStorage.getItem('blogLayout') || 'list')
-const showDropdown = ref(false)
+const layoutMode = ref(localStorage.getItem('blogLayout') || 'list');
+const showDropdown = ref(false);
 const layoutIcons = {
   list: Expand,
   grid: Menu,
-  grid3: Grid
-}
-
+  grid3: Grid,
+};
 
 const changeLayout = (mode) => {
-  layoutMode.value = mode
-  localStorage.setItem('blogLayout', mode)
-  window.dispatchEvent(new Event('layoutChange'))
-  showDropdown.value = false
-}
+  layoutMode.value = mode;
+  localStorage.setItem('blogLayout', mode);
+  window.dispatchEvent(new Event('layoutChange'));
+  showDropdown.value = false;
+};
 
 const updateLayout = () => {
-  layoutMode.value = localStorage.getItem('blogLayout') || 'list'
-}
+  layoutMode.value = localStorage.getItem('blogLayout') || 'list';
+};
 
 const closeDropdown = (e) => {
-  const dropdown = document.querySelector('.layout-dropdown')
+  const dropdown = document.querySelector('.layout-dropdown');
   if (dropdown && !dropdown.contains(e.target)) {
-    showDropdown.value = false
+    showDropdown.value = false;
   }
-}
+};
 
 onMounted(() => {
-  window.addEventListener('layoutChange', updateLayout)
-  window.addEventListener('click', closeDropdown)
-})
+  window.addEventListener('layoutChange', updateLayout);
+  window.addEventListener('click', closeDropdown);
+  getArticleList();
+});
 
 onUnmounted(() => {
-  window.removeEventListener('layoutChange', updateLayout)
-  window.removeEventListener('click', closeDropdown)
-})
-
+  window.removeEventListener('layoutChange', updateLayout);
+  window.removeEventListener('click', closeDropdown);
+});
 </script>
 
 <template>
   <div class="common-article">
-
     <div class="fixed-header">
       <div class="header-row">
-        <div class="publish-box" v-if="false">
-          <!-- 你的发布输入框代码 -->
-        </div>
         <h2>全部文章</h2>
         <div class="layout-dropdown">
           <button class="layout-trigger" @click="showDropdown = !showDropdown">
-            <span class="icon-wrap">
-              <component :is="layoutIcons[layoutMode]" />
-            </span>页面布局
+            <span class="icon-wrap"> <component :is="layoutIcons[layoutMode]" /> </span>页面布局
           </button>
           <div class="dropdown-menu" v-show="showDropdown">
             <div class="dropdown-arrow"></div>
             <div class="dropdown-item" @click="changeLayout('list')">
               <span class="icon-wrap">
                 <component :is="Expand" />
-              </span> 列表
+              </span>
+              列表
             </div>
             <div class="dropdown-item" @click="changeLayout('grid')">
               <span class="icon-wrap">
                 <component :is="Menu" />
-              </span> 网格
+              </span>
+              网格
             </div>
             <div class="dropdown-item" @click="changeLayout('grid3')">
               <span class="icon-wrap">
                 <component :is="Grid" />
-              </span> 三列
+              </span>
+              三列
             </div>
           </div>
         </div>
@@ -187,36 +109,47 @@ onUnmounted(() => {
         <!-- 右侧内容 -->
         <div class="article-content">
           <div class="article-meta">
-            <img class="avatar" :src="item.avatar" alt="头像" />
-            <span class="nickname">{{ item.nickname }}</span>
-            <span class="date">{{ item.date }}</span>
+            <img class="avatar" :src="item.userAvatar" alt="头像" />
+            <span class="nickname">{{ item.userNickname }}</span>
+            <span class="date">{{ item.createTime }}</span>
             <span class="category">{{ item.category }}</span>
           </div>
           <h3 class="article-title">{{ item.title }}</h3>
-          <p class="article-desc">{{ item.desc }}</p>
+          <p class="article-desc">{{ item.summary }}</p>
           <div class="article-stats">
-            <span><el-icon>
+            <span
+              ><el-icon>
                 <View />
-              </el-icon> {{ item.view }}</span>
-            <span><font-awesome-icon icon="fa-solid fa-thumbs-up" /> {{ item.like }}</span>
-            <span><el-icon>
+              </el-icon>
+              {{ item.viewNum }}</span
+            >
+            <span><font-awesome-icon icon="fa-solid fa-thumbs-up" /> {{ item.likeNum }}</span>
+            <span
+              ><el-icon>
                 <ChatLineSquare />
-              </el-icon> {{ item.comment }}</span>
-            <span><el-icon>
+              </el-icon>
+              {{ item.commentNum }}</span
+            >
+            <!-- <span
+              ><el-icon>
                 <Document />
-              </el-icon> {{ item.words }}字</span>
+              </el-icon>
+              {{ item.words }}字</span
+            > -->
           </div>
         </div>
       </div>
     </div>
-    <div v-if="articleList.length === 0" class="empty-data">
-      暂无文章数据
-    </div>
+    <div v-if="articleList.length === 0" class="empty-data">暂无文章数据</div>
     <div>
-
       <!-- 分页 -->
-      <MyPagination :total="total" :current-page="currentPage" :page-size="pageSize"
-        @update:current-page="currentPage = $event" @update:page-size="pageSize = $event" />
+      <MyPagination
+        :total="total"
+        :current-page="currentPage"
+        :page-size="pageSize"
+        @update:current-page="currentPage = $event"
+        @update:page-size="pageSize = $event"
+      />
     </div>
   </div>
 </template>
@@ -230,7 +163,6 @@ onUnmounted(() => {
   top: 0.1px;
 }
 
-
 .common-article {
   padding: 5px 12px;
   border-radius: 8px;
@@ -240,8 +172,6 @@ onUnmounted(() => {
   box-sizing: border-box;
 }
 
-
-/* 🔒 固定头部区域：永远保持原样 */
 .fixed-header {
   flex-shrink: 0;
 }
@@ -362,7 +292,7 @@ onUnmounted(() => {
   gap: 24px;
 }
 
-/* 三列网格（田字格） */
+/* 三列网格 */
 .article-list.grid3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -386,7 +316,6 @@ onUnmounted(() => {
   height: 160px;
 }
 
-/* 网格模式：内容区域更紧凑 */
 .article-list.grid .article-item .article-content,
 .article-list.grid3 .article-item .article-content {
   padding: 12px;

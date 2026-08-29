@@ -1,11 +1,11 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { DArrowRight, ChatLineSquare, Document, View, Reading } from '@element-plus/icons-vue'
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { DArrowRight, ChatLineSquare, Document, View, Reading } from '@element-plus/icons-vue';
 
-const router = useRouter()
+const router = useRouter();
 
-// 公告内容（你自己随便改）
+// 公告内容
 const notice = ref(`【公告】
 欢迎来到我的个人博客！
 这里会记录技术文章、日常感悟、学习笔记~
@@ -14,91 +14,90 @@ const notice = ref(`【公告】
 ▫️ 完善登录注册功能
 ▫️ 新增日常发布按钮
 ▫️ 优化页面样式
-▫️ 增加设置页面`)
+▫️ 增加设置页面`);
 
 const articleList = ref([
   {
     id: 1,
-    title: "新起点 新动力！",
-    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
-    category: "心得",
-    date: "2026-02-21 14:03",
-    cover: "https://picsum.photos/400/250",
+    title: '新起点 新动力！',
+    desc: '这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...',
+    category: '心得',
+    date: '2026-02-21 14:03',
+    cover: 'https://picsum.photos/400/250',
     view: 636,
     like: 7,
     comment: 12,
-    words: 1077
+    words: 1077,
   },
   {
     id: 2,
-    title: "新起点 新动力！",
-    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
-    category: "心得",
-    date: "2026-02-21 14:03",
-    cover: "https://picsum.photos/400/250",
+    title: '新起点 新动力！',
+    desc: '这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...',
+    category: '心得',
+    date: '2026-02-21 14:03',
+    cover: 'https://picsum.photos/400/250',
     view: 636,
     like: 7,
     comment: 12,
-    words: 1077
+    words: 1077,
   },
   {
     id: 3,
-    title: "新起点 新动力！",
-    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
-    category: "心得",
-    date: "2026-02-21 14:03",
-    cover: "https://picsum.photos/400/250",
+    title: '新起点 新动力！',
+    desc: '这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...',
+    category: '心得',
+    date: '2026-02-21 14:03',
+    cover: 'https://picsum.photos/400/250',
     view: 636,
     like: 7,
     comment: 12,
-    words: 1077
+    words: 1077,
   },
   {
     id: 4,
-    title: "新起点 新动力！",
-    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
-    category: "心得",
-    date: "2026-02-21 14:03",
-    cover: "https://picsum.photos/400/250",
+    title: '新起点 新动力！',
+    desc: '这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...',
+    category: '心得',
+    date: '2026-02-21 14:03',
+    cover: 'https://picsum.photos/400/250',
     view: 636,
     like: 7,
     comment: 12,
-    words: 1077
+    words: 1077,
   },
   {
     id: 5,
-    title: "新起点 新动力！",
-    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
-    category: "心得",
-    date: "2026-02-21 14:03",
-    cover: "https://picsum.photos/400/250",
+    title: '新起点 新动力！',
+    desc: '这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...',
+    category: '心得',
+    date: '2026-02-21 14:03',
+    cover: 'https://picsum.photos/400/250',
     view: 636,
     like: 7,
     comment: 12,
-    words: 1077
+    words: 1077,
   },
   {
     id: 6,
-    title: "新起点 新动力！",
-    desc: "这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...",
-    category: "心得",
-    date: "2026-02-21 14:03",
-    cover: "https://picsum.photos/400/250",
+    title: '新起点 新动力！',
+    desc: '这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...',
+    category: '心得',
+    date: '2026-02-21 14:03',
+    cover: 'https://picsum.photos/400/250',
     view: 636,
     like: 7,
     comment: 12,
-    words: 1077
+    words: 1077,
   },
-])
+]);
 
 const goDetail = (id) => {
-  router.push('/article/' + id)
-}
+  router.push('/article/' + id);
+};
 </script>
 
 <template>
   <div class="common-index">
-
     <!-- 公告卡片（占满父级宽度） -->
     <div class="notice-card">
       <h3 class="notice-title">📢 网站公告</h3>
@@ -107,37 +106,45 @@ const goDetail = (id) => {
 
     <!-- 两个快捷按钮（同一行平分宽度） -->
     <div class="quick-link-box">
-      <div class="quick-btn" style="background-image: url('https://picsum.photos/800/400?random=1')"
-        @click="router.push('/article')">
+      <div
+        class="quick-btn"
+        style="background-image: url('https://picsum.photos/800/400?random=1')"
+        @click="router.push('/article')"
+      >
         <div class="line-top"></div>
         <div class="line-left"></div>
         <div class="line-right"></div>
         <div class="line-bottom-left"></div>
         <div class="line-bottom-right"></div>
-        <span><el-icon>
-            <Document />
-          </el-icon>文章列表<el-icon>
-            <DArrowRight />
-          </el-icon></span>
+        <span
+          ><el-icon>
+            <Document /> </el-icon
+          >文章列表<el-icon>
+            <DArrowRight /> </el-icon
+        ></span>
       </div>
 
-      <div class="quick-btn" style="background-image: url('https://picsum.photos/800/400?random=2')"
-        @click="router.push('/daily')">
+      <div
+        class="quick-btn"
+        style="background-image: url('https://picsum.photos/800/400?random=2')"
+        @click="router.push('/daily')"
+      >
         <div class="line-top"></div>
         <div class="line-left"></div>
         <div class="line-right"></div>
         <div class="line-bottom-left"></div>
         <div class="line-bottom-right"></div>
-        <span><el-icon>
-            <Reading />
-          </el-icon>日常分享<el-icon>
-            <DArrowRight />
-          </el-icon></span>
+        <span
+          ><el-icon>
+            <Reading /> </el-icon
+          >日常分享<el-icon>
+            <DArrowRight /> </el-icon
+        ></span>
       </div>
     </div>
 
     <div>
-      <h2> 热门文章 </h2>
+      <h2>热门文章</h2>
       <div class="divider"></div>
       <div class="article-list">
         <div class="article-item" v-for="item in articleList" :key="item.id" @click="goDetail(item.id)">
@@ -154,25 +161,31 @@ const goDetail = (id) => {
             <h3 class="article-title">{{ item.title }}</h3>
             <p class="article-desc">{{ item.desc }}</p>
             <div class="article-stats">
-              <span><el-icon>
+              <span
+                ><el-icon>
                   <View />
-                </el-icon> {{ item.view }}</span>
+                </el-icon>
+                {{ item.view }}</span
+              >
               <span><font-awesome-icon icon="fa-solid fa-thumbs-up" /> {{ item.like }}</span>
-              <span><el-icon>
+              <span
+                ><el-icon>
                   <ChatLineSquare />
-                </el-icon> {{ item.comment }}</span>
-              <span><el-icon>
+                </el-icon>
+                {{ item.comment }}</span
+              >
+              <span
+                ><el-icon>
                   <Document />
-                </el-icon> {{ item.words }}字</span>
+                </el-icon>
+                {{ item.words }}字</span
+              >
             </div>
           </div>
         </div>
       </div>
-      <div v-if="articleList.length === 0" class="empty-data">
-        暂无文章数据
-      </div>
+      <div v-if="articleList.length === 0" class="empty-data">暂无文章数据</div>
     </div>
-
   </div>
 </template>
 
@@ -233,7 +246,7 @@ const goDetail = (id) => {
 
 /* 遮罩层 */
 .quick-btn::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.4);
