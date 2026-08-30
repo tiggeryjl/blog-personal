@@ -97,4 +97,11 @@ public interface CommentMapper {
      * @param ids 评论ID集合
      */
     void recover(@Param("ids") List<Long> ids);
+
+    /**
+     * 根据文章id查询文章评论
+     * @param comment
+     * @return
+     */
+    List<Comment> getArticle(Comment comment);
 }

@@ -2,10 +2,12 @@ package com.blog.service.impl;
 
 import com.blog.constant.DelStatusConstant;
 import com.blog.constant.StatusConstant;
+import com.blog.constant.SystemConstant;
 import com.blog.context.BaseContext;
 import com.blog.exception.CommentException;
 import com.blog.mapper.CommentMapper;
 import com.blog.mapper.SysUserMapper;
+import com.blog.mapper.SysUserRoleMapper;
 import com.blog.pojo.dto.CommentPageQueryDTO;
 import com.blog.pojo.dto.CommentReplyDTO;
 import com.blog.pojo.dto.CommentStatusDTO;
@@ -14,15 +16,18 @@ import com.blog.pojo.entity.SysUser;
 import com.blog.pojo.vo.CommentVo;
 import com.blog.result.PageResult;
 import com.blog.service.CommentService;
+import com.blog.utils.CommentTreeUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,6 +44,9 @@ public class CommentServiceImpl implements CommentService {
 
     @Autowired
     private SysUserMapper sysUserMapper;
+
+    @Autowired
+    private SysUserRoleMapper sysUserRoleMapper;
 
     /**
      * 分页查询评论列表
@@ -253,5 +261,33 @@ public class CommentServiceImpl implements CommentService {
             throw new CommentException("请选择要恢复的评论");
         }
         commentMapper.recover(ids);
+    }
+
+    /**
+     * 根据文章id查询文章评论
+     * @param id
+     * @return
+     */
+    @Override
+    public List<CommentVo> getArticleById(Long id) {
+        //构建查询数据对象
+        Comment comment = Comment.builder().type(0).sourceId(id).build();
+        List<Comment> commentList = commentMapper.getArticle(comment);
+        if(commentList == null || commentList.isEmpty()){
+            return Collections.emptyList();
+        }
+
+        List<CommentVo> commentVoList = commentList.stream()
+                .map(entity -> {
+                    CommentVo vo = new CommentVo();
+                    BeanUtils.copyProperties(entity, vo);
+                    boolean isAdmin = sysUserRoleMapper.hasRole(entity.getUserId(), SystemConstant.SUPER_ADMIN_ROLE);
+                    vo.setAdmin(isAdmin);
+                    return vo;
+                }).collect(Collectors.toList());
+
+        //扁平数据转树形结构
+        List<CommentVo> commentVos = CommentTreeUtil.buildFlatReplyTree(commentVoList);
+        return commentVos;
     }
 }

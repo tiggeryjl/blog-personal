@@ -1,5 +1,6 @@
 package com.blog.pojo.vo;
 
+import com.blog.pojo.entity.Comment;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -7,6 +8,8 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 评论展示对象
@@ -136,4 +139,14 @@ public class CommentVo implements Serializable {
      * 修改时间
      */
     private LocalDateTime updateTime;
+
+    /**
+     * 子回复集合
+     */
+    private List<CommentVo> replies = new ArrayList<>();
+
+    /**
+     * 是否为博主
+     */
+    private boolean admin;
 }

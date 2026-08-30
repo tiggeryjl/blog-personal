@@ -7,7 +7,6 @@ import SettingLayoutView from '@/views/layout/settingLayout.vue';
 import IndexView from '@/views/index/index.vue';
 import ArticleView from '@/views/article/article.vue';
 import ArticleDetailView from '@/views/article/articleDetail.vue';
-import editInputView from '@/views/article/editInput.vue';
 import DailyDetailView from '@/views/daily/dailyDetail.vue';
 import DailyView from '@/views/daily/daily.vue';
 import FriendLinkView from '@/views/friendlink/friendlink.vue';
@@ -60,7 +59,6 @@ const router = createRouter({
         { path: 'about', name: 'about', component: AboutView },
         { path: 'article/:id', name: 'articleDetail', component: ArticleDetailView },
         { path: 'daily/:id', name: 'dailyDetail', component: DailyDetailView },
-        { path: 'editInput', name: 'editInput', component: editInputView },
       ],
     },
     { path: '/login', name: 'login', component: () => import('@/views/login/index.vue') },

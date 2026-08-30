@@ -6,17 +6,51 @@ import { useRoute, useRouter } from 'vue-router';
 import CommentList from '@/components/Comment.vue';
 import Emoji from '@/components/Emoji.vue';
 import { getArticleListApi, getArticleDetailApi } from '@/api/article.js';
+import { getArticleCommentListApi } from '@/api/comment.js';
 
 const router = useRouter();
 const route = useRoute();
 
-const prevArticle = ref(null);
-const nextArticle = ref(null);
-
-// 评论表单
-const commentForm = ref({
+const articleList = ref([]);
+const article = ref({
+  id: '',
+  title: '',
+  userNickname: '',
+  createTime: '',
+  category: '',
+  viewNum: 0,
+  likeNum: 0,
   content: '',
 });
+
+//根据id获取当前文章信息
+const getArticle = async () => {
+  try {
+    const articleId = route.params.id;
+    const result = await getArticleDetailApi(articleId);
+    const articleListResult = await getArticleListApi();
+
+    if (result.code === 200 && articleListResult.code === 200) {
+      article.value = result.data;
+      articleList.value = articleListResult.data.rows;
+      getCommentList(article.value.id);
+    }
+
+    const currentIndex = articleList.value.findIndex((item) => item.id === articleId);
+    prevArticle.value = currentIndex > 0 ? articleList.value[currentIndex - 1] : null;
+    nextArticle.value = currentIndex < articleList.value.length - 1 ? articleList.value[currentIndex + 1] : null;
+  } catch (error) {
+    ElMessage.error('加载文章详情失败，请稍后重试');
+  }
+};
+
+// 上一页下一页跳转
+const goToArticle = (id) => {
+  router.push(`/article/${id}`);
+};
+
+const prevArticle = ref(null);
+const nextArticle = ref(null);
 
 const getDefaultComments = (articleId) => {
   if (articleId === '1') {
@@ -56,18 +90,22 @@ const likeReply = (commentId, replyId) => {
 // 存储所有文章的评论，key: 文章id, value: 评论数组
 const commentsStore = ref({});
 
-// 当前文章ID
-const currentArticleId = computed(() => route.params.id);
+// 当前文章的评论列表
+const currentCommentList = ref([]);
 
-// 当前文章的评论列表（计算属性，自动响应）
-const currentCommentList = computed(() => {
-  const id = currentArticleId.value;
-  if (!commentsStore.value[id]) {
-    commentsStore.value[id] = getDefaultComments(id);
+const getCommentList = async (id) => {
+  const result = await getArticleCommentListApi(id);
+  if (result.code === 200) {
+    currentCommentList.value = result.data;
+  } else {
+    ElMessage.error('获取评论失败，请稍后重新尝试或者联系博主反馈，感谢！');
   }
-  return commentsStore.value[id];
-});
+};
 
+// 评论表单
+const commentForm = ref({
+  content: '',
+});
 const publishComment = (commentId, replyId, content) => {
   // 发布新评论（无参数）
   if (commentId === undefined && replyId === undefined && content === undefined) {
@@ -86,7 +124,7 @@ const publishComment = (commentId, replyId, content) => {
       replies: [],
     };
     // 注意：要修改当前文章的评论数组（直接操作 commentsStore 中对应的数组）
-    commentsStore.value[currentArticleId.value].unshift(newComment);
+    commentsStore.value[article.value.id].unshift(newComment);
     ElMessage.success('评论发布成功！');
     commentForm.value.content = '';
     return;
@@ -239,40 +277,6 @@ const like = () => {
   ElMessage.success('点赞成功！');
 };
 
-const article = ref({
-  title: '',
-  userNickname: '',
-  createTime: '',
-  category: '',
-  viewNum: 0,
-  likeNum: 0,
-  content: '',
-});
-const articleList = ref([]);
-const loadArticle = async () => {
-  try {
-    const articleId = route.params.id;
-    const result = await getArticleDetailApi(articleId);
-    const articleListResult = await getArticleListApi();
-
-    if (result.code === 200 && articleListResult.code === 200) {
-      article.value = result.data;
-      articleList.value = articleListResult.data.rows;
-    }
-
-    const currentIndex = articleList.value.findIndex((item) => item.id === articleId);
-    prevArticle.value = currentIndex > 0 ? articleList.value[currentIndex - 1] : null;
-    nextArticle.value = currentIndex < articleList.value.length - 1 ? articleList.value[currentIndex + 1] : null;
-  } catch (error) {
-    ElMessage.error('加载文章详情失败，请稍后重试');
-  }
-};
-
-// 上一页下一页跳转
-const goToArticle = (id) => {
-  router.push(`/article/${id}`);
-};
-
 // 表情相关
 const showEmoji = ref(false);
 const closeEmojiOutside = (e) => {
@@ -298,13 +302,13 @@ const closeEmoji = () => {
 watch(
   () => route.params.id,
   () => {
-    loadArticle();
+    getArticle();
     commentForm.value.content = '';
   }
 );
 
 onMounted(() => {
-  loadArticle();
+  getArticle();
   document.addEventListener('click', closeEmojiOutside);
 });
 
@@ -322,7 +326,7 @@ onUnmounted(() => {
 
       <!-- 文章头部 -->
       <div class="article-header">
-        <h1 class="title">{{ article.title }}--{{ $route.params.id }}</h1>
+        <h1 class="title">{{ article.title }}</h1>
         <div class="meta">
           <span>作者：{{ article.userNickname }}</span>
           <span>{{ article.createTime }}</span>
@@ -364,7 +368,6 @@ onUnmounted(() => {
         <div class="comment-publish-box">
           <h3>留下你的想法~</h3>
           <div class="publish-form">
-            <!-- 核心：用 div 模拟输入框容器 -->
             <div class="comment-textarea-container">
               <textarea
                 v-model="commentForm.content"
@@ -385,7 +388,10 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
-        <h3>评论</h3>
+        <h3>
+          评论
+          <span>(5)</span>
+        </h3>
         <CommentList
           :comment-list="currentCommentList"
           @like-comment="likeComment"

@@ -213,4 +213,8 @@
           )
     </update>
 
+    <select id="getArticle" resultType="com.blog.pojo.entity.Comment">
+        select * from comment where type=#{type} and source_id =#{sourceId}
+        order by create_time desc
+    </select>
 </mapper>

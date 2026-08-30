@@ -73,6 +73,9 @@ public class ArticleServiceImpl implements ArticleService {
 
         article.setIsTop(StatusConstant.DISABLE);
         article.setIsHot(StatusConstant.DISABLE);
+        article.setViewNum(0L);
+        article.setLikeNum(0L);
+        article.setCommentNum(0L);
         article.setCreateTime(LocalDateTime.now());
         article.setUpdateTime(LocalDateTime.now());
         if (ArticleStatusConstant.PUBLISHED.equals(articleDTO.getStatus())) {

@@ -1,33 +1,29 @@
 <script setup>
-import { ref, onMounted, onUnmounted, watch, reactive } from 'vue'
-import { ElMessage } from 'element-plus'
-import Emoji from '@/components/Emoji.vue'
-import { ChatLineRound } from '@element-plus/icons-vue'
+import { ref, onMounted, onUnmounted, watch, reactive } from 'vue';
+import { ElMessage } from 'element-plus';
+import Emoji from '@/components/Emoji.vue';
+import { ChatLineRound } from '@element-plus/icons-vue';
 
 // 只接收评论数据
 const props = defineProps({
   commentList: {
     type: Array,
-    required: true
-  }
-})
+    required: true,
+  },
+});
 
 // 所有事件抛给父页面
-const emit = defineEmits([
-  'like-comment',
-  'like-reply',
-  'send-reply'
-])
+const emit = defineEmits(['like-comment', 'like-reply', 'send-reply']);
 
 // 类型映射
 const categoryMap = {
-  '0': '评论留言',
-  '1': '反馈建议',
-  '2': '申请友链'
-}
+  0: '评论留言',
+  1: '反馈建议',
+  2: '申请友链',
+};
 
-const commentUI = reactive(new Map())
-const replyUI = reactive(new Map())
+const commentUI = reactive(new Map());
+const replyUI = reactive(new Map());
 
 const getCommentUI = (commentId) => {
   if (!commentUI.has(commentId)) {
@@ -35,154 +31,163 @@ const getCommentUI = (commentId) => {
       replying: false,
       replyText: '',
       replyPageSize: 2,
-      expanded: false,     // 评论内容是否展开
+      expanded: false, // 评论内容是否展开
+      submitting: false, // 防重复提交loading
       // 是否还有更多
       // hasMore: true
-    })
+    });
   }
-  return commentUI.get(commentId)
-}
-const loadMoreReplies = (commentId) => {
-  const ui = getCommentUI(commentId)
-  // 每次增加10条（可根据需要调整）
-  ui.replyPageSize += 10
-  // 如果已经达到总条数，也可以设置一个标志，但按钮显示条件已经处理
-}
+  return commentUI.get(commentId);
+};
+
 const getReplyUI = (commentId, replyId) => {
-  const key = `${commentId}-${replyId}`
+  const key = `${commentId}-${replyId}`;
   if (!replyUI.has(key)) {
     replyUI.set(key, {
       replying: false,
       replyText: '',
-      expanded: false,     // 评论内容是否展开
-    })
+      expanded: false, // 评论内容是否展开
+      submitting: false,
+    });
   }
-  return replyUI.get(key)
-}
+  return replyUI.get(key);
+};
 
+const loadMoreReplies = (commentId) => {
+  const ui = getCommentUI(commentId);
+  // 每次增加10条（可根据需要调整）
+  ui.replyPageSize += 10;
+  // 如果已经达到总条数，也可以设置一个标志，但按钮显示条件已经处理
+};
 // 关闭所有回复框
 const closeAllReplies = () => {
   for (let ui of commentUI.values()) {
-    ui.replying = false
-    ui.replyText = ''
+    ui.replying = false;
+    ui.replyText = '';
   }
   for (let ui of replyUI.values()) {
-    ui.replying = false
-    ui.replyText = ''
+    ui.replying = false;
+    ui.replyText = '';
   }
-}
+};
 
 // 切换主评论回复框
 const toggleCommentReply = (commentId) => {
-  closeAllReplies()
-  const ui = getCommentUI(commentId)
-  ui.replying = !ui.replying
-}
+  closeAllReplies();
+  const ui = getCommentUI(commentId);
+  ui.replying = !ui.replying;
+};
 
 // 切换回复的回复框
 const toggleReplyReply = (commentId, replyId) => {
-  closeAllReplies()
-  const ui = getReplyUI(commentId, replyId)
-  ui.replying = !ui.replying
-}
+  closeAllReplies();
+  const ui = getReplyUI(commentId, replyId);
+  ui.replying = !ui.replying;
+};
 
 // 切换评论内容展开/收起
 const toggleCommentExpand = (commentId) => {
-  const ui = getCommentUI(commentId)
-  ui.expanded = !ui.expanded
-}
+  const ui = getCommentUI(commentId);
+  ui.expanded = !ui.expanded;
+};
 
 // 切换回复内容展开/收起
 const toggleReplyExpand = (commentId, replyId) => {
-  const ui = getReplyUI(commentId, replyId)
-  ui.expanded = !ui.expanded
-}
+  const ui = getReplyUI(commentId, replyId);
+  ui.expanded = !ui.expanded;
+};
 
 const truncateText = (text, maxLen = 100) => {
-  if (!text) return ''
-  if (text.length <= maxLen) return text
-  return text.slice(0, maxLen) + '...'
-}
+  if (!text) return '';
+  if (text.length <= maxLen) return text;
+  return text.slice(0, maxLen) + '...';
+};
 
 // 发送回复
 const sendReply = (commentId, replyId = null) => {
   if (replyId === null) {
-    const ui = getCommentUI(commentId)
-    const text = ui.replyText.trim()
+    const ui = getCommentUI(commentId);
+    const text = ui.replyText.trim();
     if (!text) {
-      ElMessage.warning('请输入回复内容')
-      return
+      ElMessage.warning('请输入回复内容');
+      return;
     }
-    emit('send-reply', commentId, null, text)
-    ui.replyText = ''
-    ui.replying = false
+    emit('send-reply', commentId, null, text);
+    ui.replyText = '';
+    ui.replying = false;
   } else {
     const ui = getReplyUI(commentId, replyId);
-    const text = ui.replyText.trim()
+    const text = ui.replyText.trim();
     if (!text) {
-      ElMessage.warning('请输入回复内容')
-      return
+      ElMessage.warning('请输入回复内容');
+      return;
     }
-    emit('send-reply', commentId, replyId, text)
-    ui.replyText = ''
-    ui.replying = false
+    emit('send-reply', commentId, replyId, text);
+    ui.replyText = '';
+    ui.replying = false;
   }
-  closeAllReplies()
-}
+  closeAllReplies();
+};
 
 // 表情相关
-const activeEmojiReply = ref(null)
+const activeEmojiReply = ref(null);
 
 const openEmoji = (target) => {
   if (activeEmojiReply.value === target) {
-    closeEmoji()
+    closeEmoji();
   } else {
-    activeEmojiReply.value = target
+    activeEmojiReply.value = target;
   }
-}
+};
 const closeEmoji = () => {
-  activeEmojiReply.value = null
-}
+  activeEmojiReply.value = null;
+};
 const insertEmoji = (code) => {
   if (activeEmojiReply.value) {
-    activeEmojiReply.value.replyText += code
-    closeEmoji()
+    activeEmojiReply.value.replyText += code;
+    closeEmoji();
   }
-}
+};
 const closeEmojiOutside = (e) => {
-  const btn = e.target.closest('.emoji-btn')
-  const panel = e.target.closest('.emoji-panel')
-  if (!btn && !panel) closeEmoji()
-}
+  const btn = e.target.closest('.emoji-btn');
+  const panel = e.target.closest('.emoji-panel');
+  if (!btn && !panel) closeEmoji();
+};
 onMounted(() => {
-  document.addEventListener('click', closeEmojiOutside)
-})
+  document.addEventListener('click', closeEmojiOutside);
+});
 
 onUnmounted(() => {
-  document.removeEventListener('click', closeEmojiOutside)
-})
+  document.removeEventListener('click', closeEmojiOutside);
+});
 
-watch(() => props.commentList, (newVal, oldVal) => {
-  if (newVal !== oldVal) {
-    commentUI.clear()
-    replyUI.clear()
-  }
-})
+watch(
+  () => props.commentList,
+  (newVal, oldVal) => {
+    console.log(newVal);
+    if (newVal !== oldVal) {
+      commentUI.clear();
+      replyUI.clear();
+      activeEmojiReply.value = null;
+    }
+  },
+  { deep: true, immediate: true }
+);
 </script>
 
 <template>
   <div class="comment-list-widget">
     <div class="comment-list">
       <div class="comment-item" v-for="item in commentList" :key="item.id">
-        <img class="avatar" :src="item.avatar" alt="头像" />
+        <img class="avatar" :src="item.userAvatar" alt="头像" />
         <div class="info">
           <div class="top">
-            <span class="name">{{ item.nickname }}</span>
-            <span v-if="item.isAdmin" class="admin">博主</span>
-            <span class="category-tag" v-if="item.category">
-              {{ categoryMap[item.category] || '未分类' }}
+            <span class="name">{{ item.userNickname }}</span>
+            <span v-if="item.admin" class="admin">博主</span>
+            <span class="category-tag" v-if="item.msgType">
+              {{ categoryMap[item.msgType] || '未分类' }}
             </span>
-            <span class="time">{{ item.time }}</span>
+            <span class="time">{{ item.createTime }}</span>
           </div>
 
           <div class="content">
@@ -199,27 +204,38 @@ watch(() => props.commentList, (newVal, oldVal) => {
 
           <div class="action-row">
             <button class="action-btn" @click="emit('like-comment', item.id)">
-              <font-awesome-icon icon="fa-solid fa-thumbs-up" /> 点赞 {{ item.like }}
+              <font-awesome-icon icon="fa-solid fa-thumbs-up" /> 点赞 {{ item.likeNum }}
             </button>
-            <button class="action-btn" :class="{ active: getCommentUI(item.id).replying }"
-              @click="toggleCommentReply(item.id)">
+            <button
+              class="action-btn"
+              :class="{ active: getCommentUI(item.id).replying }"
+              @click="toggleCommentReply(item.id)"
+            >
               <el-icon>
                 <ChatLineRound />
-              </el-icon> 回复
+              </el-icon>
+              回复
             </button>
           </div>
 
           <!-- 主评论回复框 -->
           <div class="reply-input-row" v-show="getCommentUI(item.id).replying">
             <div class="reply-input-wrapper">
-              <input v-model="getCommentUI(item.id).replyText" :placeholder="`回复 @${item.nickname}`"
-                class="reply-input" />
+              <input
+                v-model="getCommentUI(item.id).replyText"
+                :placeholder="`回复 @${item.userNickname}`"
+                class="reply-input"
+              />
 
               <div class="emoji-btn" @click.stop="openEmoji(getCommentUI(item.id))">
                 <font-awesome-icon :icon="['fa', 'face-smile']" />
               </div>
-              <Emoji :show="activeEmojiReply === getCommentUI(item.id)" @select="insertEmoji" @close="closeEmoji"
-                class="emoji-panel" />
+              <Emoji
+                :show="activeEmojiReply === getCommentUI(item.id)"
+                @select="insertEmoji"
+                @close="closeEmoji"
+                class="emoji-panel"
+              />
             </div>
             <button class="send-reply-btn" @click="sendReply(item.id)">发送</button>
             <button class="cancel-reply-btn" @click="closeAllReplies">取消</button>
@@ -228,14 +244,15 @@ watch(() => props.commentList, (newVal, oldVal) => {
           <!-- 回复列表 -->
           <div class="reply-list" v-if="item.replies.length">
             <div class="reply-item" v-for="r in item.replies.slice(0, getCommentUI(item.id).replyPageSize)" :key="r.id">
-              <img class="reply-avatar" :src="r.avatar" />
+              <img class="reply-avatar" :src="r.userAvatar" />
               <div class="reply-info">
                 <div class="reply-top">
                   <span class="reply-name">
-                    {{ r.nickname }}
-                    <span v-if="r.replyTo" class="reply-to-text">回复 @{{ r.replyTo }}</span>
+                    {{ r.userNickname }}
+                    <span v-if="r.admin" class="admin">博主</span>
+                    <span v-if="r.replyUserNickname" class="reply-to-text">回复 @{{ r.replyUserNickname }}</span>
                   </span>
-                  <span class="reply-time">{{ r.time }}</span>
+                  <span class="reply-time">{{ r.createTime }}</span>
                 </div>
 
                 <div class="reply-content">
@@ -252,37 +269,50 @@ watch(() => props.commentList, (newVal, oldVal) => {
 
                 <div class="reply-action-row">
                   <button class="action-btn" @click="emit('like-reply', item.id, r.id)">
-                    <font-awesome-icon icon="fa-solid fa-thumbs-up" /> 点赞 {{ r.like }}
+                    <font-awesome-icon icon="fa-solid fa-thumbs-up" /> 点赞 {{ r.likeNum }}
                   </button>
-                  <button class="action-btn" :class="{ active: getReplyUI(item.id, r.id).replying }"
-                    @click="toggleReplyReply(item.id, r.id)">
+                  <button
+                    class="action-btn"
+                    :class="{ active: getReplyUI(item.id, r.id).replying }"
+                    @click="toggleReplyReply(item.id, r.id)"
+                  >
                     <el-icon>
                       <ChatLineRound />
-                    </el-icon> 回复
+                    </el-icon>
+                    回复
                   </button>
                 </div>
 
                 <div class="reply-input-row" v-show="getReplyUI(item.id, r.id).replying">
                   <div class="reply-input-wrapper">
-                    <input v-model="getReplyUI(item.id, r.id).replyText" :placeholder="`回复 @${r.nickname}`"
-                      class="reply-input" />
+                    <input
+                      v-model="getReplyUI(item.id, r.id).replyText"
+                      :placeholder="`回复 @${r.userNickname}`"
+                      class="reply-input"
+                    />
 
                     <div class="emoji-btn" @click.stop="openEmoji(getReplyUI(item.id, r.id))">
                       <font-awesome-icon :icon="['fa', 'face-smile']" />
                     </div>
-                    <Emoji :show="activeEmojiReply === getReplyUI(item.id, r.id)" @select="insertEmoji"
-                      @close="closeEmoji" class="emoji-panel" />
+                    <Emoji
+                      :show="activeEmojiReply === getReplyUI(item.id, r.id)"
+                      @select="insertEmoji"
+                      @close="closeEmoji"
+                      class="emoji-panel"
+                    />
                   </div>
                   <button class="send-reply-btn" @click="sendReply(item.id, r.id)">发送</button>
                   <button class="cancel-reply-btn" @click="closeAllReplies">取消</button>
                 </div>
-
               </div>
             </div>
 
             <!-- 展开/收起 按钮 -->
-            <button v-if="getCommentUI(item.id).replyPageSize < item.replies.length" class="more-btn"
-              @click="loadMoreReplies(item.id)">
+            <button
+              v-if="getCommentUI(item.id).replyPageSize < item.replies.length"
+              class="more-btn"
+              @click="loadMoreReplies(item.id)"
+            >
               加载更多 ({{ item.replies.length - getCommentUI(item.id).replyPageSize }})
             </button>
           </div>
@@ -290,9 +320,7 @@ watch(() => props.commentList, (newVal, oldVal) => {
       </div>
     </div>
 
-    <div v-if="commentList.length === 0" class="empty-data">
-      暂无评论~~~
-    </div>
+    <div v-if="commentList.length === 0" class="empty-data">暂无评论~~~</div>
   </div>
 </template>
 
@@ -491,7 +519,6 @@ watch(() => props.commentList, (newVal, oldVal) => {
   overflow-y: auto;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
-
 
 .send-reply-btn {
   padding: 0 12px;

@@ -18,7 +18,7 @@ import java.util.List;
  * 评论管理
  */
 @Slf4j
-@RestController
+@RestController("adminCommentController")
 @RequestMapping("/admin/comment")
 public class CommentController {
 
@@ -110,7 +110,7 @@ public class CommentController {
     }
 
     /**
-     * 批量恢复评论（回收站 -> 正常列表）
+     * 批量恢复评论
      *
      * @param ids 评论ID集合
      * @return 统一结果

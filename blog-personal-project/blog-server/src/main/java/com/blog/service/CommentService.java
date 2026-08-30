@@ -3,6 +3,7 @@ package com.blog.service;
 import com.blog.pojo.dto.CommentPageQueryDTO;
 import com.blog.pojo.dto.CommentReplyDTO;
 import com.blog.pojo.dto.CommentStatusDTO;
+import com.blog.pojo.vo.CommentVo;
 import com.blog.result.PageResult;
 
 import java.util.List;
@@ -69,4 +70,11 @@ public interface CommentService {
      * @param ids 评论ID集合
      */
     void recover(List<Long> ids);
+
+    /**
+     * 根据文章id查询文章评论
+     * @param id
+     * @return
+     */
+    List<CommentVo> getArticleById(Long id);
 }

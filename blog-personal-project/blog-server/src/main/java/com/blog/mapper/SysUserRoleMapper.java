@@ -23,4 +23,9 @@ public interface SysUserRoleMapper {
      * 根据用户id查询角色列表（id、roleName、roleKey）
      */
     List<SysRoleSimpleVO> selectRoleByUserId(@Param("userId") Long userId);
+
+    /**
+     * 根据用户id 判断该用户是否拥有指定角色
+     */
+    boolean hasRole(@Param("userId") Long userId, @Param("roleKey") String roleKey);
 }
