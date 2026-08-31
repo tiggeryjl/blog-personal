@@ -1,7 +1,10 @@
 package com.blog.service.impl;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.digest.DigestUtil;
 import com.blog.constant.ArticleStatusConstant;
 import com.blog.constant.DelStatusConstant;
+import com.blog.constant.RedisConstant;
 import com.blog.constant.StatusConstant;
 import com.blog.context.BaseContext;
 import com.blog.exception.ArticleException;
@@ -17,6 +20,7 @@ import com.blog.pojo.vo.ArticleVo;
 import com.blog.result.PageResult;
 import com.blog.service.AiService;
 import com.blog.service.ArticleService;
+import com.blog.service.RedisService;
 import com.blog.utils.ArticleUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -29,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -45,6 +50,9 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Autowired
     private AiService aiService;
+
+    @Autowired
+    private RedisService redisService;
 
     /**
      * 新增文章
@@ -91,6 +99,20 @@ public class ArticleServiceImpl implements ArticleService {
         articleMapper.add(article);
     }
 
+    public static String genQueryMd5(ArticlePageQueryDTO dto) {
+        // 拼接所有条件，按固定顺序！
+        StringBuilder sb = new StringBuilder();
+        sb.append("title=").append(StrUtil.nullToEmpty(dto.getTitle())).append("&");
+        sb.append("categoryId=").append(StrUtil.nullToEmpty(dto.getCategoryId())).append("&");
+        sb.append("tag=").append(StrUtil.nullToEmpty(dto.getTag())).append("&");
+        sb.append("isTop=").append(dto.getIsTop()).append("&");
+        sb.append("status=").append(dto.getStatus()).append("&");
+        sb.append("begin=").append(dto.getBegin()).append("&");
+        sb.append("end=").append(dto.getEnd());
+        // md5加密缩短字符串
+        return DigestUtil.md5Hex(sb.toString());
+    }
+
     /**
      * 分页查询文章列表
      *
@@ -98,10 +120,23 @@ public class ArticleServiceImpl implements ArticleService {
      */
     @Override
     public PageResult pageQurey(ArticlePageQueryDTO articlePageQueryDTO) {
+
+        //查缓存
+        String md5 = genQueryMd5(articlePageQueryDTO);
+        String cacheKey = RedisConstant.ARTICLE_LIST_KEY + ":" + articlePageQueryDTO.getPage() + ":" + articlePageQueryDTO.getPageSize() + ":" + md5;
+        Object articleCache = redisService.get(cacheKey,PageResult.class);
+        if (articleCache != null) {
+            return (PageResult) articleCache;
+        }
+
         PageHelper.startPage(articlePageQueryDTO.getPage(), articlePageQueryDTO.getPageSize());
         List<ArticleVo> articleList = articleMapper.pageQurey(articlePageQueryDTO);
         PageInfo<ArticleVo> pageInfo = new PageInfo<>(articleList);
-        return new PageResult(pageInfo.getTotal(), pageInfo.getList());
+        PageResult pageResult = new PageResult(pageInfo.getTotal(), pageInfo.getList());
+
+        //存入缓存 10分钟过期
+        redisService.set(cacheKey, pageResult, 600);
+        return pageResult;
     }
 
     /**
@@ -368,6 +403,7 @@ public class ArticleServiceImpl implements ArticleService {
 
     /**
      * 置顶设置
+     *
      * @param id
      */
     @Override
