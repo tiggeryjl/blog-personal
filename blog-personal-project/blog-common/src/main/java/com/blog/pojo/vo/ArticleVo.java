@@ -51,6 +51,9 @@ public class ArticleVo implements Serializable {
     //评论数
     private Long commentNum;
 
+    //文字数
+    private Long wordsNum;
+
     //创建时间
     private LocalDateTime createTime;
 

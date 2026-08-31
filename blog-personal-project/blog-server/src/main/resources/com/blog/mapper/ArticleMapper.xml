@@ -112,6 +112,7 @@
             a.view_num,
             a.like_num,
             a.comment_num,
+            a.words_num,
             a.create_time,
             a.update_time,
             a.publish_time,

@@ -130,12 +130,12 @@ onUnmounted(() => {
               </el-icon>
               {{ item.commentNum }}</span
             >
-            <!-- <span
+            <span
               ><el-icon>
                 <Document />
               </el-icon>
-              {{ item.words }}字</span
-            > -->
+              {{ item.wordsNum }}字</span
+            >
           </div>
         </div>
       </div>
@@ -379,7 +379,7 @@ onUnmounted(() => {
 /* 左侧图片容器 */
 .article-img {
   width: 32%;
-  height: 100%;
+  height: 300px;
   overflow: hidden;
 }
 

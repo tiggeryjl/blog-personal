@@ -49,6 +49,7 @@ CREATE TABLE `article`
     `view_num`      int          DEFAULT 0 COMMENT '阅读量',
     `like_num`      int          DEFAULT 0 COMMENT '点赞数',
     `comment_num`   int          DEFAULT 0 COMMENT '评论数',
+    `words_num`   int          DEFAULT 0 COMMENT '文字数',
 
     `create_time`   datetime     DEFAULT NULL COMMENT '创建时间',
     `update_time`   datetime     DEFAULT NULL COMMENT '修改时间',
@@ -84,30 +85,30 @@ LOCK TABLES `article` WRITE;
 /*!40000 ALTER TABLE `article`
     DISABLE KEYS */;
 INSERT INTO `article` (`id`, `title`, `summary`, `content`, `category_id`, `cover`, `status`,
-                       `is_top`, `is_hot`, `view_num`, `like_num`, `comment_num`, `create_time`, `update_time`,
+                       `is_top`, `is_hot`, `view_num`, `like_num`, `comment_num`,`words_num`, `create_time`, `update_time`,
                        `publish_time`, `user_id`, `delete_flag`, `sort`)
 VALUES (1, 'Vue3 + ElementPlus后台管理实战', '从零搭建个人博客后端管理页面，实现文章增删改查',
         '本篇讲解Vue3组合式API、路由配置、表单校验、表格封装等核心后台功能，适配个人博客项目开发', 1,
-        'https://picsum.photos/400/220', 1, 1, 1, 1268, 86, 23, '2025-01-01 12:00:00',
+        'https://picsum.photos/400/220', 1, 1, 1, 1268, 86, 23, 1268,'2025-01-01 12:00:00',
         '2025-01-05 09:22:16', '2025-01-01 14:30:00', 1, 0, 99),
        (2, '个人博客开发日记', '记录从选型到上线完整开发流程',
         '选用SpringBoot+Vue3技术栈，完成数据库设计、接口编写、页面布局与部署上线全过程', 2,
-        'https://picsum.photos/400/221', 0, 1, 0, 326, 18, 5, '2025-01-02 15:30:00', '2025-01-02 15:30:00', NULL, 1,
+        'https://picsum.photos/400/221', 0, 1, 0, 326, 18, 5,1268, '2025-01-02 15:30:00', '2025-01-02 15:30:00', NULL, 1,
         0, 10),
        (3, 'MySQL常用查询优化技巧', '日常开发SQL语句调优实用方法',
         '索引创建、联表查询、分页优化、避免全表扫描等实战优化方案', 1,
-        'https://picsum.photos/400/222', 2, 0, 0, 562, 41, 12, '2025-01-03 10:20:00', '2025-01-06 11:10:25',
+        'https://picsum.photos/400/222', 2, 0, 0, 562, 41, 12,1268, '2025-01-03 10:20:00', '2025-01-06 11:10:25',
         '2025-01-03 16:10:00', 1, 0, 20),
        (4, 'JavaScript进阶语法指南', '梳理ES6+常用语法与实战用法',
         '箭头函数、解构赋值、异步Promise、async/await等前端高频知识点讲解', 1,
-        'https://picsum.photos/400/223', 3, 1, 1, 895, 63, 17, '2025-01-04 09:10:00', '2025-01-07 14:05:32',
+        'https://picsum.photos/400/223', 3, 1, 1, 895, 63, 17, 1268,'2025-01-04 09:10:00', '2025-01-07 14:05:32',
         '2025-01-04 11:20:00', 1, 0, 80),
        (5, '日常随笔：生活感悟', '平淡生活中的思考与记录', '记录工作学习之余日常心境，分享成长路上点滴心得', 3,
-        'https://picsum.photos/400/224', 5, 0, 0, 218, 9, 3, '2025-01-05 16:40:00', '2025-01-05 16:40:00',
+        'https://picsum.photos/400/224', 5, 0, 0, 218, 9, 3, 1268,'2025-01-05 16:40:00', '2025-01-05 16:40:00',
         '2025-01-05 18:00:00', 1, 0, 5),
        (6, 'SpringBoot接口统一封装', '后端接口规范化统一返回格式',
         '全局异常处理、参数校验、响应体封装，规范项目后端接口输出', 1,
-        'https://picsum.photos/400/225', 4, 0, 0, 0, 0, 0, '2025-01-06 08:30:00', '2025-01-06 08:30:00',
+        'https://picsum.photos/400/225', 4, 0, 0, 0, 0, 0, 1268,'2025-01-06 08:30:00', '2025-01-06 08:30:00',
         '2025-06-01 10:00:00', 1, 0, 15);
 /*!40000 ALTER TABLE `article`
     ENABLE KEYS */;

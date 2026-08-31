@@ -15,12 +15,15 @@ const articleList = ref([]);
 const article = ref({
   id: '',
   title: '',
+  summary: '',
+  content: '',
   userNickname: '',
   createTime: '',
   category: '',
+  tags: [],
   viewNum: 0,
   likeNum: 0,
-  content: '',
+  commentNum: 0,
 });
 
 //根据id获取当前文章信息
@@ -52,23 +55,6 @@ const goToArticle = (id) => {
 const prevArticle = ref(null);
 const nextArticle = ref(null);
 
-const getDefaultComments = (articleId) => {
-  if (articleId === '1') {
-    return [
-      {
-        id: 1,
-        nickname: '小叶同学',
-        avatar: 'https://picsum.photos/100/100?1',
-        content: '欢迎来到我的博客！大家可以在这里随意留言～',
-        time: '2025-01-01 12:00',
-        isAdmin: true,
-        like: 7,
-        replies: [],
-      },
-    ];
-  }
-  return [];
-};
 // 点赞主评论
 const likeComment = (commentId) => {
   const list = currentCommentList.value;
@@ -94,11 +80,15 @@ const commentsStore = ref({});
 const currentCommentList = ref([]);
 
 const getCommentList = async (id) => {
-  const result = await getArticleCommentListApi(id);
-  if (result.code === 200) {
-    currentCommentList.value = result.data;
-  } else {
-    ElMessage.error('获取评论失败，请稍后重新尝试或者联系博主反馈，感谢！');
+  try {
+    const result = await getArticleCommentListApi(id);
+    if (result.code === 200) {
+      currentCommentList.value = result.data;
+    } else {
+      ElMessage.error('获取评论失败，请稍后重新尝试或者联系博主反馈，感谢！');
+    }
+  } catch (err) {
+    ElMessage.error('获取评论失败，接口异常，感谢！');
   }
 };
 
@@ -390,7 +380,7 @@ onUnmounted(() => {
         </div>
         <h3>
           评论
-          <span>(5)</span>
+          <span>({{ article.commentNum }})</span>
         </h3>
         <CommentList
           :comment-list="currentCommentList"
