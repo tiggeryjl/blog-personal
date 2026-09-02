@@ -2,6 +2,7 @@ package com.blog.controller.admin;
 
 import com.blog.pojo.dto.ArticleDTO;
 import com.blog.pojo.dto.ArticlePageQueryDTO;
+import com.blog.pojo.vo.ArticleDetailVO;
 import com.blog.pojo.vo.ArticleVo;
 import com.blog.result.PageResult;
 import com.blog.result.Result;
@@ -98,8 +99,8 @@ public class ArticleController {
     @GetMapping("/{id}")
     public Result<ArticleVo> getArticleById(@PathVariable Long id){
         log.info("查询id为{}的文章",id);
-        ArticleVo articleVo=articleService.getArticleById(id);
-        return Result.success(articleVo);
+        ArticleDetailVO articleDetailVO=articleService.getArticleById(id);
+        return Result.success(articleDetailVO.getArticleVo());
     }
 
     /**

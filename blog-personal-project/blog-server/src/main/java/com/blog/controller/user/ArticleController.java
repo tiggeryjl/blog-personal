@@ -2,6 +2,7 @@ package com.blog.controller.user;
 
 import com.blog.pojo.dto.ArticleDTO;
 import com.blog.pojo.dto.ArticlePageQueryDTO;
+import com.blog.pojo.vo.ArticleDetailVO;
 import com.blog.pojo.vo.ArticleVo;
 import com.blog.result.PageResult;
 import com.blog.result.Result;
@@ -37,15 +38,15 @@ public class ArticleController {
     }
 
     /**
-     * 根据文章id获取文章详情
+     * 根据文章id获取文章详情等数据
      * @param id
      * @return
      */
     @GetMapping("/getArticleDetail/{id}")
-    public Result<ArticleVo> getArticleDetail(@PathVariable Long id){
+    public Result<ArticleDetailVO> getArticleDetail(@PathVariable Long id){
         log.info("文章id:{}",id);
-        ArticleVo articleVo = articleService.getArticleById(id);
-        return Result.success(articleVo);
+        ArticleDetailVO articleDetailVO = articleService.getArticleById(id);
+        return Result.success(articleDetailVO);
     }
 
 

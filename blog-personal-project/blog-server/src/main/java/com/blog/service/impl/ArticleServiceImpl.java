@@ -10,13 +10,16 @@ import com.blog.context.BaseContext;
 import com.blog.exception.ArticleException;
 import com.blog.mapper.ArticleMapper;
 import com.blog.mapper.ArticleTagMapper;
+import com.blog.mapper.CommentMapper;
 import com.blog.mapper.SysUserMapper;
 import com.blog.pojo.dto.ArticleDTO;
 import com.blog.pojo.dto.ArticlePageQueryDTO;
 import com.blog.pojo.dto.ArticleTagDTO;
 import com.blog.pojo.entity.Article;
 import com.blog.pojo.entity.SysUser;
+import com.blog.pojo.vo.ArticleDetailVO;
 import com.blog.pojo.vo.ArticleVo;
+import com.blog.pojo.vo.SimpleArticleVO;
 import com.blog.result.PageResult;
 import com.blog.service.AiService;
 import com.blog.service.ArticleService;
@@ -44,6 +47,9 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Autowired
     private ArticleTagMapper articleTagMapper;
+
+    @Autowired
+    private CommentMapper commentMapper;
 
     @Autowired
     private SysUserMapper sysUserMapper;
@@ -159,8 +165,32 @@ public class ArticleServiceImpl implements ArticleService {
      * @return
      */
     @Override
-    public ArticleVo getArticleById(Long id) {
-        return articleMapper.getArticleVoById(id);
+    public ArticleDetailVO getArticleById(Long id) {
+        ArticleVo articleVo = articleMapper.getArticleVoById(id);
+        if(articleVo == null){
+            return null;
+        }
+
+        Article prev = articleMapper.selectPrevArticle(articleVo.getIsTop(),
+                articleVo.getIsHot(),
+                articleVo.getCreateTime());
+        Article next = articleMapper.selectNextArticle(articleVo.getIsTop(),
+                articleVo.getIsHot(),
+                articleVo.getCreateTime());
+
+        ArticleDetailVO articleDetailVO = new ArticleDetailVO();
+        articleDetailVO.setArticleVo(articleVo);
+        if(prev != null){
+            SimpleArticleVO prevArticleVO =SimpleArticleVO.builder()
+                    .id(prev.getId()).title(prev.getTitle()).createTime(prev.getCreateTime()).build();
+            articleDetailVO.setPrevArticle(prevArticleVO);
+        }
+        if(next != null){
+            SimpleArticleVO nextArticleVO =SimpleArticleVO.builder()
+                    .id(next.getId()).title(next.getTitle()).createTime(next.getCreateTime()).build();
+            articleDetailVO.setNextArticle(nextArticleVO);
+        }
+        return articleDetailVO;
     }
 
     /**

@@ -5,13 +5,12 @@ import { ElMessage } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
 import CommentList from '@/components/Comment.vue';
 import Emoji from '@/components/Emoji.vue';
-import { getArticleListApi, getArticleDetailApi } from '@/api/article.js';
+import { getArticleDetailApi } from '@/api/article.js';
 import { getArticleCommentListApi } from '@/api/comment.js';
 
 const router = useRouter();
 const route = useRoute();
 
-const articleList = ref([]);
 const article = ref({
   id: '',
   title: '',
@@ -26,22 +25,22 @@ const article = ref({
   commentNum: 0,
 });
 
+const prevArticle = ref({});
+const nextArticle = ref({});
+const commentTotal = ref(0);
 //根据id获取当前文章信息
 const getArticle = async () => {
   try {
     const articleId = route.params.id;
     const result = await getArticleDetailApi(articleId);
-    const articleListResult = await getArticleListApi();
 
-    if (result.code === 200 && articleListResult.code === 200) {
-      article.value = result.data;
-      articleList.value = articleListResult.data.rows;
+    if (result.code === 200) {
+      article.value = result.data.articleVo || {};
+      prevArticle.value = result.data.prevArticle || {};
+      nextArticle.value = result.data.nextArticle || {};
+      commentTotal.value = result.data.commentNum || 0;
       getCommentList(article.value.id);
     }
-
-    const currentIndex = articleList.value.findIndex((item) => item.id === articleId);
-    prevArticle.value = currentIndex > 0 ? articleList.value[currentIndex - 1] : null;
-    nextArticle.value = currentIndex < articleList.value.length - 1 ? articleList.value[currentIndex + 1] : null;
   } catch (error) {
     ElMessage.error('加载文章详情失败，请稍后重试');
   }
@@ -51,9 +50,6 @@ const getArticle = async () => {
 const goToArticle = (id) => {
   router.push(`/article/${id}`);
 };
-
-const prevArticle = ref(null);
-const nextArticle = ref(null);
 
 // 点赞主评论
 const likeComment = (commentId) => {
@@ -338,14 +334,14 @@ onUnmounted(() => {
       </div>
 
       <div class="article-pagination">
-        <button v-if="prevArticle" class="prev-btn" @click="goToArticle(prevArticle.id)">
+        <button v-if="prevArticle.id" class="prev-btn" @click="goToArticle(prevArticle.id)">
           <el-icon>
             <DArrowLeft />
           </el-icon>
           上一章：{{ prevArticle.title }}
         </button>
 
-        <button v-if="nextArticle" class="next-btn" @click="goToArticle(nextArticle.id)">
+        <button v-if="nextArticle.id" class="next-btn" @click="goToArticle(nextArticle.id)">
           下一章：{{ nextArticle.title }}
           <el-icon>
             <DArrowRight />

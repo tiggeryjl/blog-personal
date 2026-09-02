@@ -2,6 +2,7 @@ package com.blog.service;
 
 import com.blog.pojo.dto.ArticleDTO;
 import com.blog.pojo.dto.ArticlePageQueryDTO;
+import com.blog.pojo.vo.ArticleDetailVO;
 import com.blog.pojo.vo.ArticleVo;
 import com.blog.result.PageResult;
 
@@ -33,7 +34,7 @@ public interface ArticleService {
      * @param id
      * @return
      */
-    ArticleVo getArticleById(Long id);
+    ArticleDetailVO getArticleById(Long id);
 
     /**
      * 修改文章

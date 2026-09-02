@@ -11,7 +11,18 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ArticleDetailVO {
 
-    private ArticleVo article;
+    /**
+     * 文章详情
+     */
+    private ArticleVo articleVo;
+
+    /**
+     * 上一页
+     */
     private SimpleArticleVO prevArticle;
+
+    /**
+     * 下一页
+     */
     private SimpleArticleVO nextArticle;
 }

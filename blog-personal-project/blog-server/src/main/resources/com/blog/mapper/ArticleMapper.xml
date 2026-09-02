@@ -287,6 +287,31 @@
         </where>
     </select>
 
+    <select id="selectPrevArticle" resultType="com.blog.pojo.entity.Article">
+        SELECT id,title,is_top,is_hot,create_time
+        FROM article
+        WHERE
+            (
+                is_top > #{isTop}
+                    OR (is_top = #{isTop} AND is_hot > #{isHot})
+                    OR (is_top = #{isTop} AND is_hot = #{isHot} AND create_time > #{createTime})
+                )
+        ORDER BY is_top ASC, is_hot ASC, create_time ASC
+        LIMIT 1
+    </select>
+    <select id="selectNextArticle" resultType="com.blog.pojo.entity.Article">
+        SELECT id,title,is_top,is_hot,create_time
+        FROM article
+        WHERE
+        (
+        is_top &lt; #{isTop}
+        OR (is_top = #{isTop} AND is_hot &lt; #{isHot})
+        OR (is_top = #{isTop} AND is_hot = #{isHot} AND create_time &lt; #{createTime})
+        )
+        ORDER BY is_top DESC, is_hot DESC, create_time DESC
+        LIMIT 1
+    </select>
+
     <!-- 设置定时发布 -->
     <update id="updateTimedPublish">
         UPDATE article

@@ -101,4 +101,22 @@ public interface ArticleMapper {
      * @param ids
      */
     void deleteBatch(List<Long> ids);
+
+    /**
+     * 查询上一页
+     * @param isTop
+     * @param isHot
+     * @param createTime
+     * @return
+     */
+    Article selectPrevArticle(Integer isTop, Integer isHot, LocalDateTime createTime);
+
+    /**
+     *查询下一页
+     * @param isTop
+     * @param isHot
+     * @param createTime
+     * @return
+     */
+    Article selectNextArticle(Integer isTop, Integer isHot, LocalDateTime createTime);
 }
