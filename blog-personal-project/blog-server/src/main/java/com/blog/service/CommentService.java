@@ -77,4 +77,13 @@ public interface CommentService {
      * @return
      */
     List<CommentVo> getArticleById(Long id);
+
+    /**
+     * 发表文章顶级评论
+     *
+     * @param articleId 文章ID
+     * @param content   评论内容
+     * @return 新评论ID
+     */
+    void addArticleComment(Long articleId, String content);
 }

@@ -10,6 +10,11 @@ const props = defineProps({
     type: Array,
     required: true,
   },
+  // 可选：由父页面传入真实的发送函数（返回 Promise<boolean>），失败时保留输入内容
+  onSendReply: {
+    type: Function,
+    default: null,
+  },
 });
 
 // 所有事件抛给父页面
@@ -104,29 +109,36 @@ const truncateText = (text, maxLen = 100) => {
 };
 
 // 发送回复
-const sendReply = (commentId, replyId = null) => {
-  if (replyId === null) {
-    const ui = getCommentUI(commentId);
-    const text = ui.replyText.trim();
-    if (!text) {
-      ElMessage.warning('请输入回复内容');
-      return;
-    }
-    emit('send-reply', commentId, null, text);
-    ui.replyText = '';
-    ui.replying = false;
-  } else {
-    const ui = getReplyUI(commentId, replyId);
-    const text = ui.replyText.trim();
-    if (!text) {
-      ElMessage.warning('请输入回复内容');
-      return;
-    }
-    emit('send-reply', commentId, replyId, text);
-    ui.replyText = '';
-    ui.replying = false;
+const sendReply = async (commentId, replyId = null) => {
+  const ui = replyId === null ? getCommentUI(commentId) : getReplyUI(commentId, replyId);
+  const text = (ui.replyText || '').trim();
+  if (!text) {
+    ElMessage.warning('请输入回复内容');
+    return;
   }
-  closeAllReplies();
+  if (ui.submitting) return;
+
+  const clearCurrent = () => {
+    ui.replyText = '';
+    ui.replying = false;
+    closeAllReplies();
+  };
+
+  if (props.onSendReply) {
+    ui.submitting = true;
+    try {
+      const ok = await props.onSendReply(commentId, replyId, text);
+      // 发送成功才清空/收起；失败时保留用户输入，方便修改后重试
+      if (ok !== false) clearCurrent();
+    } catch (error) {
+      // 父页面已提示错误，这里保留输入
+    } finally {
+      ui.submitting = false;
+    }
+  } else {
+    emit('send-reply', commentId, replyId, text);
+    clearCurrent();
+  }
 };
 
 // 表情相关
@@ -164,7 +176,6 @@ onUnmounted(() => {
 watch(
   () => props.commentList,
   (newVal, oldVal) => {
-    console.log(newVal);
     if (newVal !== oldVal) {
       commentUI.clear();
       replyUI.clear();
@@ -237,7 +248,13 @@ watch(
                 class="emoji-panel"
               />
             </div>
-            <button class="send-reply-btn" @click="sendReply(item.id)">发送</button>
+            <button
+              class="send-reply-btn"
+              :disabled="getCommentUI(item.id).submitting"
+              @click="sendReply(item.id)"
+            >
+              {{ getCommentUI(item.id).submitting ? '发送中...' : '发送' }}
+            </button>
             <button class="cancel-reply-btn" @click="closeAllReplies">取消</button>
           </div>
 
@@ -301,7 +318,13 @@ watch(
                       class="emoji-panel"
                     />
                   </div>
-                  <button class="send-reply-btn" @click="sendReply(item.id, r.id)">发送</button>
+                  <button
+                    class="send-reply-btn"
+                    :disabled="getReplyUI(item.id, r.id).submitting"
+                    @click="sendReply(item.id, r.id)"
+                  >
+                    {{ getReplyUI(item.id, r.id).submitting ? '发送中...' : '发送' }}
+                  </button>
                   <button class="cancel-reply-btn" @click="closeAllReplies">取消</button>
                 </div>
               </div>
@@ -528,6 +551,11 @@ watch(
   border-radius: 6px;
   font-size: 13px;
   cursor: pointer;
+}
+
+.send-reply-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .cancel-reply-btn {

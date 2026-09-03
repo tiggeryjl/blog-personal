@@ -17,7 +17,7 @@ const finished = ref(false);
 // 通知类型映射
 const noticeTypeMap = {
   comment: { text: '评论', type: 'success' },
-  like: { text: '点赞', type: 'warning' },
+  like: { text: '点赞', type: 'primary' },
   link: { text: '友链', type: 'warning' },
 };
 

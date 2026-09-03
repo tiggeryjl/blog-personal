@@ -103,20 +103,16 @@ public interface ArticleMapper {
     void deleteBatch(List<Long> ids);
 
     /**
-     * 查询上一页
-     * @param isTop
-     * @param isHot
-     * @param createTime
+     * 查询上一页：文章列表页中当前文章的上一条
+     * @param id
      * @return
      */
-    Article selectPrevArticle(Integer isTop, Integer isHot, LocalDateTime createTime);
+    Article selectPrevArticle(Long id);
 
     /**
-     *查询下一页
-     * @param isTop
-     * @param isHot
-     * @param createTime
+     * 查询下一页：文章列表页中当前文章的下一条
+     * @param id
      * @return
      */
-    Article selectNextArticle(Integer isTop, Integer isHot, LocalDateTime createTime);
+    Article selectNextArticle(Long id);
 }

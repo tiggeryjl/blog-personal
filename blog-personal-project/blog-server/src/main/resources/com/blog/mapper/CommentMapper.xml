@@ -214,7 +214,11 @@
     </update>
 
     <select id="getArticle" resultType="com.blog.pojo.entity.Comment">
-        select * from comment where type=#{type} and source_id =#{sourceId}
-        order by create_time desc
+        SELECT * FROM comment
+        WHERE type = #{type}
+          AND source_id = #{sourceId}
+          AND delete_flag = 0
+          AND status = 1
+        ORDER BY is_top DESC, create_time DESC
     </select>
 </mapper>

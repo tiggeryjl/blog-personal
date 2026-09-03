@@ -6,7 +6,7 @@ import { useRoute, useRouter } from 'vue-router';
 import CommentList from '@/components/Comment.vue';
 import Emoji from '@/components/Emoji.vue';
 import { getArticleDetailApi } from '@/api/article.js';
-import { getArticleCommentListApi } from '@/api/comment.js';
+import { getArticleCommentListApi, addArticleCommentApi, addCommentReplyApi } from '@/api/comment.js';
 
 const router = useRouter();
 const route = useRoute();
@@ -27,7 +27,6 @@ const article = ref({
 
 const prevArticle = ref({});
 const nextArticle = ref({});
-const commentTotal = ref(0);
 //根据id获取当前文章信息
 const getArticle = async () => {
   try {
@@ -38,7 +37,6 @@ const getArticle = async () => {
       article.value = result.data.articleVo || {};
       prevArticle.value = result.data.prevArticle || {};
       nextArticle.value = result.data.nextArticle || {};
-      commentTotal.value = result.data.commentNum || 0;
       getCommentList(article.value.id);
     }
   } catch (error) {
@@ -69,13 +67,11 @@ const likeReply = (commentId, replyId) => {
   ElMessage.success('点赞成功！');
 };
 
-// 存储所有文章的评论，key: 文章id, value: 评论数组
-const commentsStore = ref({});
-
 // 当前文章的评论列表
 const currentCommentList = ref([]);
 
 const getCommentList = async (id) => {
+  currentCommentList.value = [];
   try {
     const result = await getArticleCommentListApi(id);
     if (result.code === 200) {
@@ -88,54 +84,68 @@ const getCommentList = async (id) => {
   }
 };
 
+// 递归统计评论总数
+const countComments = (list) => {
+  if (!list) return 0;
+  return list.reduce((sum, item) => sum + 1 + countComments(item.replies), 0);
+};
+const commentTotal = computed(() => countComments(currentCommentList.value));
+
 // 评论表单
-const commentForm = ref({
-  content: '',
-});
-const publishComment = (commentId, replyId, content) => {
-  // 发布新评论（无参数）
+const commentForm = ref({ content: '' });
+const publishing = ref(false);
+
+// 发表评论/回复评论
+const publishComment = async (commentId, replyId, content) => {
+  // 发布新评论
   if (commentId === undefined && replyId === undefined && content === undefined) {
     if (!commentForm.value.content.trim()) {
       ElMessage.warning('评论内容不能为空~');
-      return;
+      return false;
     }
-    const newComment = {
-      id: Date.now(),
-      nickname: '游客' + Math.random().toString().slice(-6),
-      avatar: `https://picsum.photos/100/100?${Math.random()}`,
-      content: commentForm.value.content,
-      time: new Date().toLocaleString(),
-      isAdmin: false,
-      like: 0,
-      replies: [],
-    };
-    // 注意：要修改当前文章的评论数组（直接操作 commentsStore 中对应的数组）
-    commentsStore.value[article.value.id].unshift(newComment);
-    ElMessage.success('评论发布成功！');
-    commentForm.value.content = '';
-    return;
+    if (publishing.value) return false;
+    publishing.value = true;
+    try {
+      const result = await addArticleCommentApi(article.value.id, commentForm.value.content.trim());
+      if (result.code === 200) {
+        commentForm.value.content = '';
+        ElMessage.success('评论发布成功！');
+        await getCommentList(article.value.id);
+        return true;
+      }
+      ElMessage.error(result.msg || '评论发布失败，请稍后重试');
+      return false;
+    } catch (error) {
+      ElMessage.error('评论发布失败，请稍后重试');
+      return false;
+    } finally {
+      publishing.value = false;
+    }
   }
 
   // 回复评论
-  const parentComment = currentCommentList.value.find((c) => c.id === commentId);
-  if (!parentComment) return;
-
-  let replyToName = parentComment.nickname;
-  if (replyId) {
-    const targetReply = parentComment.replies.find((r) => r.id === replyId);
-    if (targetReply) replyToName = targetReply.nickname;
+  if (!content || !content.trim()) {
+    ElMessage.warning('回复内容不能为空');
+    return false;
   }
-
-  parentComment.replies.unshift({
-    id: Date.now(),
-    nickname: '游客' + Math.random().toString().slice(-6),
-    avatar: `https://picsum.photos/100/100?${Math.random()}`,
-    content: content,
-    replyTo: replyToName,
-    time: new Date().toLocaleString(),
-    like: 0,
-  });
-  ElMessage.success('回复成功！');
+  const parentId = replyId || commentId;
+  if (!parentId) return false;
+  try {
+    const result = await addCommentReplyApi({
+      parentId,
+      content: content.trim(),
+    });
+    if (result.code === 200) {
+      ElMessage.success('回复成功！');
+      await getCommentList(article.value.id);
+      return true;
+    }
+    ElMessage.error(result.msg || '回复失败，请稍后重试');
+    return false;
+  } catch (error) {
+    ElMessage.error('回复失败，请稍后重试');
+    return false;
+  }
 };
 
 // ========== 图片预览（循环轮播 + 预加载 + loading） ==========
@@ -216,7 +226,7 @@ const handleImageClick = async (e) => {
   }
 };
 
-// 上一张（循环）
+// 上一张
 const prevImage = () => {
   if (imageLoading.value) return;
   const len = imageList.value.length;
@@ -225,7 +235,7 @@ const prevImage = () => {
   switchToImage(newIndex);
 };
 
-// 下一张（循环）
+// 下一张
 const nextImage = () => {
   if (imageLoading.value) return;
   const len = imageList.value.length;
@@ -368,7 +378,13 @@ onUnmounted(() => {
 
               <Emoji v-if="showEmoji" :show="showEmoji" @select="insertEmoji" @close="closeEmoji" />
 
-              <el-button type="primary" size="small" @click="publishComment()" class="publish-btn">
+              <el-button
+                type="primary"
+                size="small"
+                :loading="publishing"
+                @click="publishComment()"
+                class="publish-btn"
+              >
                 发表评论
               </el-button>
             </div>
@@ -376,13 +392,13 @@ onUnmounted(() => {
         </div>
         <h3>
           评论
-          <span>({{ article.commentNum }})</span>
+          <span>({{ commentTotal }})</span>
         </h3>
         <CommentList
           :comment-list="currentCommentList"
+          :on-send-reply="publishComment"
           @like-comment="likeComment"
           @like-reply="likeReply"
-          @send-reply="publishComment"
         />
       </div>
     </div>

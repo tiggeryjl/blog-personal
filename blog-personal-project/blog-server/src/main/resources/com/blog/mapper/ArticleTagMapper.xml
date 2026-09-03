@@ -3,7 +3,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.blog.mapper.ArticleTagMapper">
     <insert id="batchInsert">
-        insert into article_tag(article_id, tag_id, create_time)
+        INSERT INTO article_tag(article_id, tag_id, create_time)
         VALUES
         <foreach collection="tagIds" item="tagId" separator=",">
             (#{articleId}, #{tagId},#{createTime})
@@ -11,14 +11,14 @@
     </insert>
 
     <select id="selectRelationTagIds" resultType="java.lang.Long">
-        SELECT DISTINCT article_id from article_tag
-        where tag_id in
+        SELECT DISTINCT article_id FROM article_tag
+        WHERE tag_id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
     </select>
     <select id="selectRelationArticleId" resultType="java.lang.Long">
-        select tag_id from article_tag where article_id =#{id}
+        SELECT tag_id FROM article_tag WHERE article_id =#{id}
     </select>
 
 </mapper>

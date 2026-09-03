@@ -31,13 +31,13 @@ public class NoticeServiceImpl implements NoticeService {
 
     @Override
     @Transactional
-    public void createNotice(String type, String title, String actionText, String articleTitle, Long articleId, String operatorName, String content) {
+    public void createNotice(String type, String title, String actionText, String articleTitle, Long sourceId, String operatorName, String content) {
         SysNotice notice = new SysNotice();
         notice.setType(type);
         notice.setTitle(title);
         notice.setActionText(actionText);
         notice.setArticleTitle(articleTitle);
-        notice.setArticleId(articleId);
+        notice.setArticleId(sourceId);
         notice.setOperatorName(operatorName);
         notice.setContent(content);
         notice.setIsRead(StatusConstant.DISABLE);

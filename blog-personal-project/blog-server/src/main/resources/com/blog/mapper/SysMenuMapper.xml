@@ -3,13 +3,13 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.blog.mapper.SysMenuMapper">
     <insert id="add" useGeneratedKeys="true" keyProperty="id">
-        insert into sys_menu(parent_id, menu_name, path, component, perms, menu_type, icon,
+        INSERT INTO sys_menu(parent_id, menu_name, path, component, perms, menu_type, icon,
                              sort, status, delete_flag, create_time, update_time)
         VALUES (#{parentId}, #{menuName}, #{path}, #{component}, #{perms}, #{menuType},
                 #{icon}, #{sort}, #{status}, #{deleteFlag}, #{createTime}, #{updateTime})
     </insert>
     <update id="update">
-        update sys_menu
+        UPDATE sys_menu
         <set>
             <if test="parentId != null and parentId != ''">parent_id = #{parentId},</if>
             <if test="menuName != null and menuName != ''">menu_name = #{menuName},</if>
@@ -23,7 +23,7 @@
             <if test="deleteFlag != null">delete_flag = #{deleteFlag},</if>
             <if test="updateTime != null">update_time = #{updateTime},</if>
         </set>
-        where id = #{id}
+        WHERE id = #{id}
     </update>
 
     <update id="updateChildMenuStatus">
@@ -107,11 +107,11 @@
         SELECT id,status FROM sys_menu WHERE id = #{id}
     </select>
     <select id="selectMenuList" resultType="com.blog.pojo.entity.SysMenu">
-        select * from sys_menu where delete_flag = 0
+        SELECT * FROM sys_menu WHERE delete_flag = 0
         ORDER BY sort ASC, id ASC
     </select>
     <select id="selectAllMenuList" resultType="com.blog.pojo.entity.SysMenu">
-        select * from sys_menu
+        SELECT * FROM sys_menu
         <where>
             <if test="status != null ">
                 AND status = #{status}

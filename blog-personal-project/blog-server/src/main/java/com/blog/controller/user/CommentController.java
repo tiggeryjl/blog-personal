@@ -1,5 +1,6 @@
 package com.blog.controller.user;
 
+import com.blog.pojo.dto.ArticleCommentDTO;
 import com.blog.pojo.dto.CommentPageQueryDTO;
 import com.blog.pojo.dto.CommentReplyDTO;
 import com.blog.pojo.dto.CommentStatusDTO;
@@ -40,6 +41,21 @@ public class CommentController {
     }
 
     /**
+     * 发表文章顶级评论
+     *
+     * @param articleId         文章ID
+     * @param articleCommentDTO 评论内容
+     * @return 新评论ID
+     */
+    @PostMapping("/article/{articleId}")
+    public Result addArticleComment(@PathVariable Long articleId,
+                                          @Valid @RequestBody ArticleCommentDTO articleCommentDTO) {
+        log.info("发表文章id为{}的评论:{}", articleId, articleCommentDTO);
+        commentService.addArticleComment(articleId, articleCommentDTO.getContent());
+        return Result.success();
+    }
+
+    /**
      * 分页查询日常评论
      *
      * @param param 查询参数
@@ -74,7 +90,7 @@ public class CommentController {
      */
     @PostMapping("/reply")
     public Result reply(@Valid @RequestBody CommentReplyDTO commentReplyDTO) {
-        log.info("后台回复评论:{}", commentReplyDTO);
+        log.info("回复评论:{}", commentReplyDTO);
         commentService.addReply(commentReplyDTO);
         return Result.success();
     }

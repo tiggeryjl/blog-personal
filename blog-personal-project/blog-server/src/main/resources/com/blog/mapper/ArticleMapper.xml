@@ -3,7 +3,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.blog.mapper.ArticleMapper">
     <insert id="add">
-        insert into article(title, summary, content, category_id, cover, status, is_top, is_hot,
+        INSERT INTO article(title, summary, content, category_id, cover, status, is_top, is_hot,
                view_num, like_num, comment_num, create_time, update_time, publish_time, user_id,
                             user_nickname, user_avatar, delete_flag, sort)
         VALUES (#{title},#{summary},#{content},#{categoryId},#{cover},#{status},#{isTop},#{isHot},
@@ -48,24 +48,24 @@
     </update>
 
     <delete id="deleteBatchLogic">
-        update article set delete_flag=#{deleteFlag}
-        where id in
+        UPDATE article SET delete_flag=#{deleteFlag}
+        WHERE id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <delete id="deleteBatch">
-        delete from article
-        where id in
+        DELETE FROM article
+        WHERE id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <select id="selectRelationCategoryIds" resultType="java.lang.Long">
-        SELECT DISTINCT category_id from article
-        where category_id in
+        SELECT DISTINCT category_id FROM article
+        WHERE category_id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
@@ -128,7 +128,7 @@
             INNER JOIN article_tag at ON t.id = at.tag_id
             WHERE at.article_id = a.id
             ) AS tags_str
-        from article a
+        FROM article a
         LEFT JOIN sys_user u ON a.user_id = u.id
         LEFT JOIN category c ON a.category_id = c.id
         <where>
@@ -162,7 +162,7 @@
                 AND a.publish_time BETWEEN #{begin} AND #{end}
             </if>
         </where>
-        ORDER BY a.is_top DESC, a.publish_time DESC
+        ORDER BY a.is_top DESC, a.publish_time DESC, a.id DESC
     </select>
 
     <!-- 分页查询逻辑删除的文章（回收站） -->
@@ -195,7 +195,7 @@
             INNER JOIN article_tag at ON t.id = at.tag_id
             WHERE at.article_id = a.id
             ) AS tags_str
-        from article a
+        FROM article a
         LEFT JOIN sys_user u ON a.user_id = u.id
         LEFT JOIN category c ON a.category_id = c.id
         <where>
@@ -212,8 +212,8 @@
 
     <!-- 批量恢复（逻辑删除 -> 正常） -->
     <update id="recoverBatch">
-        update article set delete_flag = 0, update_time = NOW()
-        where id in
+        UPDATE article SET delete_flag = 0, update_time = NOW()
+        WHERE id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
@@ -249,7 +249,7 @@
             INNER JOIN article_tag at ON t.id = at.tag_id
             WHERE at.article_id = a.id
             ) AS tags_str
-        from article a
+        FROM article a
         LEFT JOIN sys_user u ON a.user_id = u.id
         LEFT JOIN category c ON a.category_id = c.id
         WHERE a.id = #{id}
@@ -289,26 +289,36 @@
 
     <select id="selectPrevArticle" resultType="com.blog.pojo.entity.Article">
         SELECT id,title,is_top,is_hot,create_time
-        FROM article
-        WHERE
-            (
-                is_top > #{isTop}
-                    OR (is_top = #{isTop} AND is_hot > #{isHot})
-                    OR (is_top = #{isTop} AND is_hot = #{isHot} AND create_time > #{createTime})
-                )
-        ORDER BY is_top ASC, is_hot ASC, create_time ASC
+        FROM (
+            SELECT id,title,is_top,is_hot,create_time,
+                   ROW_NUMBER() OVER (ORDER BY is_top DESC, publish_time DESC, id DESC) AS rn
+            FROM article
+        ) ranked
+        WHERE rn = (
+            SELECT rn - 1
+            FROM (
+                SELECT id, ROW_NUMBER() OVER (ORDER BY is_top DESC, publish_time DESC, id DESC) AS rn
+                FROM article
+            ) current
+            WHERE id = #{id}
+        )
         LIMIT 1
     </select>
     <select id="selectNextArticle" resultType="com.blog.pojo.entity.Article">
         SELECT id,title,is_top,is_hot,create_time
-        FROM article
-        WHERE
-        (
-        is_top &lt; #{isTop}
-        OR (is_top = #{isTop} AND is_hot &lt; #{isHot})
-        OR (is_top = #{isTop} AND is_hot = #{isHot} AND create_time &lt; #{createTime})
+        FROM (
+            SELECT id,title,is_top,is_hot,create_time,
+                   ROW_NUMBER() OVER (ORDER BY is_top DESC, publish_time DESC, id DESC) AS rn
+            FROM article
+        ) ranked
+        WHERE rn = (
+            SELECT rn + 1
+            FROM (
+                SELECT id, ROW_NUMBER() OVER (ORDER BY is_top DESC, publish_time DESC, id DESC) AS rn
+                FROM article
+            ) current
+            WHERE id = #{id}
         )
-        ORDER BY is_top DESC, is_hot DESC, create_time DESC
         LIMIT 1
     </select>
 

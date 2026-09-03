@@ -3,22 +3,22 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.blog.mapper.SysRoleMenuMapper">
     <insert id="batchInsert">
-        insert into sys_role_menu(role_id, menu_id, create_time) VALUES
+        INSERT INTO sys_role_menu(role_id, menu_id, create_time) VALUES
         <foreach collection="roleMenuList" item="list" separator="," >
             (#{list.roleId},#{list.menuId},#{list.createTime})
         </foreach>
     </insert>
     <insert id="addMenu">
-        insert into sys_role_menu(role_id, menu_id, create_time)
-        values (#{roleId},#{menuId},#{createTime})
+        INSERT INTO sys_role_menu(role_id, menu_id, create_time)
+        VALUES (#{roleId},#{menuId},#{createTime})
     </insert>
 
     <delete id="deleteByRoleId">
-        delete from sys_role_menu
-        where role_id =#{roleId}
+        DELETE FROM sys_role_menu
+        WHERE role_id =#{roleId}
     </delete>
     <delete id="deleteByMenuId">
-        delete from sys_role_menu
+        DELETE FROM sys_role_menu
         WHERE menu_id IN
         <foreach collection="menuIds" item="menuId" open="(" separator="," close=")">
             #{menuId}

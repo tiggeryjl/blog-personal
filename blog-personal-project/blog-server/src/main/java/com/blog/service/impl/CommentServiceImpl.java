@@ -1,21 +1,22 @@
 package com.blog.service.impl;
 
-import com.blog.constant.DelStatusConstant;
-import com.blog.constant.StatusConstant;
-import com.blog.constant.SystemConstant;
+import com.blog.constant.*;
 import com.blog.context.BaseContext;
 import com.blog.exception.CommentException;
+import com.blog.mapper.ArticleMapper;
 import com.blog.mapper.CommentMapper;
 import com.blog.mapper.SysUserMapper;
 import com.blog.mapper.SysUserRoleMapper;
 import com.blog.pojo.dto.CommentPageQueryDTO;
 import com.blog.pojo.dto.CommentReplyDTO;
 import com.blog.pojo.dto.CommentStatusDTO;
+import com.blog.pojo.entity.Article;
 import com.blog.pojo.entity.Comment;
 import com.blog.pojo.entity.SysUser;
 import com.blog.pojo.vo.CommentVo;
 import com.blog.result.PageResult;
 import com.blog.service.CommentService;
+import com.blog.service.NoticeService;
 import com.blog.utils.CommentTreeUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -43,10 +44,16 @@ public class CommentServiceImpl implements CommentService {
     private CommentMapper commentMapper;
 
     @Autowired
+    private ArticleMapper articleMapper;
+
+    @Autowired
     private SysUserMapper sysUserMapper;
 
     @Autowired
     private SysUserRoleMapper sysUserRoleMapper;
+
+    @Autowired
+    private NoticeService noticeService;
 
     /**
      * 分页查询评论列表
@@ -168,6 +175,7 @@ public class CommentServiceImpl implements CommentService {
      * @param commentReplyDTO 被回复评论ID与回复内容
      */
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void addReply(CommentReplyDTO commentReplyDTO) {
         Comment parent = commentMapper.getById(commentReplyDTO.getParentId());
         if (parent == null || DelStatusConstant.DISABLE.equals(parent.getDeleteFlag())) {
@@ -176,7 +184,7 @@ public class CommentServiceImpl implements CommentService {
 
         SysUser user = sysUserMapper.getByUserId(BaseContext.getCurrentId());
         if (user == null) {
-            throw new CommentException("当前管理员不存在");
+            throw new CommentException("当前用户不存在或登录已失效");
         }
 
         Comment reply = Comment.builder()
@@ -198,6 +206,89 @@ public class CommentServiceImpl implements CommentService {
                 .updateTime(LocalDateTime.now())
                 .build();
         commentMapper.add(reply);
+        notifyAdminForComment(reply, null);
+    }
+
+    /**
+     * 发表文章评论
+     *
+     * @param articleId 文章ID
+     * @param content   评论内容
+     * @return 新评论ID
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addArticleComment(Long articleId, String content) {
+        String trimmed = content == null ? "" : content.trim();
+        if (trimmed.isEmpty()) {
+            throw new CommentException("评论内容不能为空");
+        }
+        if (trimmed.length() > 500) {
+            throw new CommentException("评论内容最多500字");
+        }
+
+        Article article = articleMapper.getArticleById(articleId);
+        if (article == null || DelStatusConstant.DISABLE.equals(article.getDeleteFlag())) {
+            throw new CommentException("文章不存在或已删除");
+        }
+
+        SysUser user = sysUserMapper.getByUserId(BaseContext.getCurrentId());
+        if (user == null) {
+            throw new CommentException("当前用户不存在或登录已失效");
+        }
+
+        Comment comment = Comment.builder()
+                .type(0)
+                .sourceId(articleId)
+                .msgType(0)
+                .parentId(LayoutConstant.PARENTID)
+                .replyUserId(LayoutConstant.REPLYID)
+                .userId(user.getId())
+                .userNickname(user.getNickname())
+                .userAvatar(user.getAvatar())
+                .content(trimmed)
+                .likeNum(0)
+                .status(StatusConstant.ENABLE)
+                .isTop(StatusConstant.DISABLE)
+                .deleteFlag(DelStatusConstant.ENABLE)
+                .createTime(LocalDateTime.now())
+                .updateTime(LocalDateTime.now())
+                .build();
+        commentMapper.add(comment);
+        notifyAdminForComment(comment, article.getTitle());
+    }
+
+    /**
+     * 非博主的用户发表/回复文章评论时，记录通知并推送管理员
+     *
+     * @param comment        新评论
+     * @param fallbackTitle  文章标题（回复场景可传空，由内部补充）
+     */
+    private void notifyAdminForComment(Comment comment, String fallbackTitle) {
+        if (comment == null || !CommentConstant.ZERO.equals(comment.getType())) {
+            return;
+        }
+        // 博主本人评论不通知
+        if (sysUserRoleMapper.hasRole(comment.getUserId(), SystemConstant.SUPER_ADMIN_ROLE)) {
+            return;
+        }
+
+        String articleTitle = fallbackTitle;
+        if (articleTitle == null || articleTitle.trim().isEmpty()) {
+            Article article = articleMapper.getArticleById(comment.getSourceId());
+            articleTitle = article == null ? null : article.getTitle();
+        }
+        String operatorName = (comment.getUserNickname() == null || comment.getUserNickname().trim().isEmpty())
+                ? "匿名用户" : comment.getUserNickname();
+
+        noticeService.createNotice(
+                "comment",
+                "收到新评论",
+                "评论",
+                articleTitle == null || articleTitle.trim().isEmpty() ? "文章" : articleTitle,
+                comment.getSourceId(),
+                operatorName,
+                comment.getContent());
     }
 
     /**

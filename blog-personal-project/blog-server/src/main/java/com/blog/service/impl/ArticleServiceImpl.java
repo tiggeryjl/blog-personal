@@ -171,12 +171,8 @@ public class ArticleServiceImpl implements ArticleService {
             return null;
         }
 
-        Article prev = articleMapper.selectPrevArticle(articleVo.getIsTop(),
-                articleVo.getIsHot(),
-                articleVo.getCreateTime());
-        Article next = articleMapper.selectNextArticle(articleVo.getIsTop(),
-                articleVo.getIsHot(),
-                articleVo.getCreateTime());
+        Article prev = articleMapper.selectPrevArticle(articleVo.getId());
+        Article next = articleMapper.selectNextArticle(articleVo.getId());
 
         ArticleDetailVO articleDetailVO = new ArticleDetailVO();
         articleDetailVO.setArticleVo(articleVo);

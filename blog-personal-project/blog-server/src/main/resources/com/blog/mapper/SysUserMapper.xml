@@ -36,11 +36,11 @@
     </update>
 
     <select id="selectRoleListByUserId" resultType="com.blog.pojo.entity.SysRole">
-        select r.*
-            from sys_user u
-            inner join sys_user_role ur on u.id = ur.user_id
-            inner join sys_role r on ur.role_id = r.id
-            where u.id = #{userId}
+        SELECT r.*
+            FROM sys_user u
+            INNER JOIN sys_user_role ur ON u.id = ur.user_id
+            INNER JOIN sys_role r ON ur.role_id = r.id
+            WHERE u.id = #{userId}
     </select>
 
     <select id="selectByIds" resultType="com.blog.pojo.entity.SysUser">
@@ -72,11 +72,11 @@
     </resultMap>
 
     <select id="pageQuery" resultMap="UserVOResultMap">
-        select u.*,
+        SELECT u.*,
         r.id r_id,
         r.role_name,
         r.role_key
-        from sys_user u
+        FROM sys_user u
         LEFT JOIN sys_user_role ur ON u.id = ur.user_id
         LEFT JOIN sys_role r ON ur.role_id = r.id
         <where>
@@ -115,26 +115,26 @@
     </select>
 
     <delete id="deleteBatch">
-        delete from sys_user
-        where id in
+        DELETE FROM sys_user
+        WHERE id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
     <delete id="deleteBatchLogic">
-        update sys_user set delete_flag=#{deleteFlag},status=2,update_time=now()
-        where id in
+        UPDATE sys_user SET delete_flag=#{deleteFlag},status=2,update_time=NOW()
+        WHERE id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
     </delete>
 
     <select id="pageQueryLogicDelete" resultMap="UserVOResultMap">
-        select u.*,
+        SELECT u.*,
         r.id r_id,
         r.role_name,
         r.role_key
-        from sys_user u
+        FROM sys_user u
         LEFT JOIN sys_user_role ur ON u.id = ur.user_id
         LEFT JOIN sys_role r ON ur.role_id = r.id
         <where>

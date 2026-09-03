@@ -5,7 +5,7 @@ import com.blog.result.PageResult;
 
 public interface NoticeService {
 
-    void createNotice(String type, String title, String actionText, String articleTitle, Long articleId, String operatorName, String content);
+    void createNotice(String type, String title, String actionText, String articleTitle, Long sourceId, String operatorName, String content);
 
     InitNoticeVO getInitUnread();
 
