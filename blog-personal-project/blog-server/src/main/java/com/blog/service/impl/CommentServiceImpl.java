@@ -5,6 +5,7 @@ import com.blog.context.BaseContext;
 import com.blog.exception.CommentException;
 import com.blog.mapper.ArticleMapper;
 import com.blog.mapper.CommentMapper;
+import com.blog.mapper.LikeMapper;
 import com.blog.mapper.SysUserMapper;
 import com.blog.mapper.SysUserRoleMapper;
 import com.blog.pojo.dto.CommentPageQueryDTO;
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -54,6 +56,9 @@ public class CommentServiceImpl implements CommentService {
 
     @Autowired
     private NoticeService noticeService;
+
+    @Autowired
+    private LikeMapper likeMapper;
 
     /**
      * 分页查询评论列表
@@ -190,7 +195,7 @@ public class CommentServiceImpl implements CommentService {
         Comment reply = Comment.builder()
                 .type(parent.getType())
                 .sourceId(parent.getSourceId())
-                .msgType(parent.getMsgType() == null ? 0 : parent.getMsgType())
+                .msgType(parent.getMsgType() == null ? CommentConstant.ZERO : parent.getMsgType())
                 .parentId(parent.getId())
                 .replyUserId(parent.getUserId())
                 .replyUserNickname(parent.getUserNickname())
@@ -238,9 +243,9 @@ public class CommentServiceImpl implements CommentService {
         }
 
         Comment comment = Comment.builder()
-                .type(0)
+                .type(CommentConstant.ZERO)
                 .sourceId(articleId)
-                .msgType(0)
+                .msgType(CommentConstant.ZERO)
                 .parentId(LayoutConstant.PARENTID)
                 .replyUserId(LayoutConstant.REPLYID)
                 .userId(user.getId())
@@ -379,6 +384,44 @@ public class CommentServiceImpl implements CommentService {
 
         //扁平数据转树形结构
         List<CommentVo> commentVos = CommentTreeUtil.buildFlatReplyTree(commentVoList);
+        fillLikedStatus(commentVos);
         return commentVos;
+    }
+
+    /**
+     * 为评论列表填充当前登录用户是否已点赞的状态
+     *
+     * @param commentVos 评论树
+     */
+    private void fillLikedStatus(List<CommentVo> commentVos) {
+        Long currentUserId = BaseContext.getCurrentId();
+        if (currentUserId == null || commentVos == null || commentVos.isEmpty()) {
+            return;
+        }
+        List<CommentVo> allComments = new ArrayList<>();
+        collectComments(commentVos, allComments);
+        if (allComments.isEmpty()) {
+            return;
+        }
+        List<Long> commentIds = allComments.stream()
+                .map(CommentVo::getId)
+                .collect(Collectors.toList());
+        Set<Long> likedIds = new HashSet<>(likeMapper.selectLikedIds(
+                currentUserId, LikeConstant.TARGET_COMMENT, commentIds));
+        for (CommentVo vo : allComments) {
+            vo.setLiked(likedIds.contains(vo.getId()));
+        }
+    }
+
+    /**
+     * 递归收集评论树全部节点
+     */
+    private void collectComments(List<CommentVo> comments, List<CommentVo> result) {
+        for (CommentVo comment : comments) {
+            result.add(comment);
+            if (comment.getReplies() != null && !comment.getReplies().isEmpty()) {
+                collectComments(comment.getReplies(), result);
+            }
+        }
     }
 }

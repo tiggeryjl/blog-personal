@@ -214,8 +214,12 @@ watch(
           </div>
 
           <div class="action-row">
-            <button class="action-btn" @click="emit('like-comment', item.id)">
-              <font-awesome-icon icon="fa-solid fa-thumbs-up" /> 点赞 {{ item.likeNum }}
+            <button
+              class="action-btn"
+              :class="{ active: item.liked }"
+              @click="emit('like-comment', item.id)"
+            >
+              <font-awesome-icon icon="fa-solid fa-thumbs-up" /> {{ item.liked ? '已点赞' : '点赞' }} {{ item.likeNum }}
             </button>
             <button
               class="action-btn"
@@ -285,8 +289,12 @@ watch(
                 </div>
 
                 <div class="reply-action-row">
-                  <button class="action-btn" @click="emit('like-reply', item.id, r.id)">
-                    <font-awesome-icon icon="fa-solid fa-thumbs-up" /> 点赞 {{ r.likeNum }}
+                  <button
+                    class="action-btn"
+                    :class="{ active: r.liked }"
+                    @click="emit('like-reply', item.id, r.id)"
+                  >
+                    <font-awesome-icon icon="fa-solid fa-thumbs-up" /> {{ r.liked ? '已点赞' : '点赞' }} {{ r.likeNum }}
                   </button>
                   <button
                     class="action-btn"

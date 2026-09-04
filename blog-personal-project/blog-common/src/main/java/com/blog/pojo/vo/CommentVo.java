@@ -149,4 +149,9 @@ public class CommentVo implements Serializable {
      * 是否为博主
      */
     private boolean admin;
+
+    /**
+     * 当前登录用户是否已点赞
+     */
+    private boolean liked;
 }

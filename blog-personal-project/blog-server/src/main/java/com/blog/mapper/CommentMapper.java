@@ -104,4 +104,13 @@ public interface CommentMapper {
      * @return
      */
     List<Comment> getArticle(Comment comment);
+
+    /**
+     * 变更评论点赞数
+     *
+     * @param id    评论ID
+     * @param delta 变化量(+1点赞)
+     * @return 受影响行数
+     */
+    int changeLikeNum(@Param("id") Long id, @Param("delta") int delta);
 }

@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 点赞数VO实体
+ * 点赞结果VO实体
  */
 @Data
 @Builder
@@ -14,12 +14,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class LikeVo {
     /**
-     * true已点赞，false取消点赞
+     * 当前用户是否已点赞
      */
-    private boolean isLike;
+    private boolean liked;
 
     /**
-     * 记录点赞树
+     * 点赞总数
      */
     private Integer likeCount;
 }

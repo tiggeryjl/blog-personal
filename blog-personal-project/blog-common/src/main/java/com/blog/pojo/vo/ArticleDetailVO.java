@@ -25,4 +25,9 @@ public class ArticleDetailVO {
      * 下一页
      */
     private SimpleArticleVO nextArticle;
+
+    /**
+     * 当前登录用户是否已点赞文章
+     */
+    private boolean liked;
 }

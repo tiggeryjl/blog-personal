@@ -8,7 +8,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 /**
- * 报表模块权限校验（供 @PreAuthorize SpEL 调用）
+ * 报表模块权限校验
  */
 @Component("reportPermission")
 public class ReportPermission {

@@ -115,4 +115,13 @@ public interface ArticleMapper {
      * @return
      */
     Article selectNextArticle(Long id);
+
+    /**
+     * 变更文章点赞数
+     *
+     * @param id    文章ID
+     * @param delta 变化量(+1点赞)
+     * @return 受影响行数
+     */
+    int changeLikeNum(@Param("id") Long id, @Param("delta") int delta);
 }

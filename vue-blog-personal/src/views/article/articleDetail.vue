@@ -7,6 +7,7 @@ import CommentList from '@/components/Comment.vue';
 import Emoji from '@/components/Emoji.vue';
 import { getArticleDetailApi } from '@/api/article.js';
 import { getArticleCommentListApi, addArticleCommentApi, addCommentReplyApi } from '@/api/comment.js';
+import { likeApi, LIKE_TARGET_TYPE } from '@/api/like.js';
 
 const router = useRouter();
 const route = useRoute();
@@ -27,16 +28,20 @@ const article = ref({
 
 const prevArticle = ref({});
 const nextArticle = ref({});
+// 当前用户是否已点赞文章
+const articleLiked = ref(false);
 //根据id获取当前文章信息
 const getArticle = async () => {
   try {
     const articleId = route.params.id;
+    articleLiked.value = false;
     const result = await getArticleDetailApi(articleId);
 
     if (result.code === 200) {
       article.value = result.data.articleVo || {};
       prevArticle.value = result.data.prevArticle || {};
       nextArticle.value = result.data.nextArticle || {};
+      articleLiked.value = result.data.liked === true;
       getCommentList(article.value.id);
     }
   } catch (error) {
@@ -49,22 +54,58 @@ const goToArticle = (id) => {
   router.push(`/article/${id}`);
 };
 
+// 点赞中目标集合，防止连点
+const likingTargets = new Set();
+
+// 统一调用点赞接口并更新本地数据
+const handleLike = async (targetType, targetId, onSuccess) => {
+  const likeKey = `${targetType}_${targetId}`;
+  if (likingTargets.has(likeKey)) return;
+  likingTargets.add(likeKey);
+  try {
+    const result = await likeApi({ targetType, targetId });
+    if (result.code === 200) {
+      const data = result.data || {};
+      onSuccess(data);
+      ElMessage.success(data.liked ? '点赞成功！' : '已取消点赞');
+    } else {
+      ElMessage.error(result.msg || '操作失败，请稍后重试');
+    }
+  } catch (error) {
+    ElMessage.error('点赞失败，请稍后重试');
+  } finally {
+    likingTargets.delete(likeKey);
+  }
+};
+
 // 点赞主评论
 const likeComment = (commentId) => {
-  const list = currentCommentList.value;
-  const comment = list.find((c) => c.id === commentId);
-  if (comment) comment.like++;
-  ElMessage.success('点赞成功！');
+  const comment = currentCommentList.value.find((c) => c.id === commentId);
+  if (!comment) return;
+  if (comment.liked) {
+    ElMessage.warning('你已经点过赞了');
+    return;
+  }
+  handleLike(LIKE_TARGET_TYPE.COMMENT, commentId, (data) => {
+    comment.liked = data.liked === true;
+    if (typeof data.likeCount === 'number') comment.likeNum = data.likeCount;
+  });
 };
 
 // 点赞回复
 const likeReply = (commentId, replyId) => {
-  const list = currentCommentList.value;
-  const comment = list.find((c) => c.id === commentId);
+  const comment = currentCommentList.value.find((c) => c.id === commentId);
   if (!comment) return;
   const reply = comment.replies.find((r) => r.id === replyId);
-  if (reply) reply.like++;
-  ElMessage.success('点赞成功！');
+  if (!reply) return;
+  if (reply.liked) {
+    ElMessage.warning('你已经点过赞了');
+    return;
+  }
+  handleLike(LIKE_TARGET_TYPE.COMMENT, replyId, (data) => {
+    reply.liked = data.liked === true;
+    if (typeof data.likeCount === 'number') reply.likeNum = data.likeCount;
+  });
 };
 
 // 当前文章的评论列表
@@ -261,16 +302,16 @@ const closeModal = () => {
 };
 
 //点赞文章
-const like = () => {
-  const articleId = route.params.id;
-  const storageKey = `liked_article_${articleId}`;
-  if (localStorage.getItem(storageKey)) {
+const likeArticle = () => {
+  if (!article.value.id) return;
+  if (articleLiked.value) {
     ElMessage.warning('你已经点过赞了');
     return;
   }
-  article.value.like++;
-  localStorage.setItem(storageKey, '1');
-  ElMessage.success('点赞成功！');
+  handleLike(LIKE_TARGET_TYPE.ARTICLE, article.value.id, (data) => {
+    articleLiked.value = data.liked === true;
+    if (typeof data.likeCount === 'number') article.value.likeNum = data.likeCount;
+  });
 };
 
 // 表情相关
@@ -337,9 +378,9 @@ onUnmounted(() => {
       </div>
 
       <div class="article-actions">
-        <el-button type="primary" @click="like">
+        <el-button type="primary" :type="articleLiked ? 'success' : 'primary'" @click="likeArticle">
           <font-awesome-icon icon="fa-solid fa-thumbs-up" />
-          点赞 {{ article.likeNum }}
+          {{ articleLiked ? '已点赞' : '点赞' }} {{ article.likeNum }}
         </el-button>
       </div>
 

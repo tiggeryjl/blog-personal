@@ -352,4 +352,13 @@
         AND timed_publish_time &lt; #{now}
     </update>
 
+    <!-- 变更文章点赞数(仅正常文章) -->
+    <update id="changeLikeNum">
+        UPDATE article
+        SET like_num = GREATEST(IFNULL(like_num, 0) + #{delta}, 0),
+            update_time = NOW()
+        WHERE id = #{id}
+          AND delete_flag = 0
+    </update>
+
 </mapper>

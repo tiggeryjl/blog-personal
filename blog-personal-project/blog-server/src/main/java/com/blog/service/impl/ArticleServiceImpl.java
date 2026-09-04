@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.blog.constant.ArticleStatusConstant;
 import com.blog.constant.DelStatusConstant;
+import com.blog.constant.LikeConstant;
 import com.blog.constant.RedisConstant;
 import com.blog.constant.StatusConstant;
 import com.blog.context.BaseContext;
@@ -11,6 +12,7 @@ import com.blog.exception.ArticleException;
 import com.blog.mapper.ArticleMapper;
 import com.blog.mapper.ArticleTagMapper;
 import com.blog.mapper.CommentMapper;
+import com.blog.mapper.LikeMapper;
 import com.blog.mapper.SysUserMapper;
 import com.blog.pojo.dto.ArticleDTO;
 import com.blog.pojo.dto.ArticlePageQueryDTO;
@@ -35,6 +37,7 @@ import org.springframework.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -59,6 +62,9 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Autowired
     private RedisService redisService;
+
+    @Autowired
+    private LikeMapper likeMapper;
 
     /**
      * 新增文章
@@ -176,6 +182,12 @@ public class ArticleServiceImpl implements ArticleService {
 
         ArticleDetailVO articleDetailVO = new ArticleDetailVO();
         articleDetailVO.setArticleVo(articleVo);
+        Long currentUserId = BaseContext.getCurrentId();
+        if (currentUserId != null) {
+            List<Long> likedIds = likeMapper.selectLikedIds(
+                    currentUserId, LikeConstant.TARGET_ARTICLE, Collections.singletonList(articleVo.getId()));
+            articleDetailVO.setLiked(likedIds != null && !likedIds.isEmpty());
+        }
         if(prev != null){
             SimpleArticleVO prevArticleVO =SimpleArticleVO.builder()
                     .id(prev.getId()).title(prev.getTitle()).createTime(prev.getCreateTime()).build();

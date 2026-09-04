@@ -221,4 +221,13 @@
           AND status = 1
         ORDER BY is_top DESC, create_time DESC
     </select>
+
+    <!-- 变更评论点赞数(仅正常评论) -->
+    <update id="changeLikeNum">
+        UPDATE comment
+        SET like_num = GREATEST(IFNULL(like_num, 0) + #{delta}, 0)
+        WHERE id = #{id}
+          AND delete_flag = 0
+          AND status = 1
+    </update>
 </mapper>
