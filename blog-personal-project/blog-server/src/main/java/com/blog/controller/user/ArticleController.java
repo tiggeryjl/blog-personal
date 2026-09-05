@@ -43,7 +43,7 @@ public class ArticleController {
      * @return
      */
     @GetMapping("/getArticleDetail/{id}")
-    public Result<ArticleDetailVO> getArticleDetail(@PathVariable Long id){
+    public Result<ArticleDetailVO> getArticleDetail(@PathVariable("id") Long id){
         log.info("文章id:{}",id);
         ArticleDetailVO articleDetailVO = articleService.getArticleById(id);
         return Result.success(articleDetailVO);

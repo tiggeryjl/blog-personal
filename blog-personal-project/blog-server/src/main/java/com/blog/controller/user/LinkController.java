@@ -64,7 +64,7 @@ public class LinkController {
      * @return 统一结果
      */
     @PostMapping("/urge/{id}")
-    public Result urge(@PathVariable Long id) {
+    public Result urge(@PathVariable("id") Long id) {
         log.info("催促审核友链申请:{}", id);
         linkService.urge(id);
         return Result.success();

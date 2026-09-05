@@ -2,10 +2,12 @@ package com.blog.mapper;
 
 import com.blog.pojo.dto.CommentPageQueryDTO;
 import com.blog.pojo.entity.Comment;
+import com.blog.pojo.vo.ArticleCountVO;
 import com.blog.pojo.vo.CommentVo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -44,7 +46,7 @@ public interface CommentMapper {
      * @param ids 评论ID集合
      * @return 评论列表
      */
-    List<CommentVo> selectByIds(List<Long> ids);
+    List<CommentVo> selectByIds(@Param("ids") List<Long> ids);
 
     /**
      * 查询指定主楼评论下的全部回复(递归所有层级)
@@ -61,7 +63,7 @@ public interface CommentMapper {
      * @param id 评论ID
      * @return 评论
      */
-    Comment getById(Long id);
+    Comment getById(@Param("id") Long id);
 
     /**
      * 更新评论(状态/置顶等)
@@ -78,18 +80,26 @@ public interface CommentMapper {
     void add(Comment comment);
 
     /**
+     * 批量统计多篇文章的可见评论数
+     *
+     * @param articleIds 文章ID集合
+     * @return 各文章ID对应的评论数
+     */
+    List<ArticleCountVO> countByArticleIds(@Param("articleIds") Collection<Long> articleIds);
+
+    /**
      * 批量逻辑删除(含其下二级回复)
      *
      * @param ids 评论ID集合
      */
-    void logicDelete(List<Long> ids);
+    void logicDelete(@Param("ids") List<Long> ids);
 
     /**
      * 批量物理删除(含其下二级回复)
      *
      * @param ids 评论ID集合
      */
-    void delete(List<Long> ids);
+    void delete(@Param("ids") List<Long> ids);
 
     /**
      * 批量恢复（逻辑删除 -> 正常）

@@ -26,7 +26,7 @@ public class UserDailyController {
      * @param id 日常ID
      */
     @PutMapping("/{id}/view")
-    public Result addView(@PathVariable Long id) {
+    public Result addView(@PathVariable("id") Long id) {
         log.info("日常浏览+1:{}", id);
         dailyService.incrementView(id);
         return Result.success();

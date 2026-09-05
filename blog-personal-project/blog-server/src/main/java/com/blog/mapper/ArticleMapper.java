@@ -53,14 +53,14 @@ public interface ArticleMapper {
      * @return 1
      */
     @Select("select * from article where id =#{id}")
-    Article getArticleById(Long id);
+    Article getArticleById(@Param("id") Long id);
 
     /**
      * 根据ID查询文章完整信息（含分类、作者、标签）
      * @param id
      * @re turn
      */
-    ArticleVo getArticleVoById(Long id);
+    ArticleVo getArticleVoById(@Param("id") Long id);
 
     /**
      * 修改文章
@@ -88,7 +88,7 @@ public interface ArticleMapper {
      * 批量逻辑删除
      * @param ids
      */
-    void deleteBatchLogic(List<Long> ids, Integer deleteFlag);
+    void deleteBatchLogic(@Param("ids") List<Long> ids, @Param("deleteFlag") Integer deleteFlag);
 
     /**
      * 批量恢复
@@ -100,21 +100,21 @@ public interface ArticleMapper {
      * 批量永久删除
      * @param ids
      */
-    void deleteBatch(List<Long> ids);
+    void deleteBatch(@Param("ids") List<Long> ids);
 
     /**
      * 查询上一页：文章列表页中当前文章的上一条
      * @param id
      * @return
      */
-    Article selectPrevArticle(Long id);
+    Article selectPrevArticle(@Param("id") Long id);
 
     /**
      * 查询下一页：文章列表页中当前文章的下一条
      * @param id
      * @return
      */
-    Article selectNextArticle(Long id);
+    Article selectNextArticle(@Param("id") Long id);
 
     /**
      * 变更文章点赞数

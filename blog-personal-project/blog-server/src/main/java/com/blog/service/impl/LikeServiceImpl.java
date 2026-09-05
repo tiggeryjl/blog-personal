@@ -17,6 +17,7 @@ import com.blog.pojo.entity.Article;
 import com.blog.pojo.entity.Comment;
 import com.blog.pojo.entity.SysUser;
 import com.blog.pojo.entity.UserLike;
+import com.blog.pojo.vo.ArticleCountVO;
 import com.blog.pojo.vo.LikeVo;
 import com.blog.service.LikeService;
 import com.blog.service.NoticeService;
@@ -26,6 +27,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -87,9 +90,11 @@ public class LikeServiceImpl implements LikeService {
             articleMapper.changeLikeNum(articleId, 1);
             notifyArticleLike(userId, article);
         }
-        Article latest = articleMapper.getArticleById(articleId);
-        int likeCount = latest == null || latest.getLikeNum() == null ? 0 : latest.getLikeNum().intValue();
-        return LikeVo.builder().liked(true).likeCount(likeCount).build();
+        List<ArticleCountVO> counts = likeMapper.countByTargetIds(
+                LikeConstant.TARGET_ARTICLE, Collections.singletonList(articleId));
+        long likeCount = counts.isEmpty() || counts.get(0).getCountNum() == null
+                ? 0L : counts.get(0).getCountNum();
+        return LikeVo.builder().liked(true).likeCount((int) likeCount).build();
     }
 
     /**

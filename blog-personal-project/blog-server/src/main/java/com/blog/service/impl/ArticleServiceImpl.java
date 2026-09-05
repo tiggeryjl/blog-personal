@@ -20,6 +20,7 @@ import com.blog.pojo.dto.ArticleTagDTO;
 import com.blog.pojo.entity.Article;
 import com.blog.pojo.entity.SysUser;
 import com.blog.pojo.vo.ArticleDetailVO;
+import com.blog.pojo.vo.ArticleCountVO;
 import com.blog.pojo.vo.ArticleVo;
 import com.blog.pojo.vo.SimpleArticleVO;
 import com.blog.result.PageResult;
@@ -37,9 +38,11 @@ import org.springframework.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -138,7 +141,9 @@ public class ArticleServiceImpl implements ArticleService {
         String cacheKey = RedisConstant.ARTICLE_LIST_KEY + ":" + articlePageQueryDTO.getPage() + ":" + articlePageQueryDTO.getPageSize() + ":" + md5;
         Object articleCache = redisService.get(cacheKey,PageResult.class);
         if (articleCache != null) {
-            return (PageResult) articleCache;
+            PageResult pageResult = (PageResult) articleCache;
+            fillRealtimeCounts(pageResult.getRows());
+            return pageResult;
         }
 
         PageHelper.startPage(articlePageQueryDTO.getPage(), articlePageQueryDTO.getPageSize());
@@ -148,7 +153,82 @@ public class ArticleServiceImpl implements ArticleService {
 
         //存入缓存 10分钟过期
         redisService.set(cacheKey, pageResult, 600);
+        fillRealtimeCounts(pageResult.getRows());
         return pageResult;
+    }
+
+    /**
+     * 在返回行之前，从详细表中填充实时的点赞/评论计数，以便缓存列表行和文章详情始终共享相同的计数源
+     *
+     * @param rows article rows to fill
+     */
+    private void fillRealtimeCounts(List<?> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return;
+        }
+        List<Long> articleIds = new ArrayList<>();
+        for (Object row : rows) {
+            Long id = resolveArticleId(row);
+            if (id != null && !articleIds.contains(id)) {
+                articleIds.add(id);
+            }
+        }
+        if (articleIds.isEmpty()) {
+            return;
+        }
+
+        Map<Long, Long> likeCounts = likeMapper
+                .countByTargetIds(LikeConstant.TARGET_ARTICLE, articleIds)
+                .stream()
+                .collect(Collectors.toMap(ArticleCountVO::getArticleId,
+                        ArticleCountVO::getCountNum, (a, b) -> a));
+        Map<Long, Long> commentCounts = commentMapper
+                .countByArticleIds(articleIds)
+                .stream()
+                .collect(Collectors.toMap(ArticleCountVO::getArticleId,
+                        ArticleCountVO::getCountNum, (a, b) -> a));
+
+        for (Object row : rows) {
+            Long id = resolveArticleId(row);
+            if (id == null) {
+                continue;
+            }
+            applyCounts(row, likeCounts.getOrDefault(id, 0L), commentCounts.getOrDefault(id, 0L));
+        }
+    }
+
+    /**
+     * 从已类型化ArticleVo或Redis反序列化的映射行中解析文章ID
+     */
+    private Long resolveArticleId(Object row) {
+        if (row instanceof ArticleVo vo) {
+            return vo.getId();
+        }
+        if (row instanceof Map<?, ?> map) {
+            Object id = map.get("id");
+            if (id == null) {
+                return null;
+            }
+            return id instanceof Number ? ((Number) id).longValue() : Long.valueOf(id.toString());
+        }
+        return null;
+    }
+
+    /**
+     * 覆盖类型为VO或Redis反序列化映射行的计数
+     */
+    private void applyCounts(Object row, Long likeNum, Long commentNum) {
+        if (row instanceof ArticleVo vo) {
+            vo.setLikeNum(likeNum);
+            vo.setCommentNum(commentNum);
+            return;
+        }
+        if (row instanceof Map<?, ?> rawMap) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = (Map<String, Object>) rawMap;
+            map.put("likeNum", likeNum);
+            map.put("commentNum", commentNum);
+        }
     }
 
     /**
@@ -176,6 +256,7 @@ public class ArticleServiceImpl implements ArticleService {
         if(articleVo == null){
             return null;
         }
+        fillRealtimeCounts(Collections.singletonList(articleVo));
 
         Article prev = articleMapper.selectPrevArticle(articleVo.getId());
         Article next = articleMapper.selectNextArticle(articleVo.getId());

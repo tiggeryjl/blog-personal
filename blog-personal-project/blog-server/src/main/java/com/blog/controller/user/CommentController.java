@@ -34,7 +34,7 @@ public class CommentController {
      * @return
      */
     @GetMapping("/article/{id}")
-    public Result<List<CommentVo>> getArticleById(@PathVariable Long id) {
+    public Result<List<CommentVo>> getArticleById(@PathVariable("id") Long id) {
         log.info("查询文章id为{}的评论",id);
         List<CommentVo> commentList=commentService.getArticleById(id);
         return Result.success(commentList);
@@ -48,7 +48,7 @@ public class CommentController {
      * @return 新评论ID
      */
     @PostMapping("/article/{articleId}")
-    public Result addArticleComment(@PathVariable Long articleId,
+    public Result addArticleComment(@PathVariable("articleId") Long articleId,
                                           @Valid @RequestBody ArticleCommentDTO articleCommentDTO) {
         log.info("发表文章id为{}的评论:{}", articleId, articleCommentDTO);
         commentService.addArticleComment(articleId, articleCommentDTO.getContent());

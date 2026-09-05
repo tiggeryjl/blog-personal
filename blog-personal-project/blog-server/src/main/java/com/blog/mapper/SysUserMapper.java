@@ -31,7 +31,7 @@ public interface SysUserMapper {
      * @return
      */
     @Select("select * from sys_user where username=#{username}")
-    SysUser selectByUsername(String username);
+    SysUser selectByUsername(@Param("username") String username);
 
     /**
      * 根据手机号查询用户
@@ -39,7 +39,7 @@ public interface SysUserMapper {
      * @return
      */
     @Select("select * from sys_user where phone=#{phone}")
-    SysUser selectByPhone(String phone);
+    SysUser selectByPhone(@Param("phone") String phone);
 
     /**
      * 根据邮箱查询用户
@@ -47,7 +47,7 @@ public interface SysUserMapper {
      * @return
      */
     @Select("select * from sys_user where email=#{email}")
-    SysUser selectByEmail(String email);
+    SysUser selectByEmail(@Param("email") String email);
 
     /**
      * 根据id查找用户
@@ -55,7 +55,7 @@ public interface SysUserMapper {
      * @return
      */
     @Select("select * from sys_user where id =#{id}")
-    SysUser getByUserId(Long id);
+    SysUser getByUserId(@Param("id") Long id);
 
 
     /**
@@ -64,7 +64,7 @@ public interface SysUserMapper {
      * @return
      */
     @Select("select * from sys_user where id = #{id} and delete_flag = 0 for update")
-    SysUser getByIdForUpdate(Long id);
+    SysUser getByIdForUpdate(@Param("id") Long id);
 
     /**
      * 修改用户

@@ -57,7 +57,7 @@ const goToArticle = (id) => {
 // 点赞中目标集合，防止连点
 const likingTargets = new Set();
 
-// 统一调用点赞接口并更新本地数据
+// 统一调用点赞接口
 const handleLike = async (targetType, targetId, onSuccess) => {
   const likeKey = `${targetType}_${targetId}`;
   if (likingTargets.has(likeKey)) return;
@@ -76,6 +76,19 @@ const handleLike = async (targetType, targetId, onSuccess) => {
   } finally {
     likingTargets.delete(likeKey);
   }
+};
+
+//点赞文章
+const likeArticle = () => {
+  if (!article.value.id) return;
+  if (articleLiked.value) {
+    ElMessage.warning('你已经点过赞了');
+    return;
+  }
+  handleLike(LIKE_TARGET_TYPE.ARTICLE, article.value.id, (data) => {
+    articleLiked.value = data.liked === true;
+    if (typeof data.likeCount === 'number') article.value.likeNum = data.likeCount;
+  });
 };
 
 // 点赞主评论
@@ -189,7 +202,7 @@ const publishComment = async (commentId, replyId, content) => {
   }
 };
 
-// ========== 图片预览（循环轮播 + 预加载 + loading） ==========
+// ========== 图片预览 ==========
 const showImageModal = ref(false);
 const previewImageUrl = ref('');
 const scale = ref(1);
@@ -301,19 +314,6 @@ const closeModal = () => {
   imageLoading.value = false;
 };
 
-//点赞文章
-const likeArticle = () => {
-  if (!article.value.id) return;
-  if (articleLiked.value) {
-    ElMessage.warning('你已经点过赞了');
-    return;
-  }
-  handleLike(LIKE_TARGET_TYPE.ARTICLE, article.value.id, (data) => {
-    articleLiked.value = data.liked === true;
-    if (typeof data.likeCount === 'number') article.value.likeNum = data.likeCount;
-  });
-};
-
 // 表情相关
 const showEmoji = ref(false);
 const closeEmojiOutside = (e) => {
@@ -378,7 +378,7 @@ onUnmounted(() => {
       </div>
 
       <div class="article-actions">
-        <el-button type="primary" :type="articleLiked ? 'success' : 'primary'" @click="likeArticle">
+        <el-button :type="articleLiked ? 'success' : 'primary'" @click="likeArticle">
           <font-awesome-icon icon="fa-solid fa-thumbs-up" />
           {{ articleLiked ? '已点赞' : '点赞' }} {{ article.likeNum }}
         </el-button>

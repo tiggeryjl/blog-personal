@@ -1,6 +1,7 @@
 package com.blog.mapper;
 
 import com.blog.pojo.entity.UserLike;
+import com.blog.pojo.vo.ArticleCountVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -24,6 +25,16 @@ public interface LikeMapper {
     List<Long> selectLikedIds(@Param("userId") Long userId,
                               @Param("targetType") Integer targetType,
                               @Param("targetIds") Collection<Long> targetIds);
+
+    /**
+     * 批量统计多个目标的点赞数
+     *
+     * @param targetType 点赞目标类型
+     * @param targetIds  目标ID集合
+     * @return 各目标ID对应的点赞数
+     */
+    List<ArticleCountVO> countByTargetIds(@Param("targetType") Integer targetType,
+                                          @Param("targetIds") Collection<Long> targetIds);
 
     /**
      * 新增点赞记录，已存在正常点赞记录时忽略，避免重复点赞
