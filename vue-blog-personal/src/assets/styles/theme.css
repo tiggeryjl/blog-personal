@@ -24,12 +24,15 @@
   --primary-color: #007efbc3;
   /* 悬浮颜色 */
   --hover-color: #fb4700;
+  /* 文章摘要背景色 */
+  --summary-bg: #e8f2ff;
+  --summary-border: rgba(31, 32, 32, 0.979);
   /* 向上按钮颜色 */
   --scroll-top-color: #121212;
 }
 
 /* 深色主题 */
-[data-theme="dark"] {
+[data-theme='dark'] {
   --bg-color: #1e1e1e9a;
   --navbar-bg: #090601a9;
   --text-color: #ffffff;
@@ -43,11 +46,14 @@
   --border-color: #ededed;
   --primary-color: #3b82f6;
   --hover-color: #fb4700f4;
+  /* 文章摘要背景色 */
+  --summary-bg: rgba(59, 130, 246, 0.16);
+  --summary-border: rgb(194, 194, 194);
   --scroll-top-color: #fafafa;
 }
 
 /* 浅色主题 */
-[data-theme="white"] {
+[data-theme='white'] {
   --bg-color: #f4ecec9a;
   --navbar-bg: #ecdfdfd1;
   --text-color: #000000;
@@ -61,5 +67,8 @@
   --border-color: #000000;
   --primary-color: #3b82f6;
   --hover-color: #fb4700;
+  /* 文章摘要背景色 */
+  --summary-bg: #dfeeff;
+  --summary-border: rgba(10, 10, 10, 0.3);
   --scroll-top-color: #6f6c66;
 }

@@ -24,6 +24,9 @@ public class ArticleVo implements Serializable {
     //摘要
     private String summary;
 
+    //摘要是否ai生成
+    private Integer aiSuggest;
+
     //内容
     private String content;
 

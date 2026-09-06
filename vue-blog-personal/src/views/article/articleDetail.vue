@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { DArrowLeft, DArrowRight, ZoomIn, ZoomOut } from '@element-plus/icons-vue';
+import { DArrowLeft, DArrowRight, ZoomIn, ZoomOut, List, Help } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { useRoute, useRouter } from 'vue-router';
 import CommentList from '@/components/Comment.vue';
@@ -372,6 +372,19 @@ onUnmounted(() => {
         </div>
       </div>
 
+      <!-- 文章摘要 -->
+      <div class="summary" v-if="article.summary">
+        <div class="summary-icon">
+          <el-icon><List /></el-icon>
+        </div>
+        <div class="summary-content">
+          <span>{{ article.summary }}</span>
+          <span class="ai-tag" v-if="article.aiSuggest"
+            ><el-icon class="ai-icon"><Help /></el-icon>该文章摘要由AI生成</span
+          >
+        </div>
+      </div>
+
       <!-- 文章正文 -->
       <div class="content">
         <div class="article-body" v-html="article.content" @click="handleImageClick"></div>
@@ -559,6 +572,62 @@ onUnmounted(() => {
   display: flex;
   gap: 16px;
   justify-content: center;
+}
+
+.summary {
+  width: 100%;
+  max-width: 1800px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  border-left: 3px solid var(--summary-border);
+  padding: 15px 22px 15px 14px;
+  background-color: var(--summary-bg);
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.summary-icon {
+  font-size: 15px;
+  color: var(--text-main-color);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.summary-content {
+  margin-right: 22px;
+  flex: 1;
+  color: var(--text-main-color);
+  font-size: 15px;
+  line-height: 1.8;
+  word-break: break-word;
+  text-align: left;
+  position: relative;
+}
+.ai-tag {
+  display: block;
+  margin-top: 6px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--text-secondary-color);
+  line-height: 1;
+}
+
+.ai-tag .ai-icon {
+  display: inline-flex;
+  align-items: baseline;
+  vertical-align: baseline;
+  font-size: 14px;
+  margin-right: 2px;
+  position: relative;
+  top: 2px;
+}
+
+/* 正文区域：居中并限制最大宽度，提升长文阅读体验 */
+.content {
+  width: 100% !important;
+  max-width: 1800px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .article-body {

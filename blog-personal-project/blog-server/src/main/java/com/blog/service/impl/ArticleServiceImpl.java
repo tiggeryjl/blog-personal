@@ -83,6 +83,7 @@ public class ArticleServiceImpl implements ArticleService {
             String summary = aiService.generateSummary(article.getContent());
             if (StringUtils.hasText(summary)) {
                 article.setSummary(summary);
+                article.setAiSuggest(StatusConstant.ENABLE);
             } else {
                 throw new RuntimeException("AI 返回空摘要"); // 主动跳转到 catch
             }
