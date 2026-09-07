@@ -382,6 +382,7 @@ onUnmounted(() => {
           <span class="ai-tag" v-if="article.aiSuggest"
             ><el-icon class="ai-icon"><Help /></el-icon>该文章摘要由AI生成</span
           >
+          <span class="ai-tag" v-else>----文章摘要</span>
         </div>
       </div>
 

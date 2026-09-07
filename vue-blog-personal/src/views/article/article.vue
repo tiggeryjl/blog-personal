@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { Expand, Menu, Grid, Edit, ChatLineSquare, Document, View } from '@element-plus/icons-vue';
+import { Expand, Menu, Grid, ChatLineSquare, Document, View } from '@element-plus/icons-vue';
 import MyPagination from '@/components/MyPagination.vue';
 import { getArticleListApi } from '@/api/article.js';
 
@@ -53,6 +53,24 @@ const closeDropdown = (e) => {
   }
 };
 
+const hotTip = ref({
+  show: false,
+  x: 0,
+  y: 0,
+  text: '',
+});
+
+const showHotTip = (e, text) => {
+  const rect = e.target.getBoundingClientRect();
+  hotTip.value.text = text;
+  hotTip.value.show = true;
+  hotTip.value.x = rect.left + rect.width / 2;
+  hotTip.value.y = rect.top - 8;
+};
+const hideHotTip = () => {
+  hotTip.value.show = false;
+};
+
 onMounted(() => {
   window.addEventListener('layoutChange', updateLayout);
   window.addEventListener('click', closeDropdown);
@@ -102,6 +120,12 @@ onUnmounted(() => {
 
     <div class="article-list" :class="layoutMode">
       <div class="article-item" v-for="item in articleList" :key="item.id" @click="goDetail(item.id)">
+        <span v-if="item.isTop" class="top-icon">
+          <span class="tooltip-inner">
+            <font-awesome-icon icon="fa-solid fa-thumbtack" size="lg" :style="{ color: '#0090f0' }" />
+            <span class="tooltip-text">置顶</span>
+          </span>
+        </span>
         <!-- 左侧图片 -->
         <div class="article-img">
           <img :src="item.cover" alt="文章封面" />
@@ -114,7 +138,17 @@ onUnmounted(() => {
             <span class="date">{{ item.createTime }}</span>
             <span class="category">{{ item.category }}</span>
           </div>
-          <h3 class="article-title">{{ item.title }}</h3>
+          <h3 class="article-title">
+            {{ item.title }}
+            <span
+              v-if="item.isHot"
+              class="hot-icon"
+              @mouseenter="showHotTip($event, '热门文章')"
+              @mouseleave="hideHotTip"
+            >
+              <font-awesome-icon icon="fa-solid fa-fire" size="xs" :style="{ color: '#ff5500' }" />
+            </span>
+          </h3>
           <p class="article-desc">{{ item.summary }}</p>
           <div class="article-stats">
             <span
@@ -141,6 +175,9 @@ onUnmounted(() => {
       </div>
     </div>
     <div v-if="articleList.length === 0" class="empty-data">暂无文章数据</div>
+    <div v-show="hotTip.show" class="global-tooltip" :style="{ left: hotTip.x + 'px', top: hotTip.y + 'px' }">
+      {{ hotTip.text }}
+    </div>
     <div>
       <!-- 分页 -->
       <MyPagination
@@ -355,8 +392,6 @@ onUnmounted(() => {
 /* 卡片统一动画 */
 .article-item {
   transition: all 0.3s ease;
-  /* 悬浮动画 */
-  /* animation: fadeIn 0.4s ease forwards; */
   min-height: 200px;
   display: flex;
   align-items: center;
@@ -364,16 +399,70 @@ onUnmounted(() => {
   padding: 0px;
   background-color: var(--card-bg);
   border-radius: 8px;
-  overflow: hidden;
+  /* overflow: hidden; */
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  cursor: pointer;
-  /* 鼠标移上去变小手 */
+  cursor: pointer; /* 鼠标移上去变小手 */
+  position: relative;
 }
 
 /* 卡片悬浮上浮效果 */
 .article-item:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(229, 199, 147, 0.426);
+}
+
+.top-icon {
+  margin-top: 3px;
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 10;
+  font-size: 18px;
+}
+
+.top-icon > :deep(.tooltip-inner) {
+  position: relative;
+  display: inline-flex;
+}
+/* tooltip气泡通用 */
+.tooltip-text {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  background: #303133;
+  color: #ffffff;
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  transition: 0.2s ease;
+  z-index: 9999;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.top-icon > :deep(.tooltip-inner):hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+.global-tooltip {
+  position: fixed;
+  z-index: 99999;
+  transform: translate(-50%, -100%);
+  background: #303133;
+  color: #fff;
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.hot-icon {
+  display: inline-flex;
+  margin-left: 6px;
 }
 
 /* 左侧图片容器 */
@@ -438,11 +527,9 @@ onUnmounted(() => {
   font-weight: 600;
   margin: 0 0 12px;
   color: var(--text-color);
-  white-space: nowrap;
-  /* 不换行 */
+  white-space: nowrap; /* 不换行 */
   overflow: hidden;
-  text-overflow: ellipsis;
-  /* 超出... */
+  text-overflow: ellipsis; /* 超出... */
 }
 
 .article-desc {
