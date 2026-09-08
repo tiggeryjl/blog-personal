@@ -21,6 +21,7 @@ const article = ref({
   createTime: '',
   category: '',
   tags: [],
+  tagNames: [],
   viewNum: 0,
   likeNum: 0,
   commentNum: 0,
@@ -370,6 +371,10 @@ onUnmounted(() => {
           <span>分类：{{ article.category }}</span>
           <span>浏览 {{ article.viewNum }}</span>
         </div>
+
+        <div v-if="article.tagNames && article.tagNames.length" class="article-tags">
+          <span v-for="(tag, index) in article.tagNames" :key="index" class="article-tag">{{ tag }}</span>
+        </div>
       </div>
 
       <!-- 文章摘要 -->
@@ -573,6 +578,30 @@ onUnmounted(() => {
   display: flex;
   gap: 16px;
   justify-content: center;
+}
+
+.article-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.article-tag {
+  padding: 2px 12px;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  background: var(--summary-bg);
+  border-radius: 999px;
+  font-size: 13px;
+  line-height: 1.6;
+  cursor: default;
+}
+
+.article-tag:hover {
+  background: var(--primary-color);
+  color: var(--card-secound-bg);
 }
 
 .summary {

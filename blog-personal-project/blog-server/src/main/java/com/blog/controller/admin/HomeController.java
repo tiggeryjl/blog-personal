@@ -48,7 +48,7 @@ public class HomeController {
      */
     @PreAuthorize("hasPermission(null,'sys:index:list')")
     @GetMapping("/getTrend")
-    public Result<List<HomeTrendVO>> getTrend(@RequestParam(defaultValue = "week") String rangeType) {
+    public Result<List<HomeTrendVO>> getTrend(@RequestParam(name = "rangeType", defaultValue = "week") String rangeType) {
         log.info("获取首页趋势数据:{}", rangeType);
         List<HomeTrendVO> trendList = homeService.getTrend(rangeType);
         return Result.success(trendList);
@@ -63,7 +63,7 @@ public class HomeController {
     @PreAuthorize("hasPermission(null,'sys:index:list')")
     @GetMapping("/exportTrend")
     public void exportTrend(HttpServletResponse response,
-                            @RequestParam(defaultValue = "week") String rangeType) throws IOException {
+                            @RequestParam(name = "rangeType", defaultValue = "week") String rangeType) throws IOException {
         log.info("导出首页趋势报表:{}", rangeType);
         homeService.exportTrend(response, rangeType);
     }

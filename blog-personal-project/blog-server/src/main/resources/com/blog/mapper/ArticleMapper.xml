@@ -96,6 +96,8 @@
         <!-- 标签名称列表 -->
         <result property="tags" column="tags_str"
                 typeHandler="com.blog.handler.LongListTypeHandler"/>
+        <result property="tagNames" column="tag_names_str"
+                typeHandler="com.blog.handler.StringListTypeHandler"/>
     </resultMap>
 
     <select id="pageQurey" resultMap="ArticleVoResultMap">
@@ -250,7 +252,13 @@
             FROM tag t
             INNER JOIN article_tag at ON t.id = at.tag_id
             WHERE at.article_id = a.id
-            ) AS tags_str
+            ) AS tags_str,
+            (
+            SELECT GROUP_CONCAT(t.name SEPARATOR ',')
+            FROM tag t
+            INNER JOIN article_tag at ON t.id = at.tag_id
+            WHERE at.article_id = a.id
+            ) AS tag_names_str
         FROM article a
         LEFT JOIN sys_user u ON a.user_id = u.id
         LEFT JOIN category c ON a.category_id = c.id

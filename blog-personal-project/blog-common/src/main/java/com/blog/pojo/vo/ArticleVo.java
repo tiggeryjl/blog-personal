@@ -86,4 +86,6 @@ public class ArticleVo implements Serializable {
 
     //冗余标签
     private List<Long> tags;
+
+    private List<String> tagNames;
 }
