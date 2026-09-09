@@ -6,6 +6,7 @@ import com.blog.pojo.dto.UserLoginDTO;
 import com.blog.pojo.dto.UserRegisterDTO;
 import com.blog.pojo.entity.SysUser;
 import com.blog.pojo.vo.UserInfoVO;
+import com.blog.pojo.vo.UserPersonalInfoVO;
 import com.blog.pojo.vo.UserSimpleVO;
 
 public interface UserService {
@@ -41,4 +42,10 @@ public interface UserService {
      * @param userDTO
      */
     void update(UserDTO userDTO);
+
+    /**
+     * 获取个人信息
+     * @return
+     */
+    UserPersonalInfoVO getPersonalInfo();
 }

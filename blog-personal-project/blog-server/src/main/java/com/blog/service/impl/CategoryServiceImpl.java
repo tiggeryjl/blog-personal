@@ -9,6 +9,7 @@ import com.blog.mapper.CategoryMapper;
 import com.blog.pojo.dto.CategoryDTO;
 import com.blog.pojo.dto.RecyclePageQueryDTO;
 import com.blog.pojo.entity.Category;
+import com.blog.pojo.vo.CategoryFrontVO;
 import com.blog.pojo.vo.CategoryVo;
 import com.blog.pojo.vo.OptionVO;
 import com.blog.result.PageResult;
@@ -146,5 +147,14 @@ public class CategoryServiceImpl implements CategoryService {
     @Override
     public List<OptionVO> getCategoryOptions() {
         return categoryMapper.getCategoryOptions();
+    }
+
+    /**
+     * 查询所有启用分类信息
+     * @return
+     */
+    @Override
+    public List<CategoryFrontVO> getCategoryList() {
+        return categoryMapper.getCategoryList();
     }
 }

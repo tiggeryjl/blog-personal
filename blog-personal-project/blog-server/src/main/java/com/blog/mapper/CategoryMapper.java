@@ -2,6 +2,7 @@ package com.blog.mapper;
 
 import com.blog.pojo.entity.Category;
 import com.blog.pojo.dto.RecyclePageQueryDTO;
+import com.blog.pojo.vo.CategoryFrontVO;
 import com.blog.pojo.vo.CategoryVo;
 import com.blog.pojo.vo.OptionVO;
 import org.apache.ibatis.annotations.Mapper;
@@ -22,7 +23,6 @@ public interface CategoryMapper {
      * 查询所有分类信息
      * @return
      */
-    @Select("select * from category where delete_flag = 0 order by create_time desc")
     List<CategoryVo> findAll();
 
     /**
@@ -69,4 +69,10 @@ public interface CategoryMapper {
      * @return
      */
     List<OptionVO> getCategoryOptions();
+
+    /**
+     *查询所有启用分类信息
+     * @return
+     */
+    List<CategoryFrontVO> getCategoryList();
 }

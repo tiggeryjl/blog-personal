@@ -1,9 +1,6 @@
 package com.blog.service.impl;
 
-import com.blog.constant.DelStatusConstant;
-import com.blog.constant.MessageConstant;
-import com.blog.constant.MultiStatusConstant;
-import com.blog.constant.StatusConstant;
+import com.blog.constant.*;
 import com.blog.exception.LoginFailedException;
 import com.blog.exception.PasswordEditFailedException;
 import com.blog.exception.RegisterFailedException;
@@ -13,6 +10,7 @@ import com.blog.pojo.dto.UserDTO;
 import com.blog.pojo.dto.UserLoginDTO;
 import com.blog.pojo.dto.UserRegisterDTO;
 import com.blog.pojo.entity.SysUser;
+import com.blog.pojo.vo.UserPersonalInfoVO;
 import com.blog.pojo.vo.UserSimpleVO;
 import com.blog.service.UserService;
 import com.blog.utils.PasswordSaltUtil;
@@ -202,6 +200,18 @@ public class UserServiceImpl implements UserService {
         SysUser user = new SysUser();
         BeanUtils.copyProperties(userDTO, user);
         userMapper.update(user);
+    }
+
+    /**
+     * 获取个人信息
+     * @return
+     */
+    @Override
+    public UserPersonalInfoVO getPersonalInfo() {
+        SysUser admin = userMapper.getByUserId(LayoutConstant.ADMIN_ID);
+        UserPersonalInfoVO userPersonalInfoVO = new UserPersonalInfoVO();
+        BeanUtils.copyProperties(admin, userPersonalInfoVO);
+        return userPersonalInfoVO;
     }
 
     /**

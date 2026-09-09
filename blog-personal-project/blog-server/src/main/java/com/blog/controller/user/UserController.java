@@ -7,6 +7,7 @@ import com.blog.pojo.dto.UserLoginDTO;
 import com.blog.pojo.dto.UserRegisterDTO;
 import com.blog.pojo.entity.SysUser;
 import com.blog.pojo.vo.LoginVO;
+import com.blog.pojo.vo.UserPersonalInfoVO;
 import com.blog.pojo.vo.UserSimpleVO;
 import com.blog.result.Result;
 import com.blog.service.JwtService;
@@ -160,6 +161,17 @@ public class UserController {
     public Result<String> logout(HttpServletResponse resp) {
         jwtService.clearUserRefreshCookie(resp);
         return Result.success();
+    }
+
+    /**
+     * 获取个人信息
+     * @return
+     */
+    @GetMapping("/personalInfo")
+    public Result<UserPersonalInfoVO> getPersonalInfo(){
+        log.info("获取个人信息");
+        UserPersonalInfoVO userVo=userService.getPersonalInfo();
+        return Result.success(userVo);
     }
 
 }

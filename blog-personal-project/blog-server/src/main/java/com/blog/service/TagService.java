@@ -5,6 +5,7 @@ import com.blog.pojo.dto.RecyclePageQueryDTO;
 import com.blog.pojo.dto.TagDTO;
 import com.blog.pojo.vo.CategoryVo;
 import com.blog.pojo.vo.OptionVO;
+import com.blog.pojo.vo.TagFrontVo;
 import com.blog.pojo.vo.TagVo;
 import com.blog.result.PageResult;
 
@@ -73,4 +74,10 @@ public interface TagService {
      * @return
      */
     List<OptionVO> getTagOptions();
+
+    /**
+     * 查询所有标签信息
+     * @return
+     */
+    List<TagFrontVo> getTagList();
 }

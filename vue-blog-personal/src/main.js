@@ -12,6 +12,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { fas } from '@fortawesome/free-solid-svg-icons' // 全部实心图标
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faGithub } from '@fortawesome/free-brands-svg-icons' // GitHub 品牌图标
 
 import './assets/main.css'
 import './assets/styles/theme.css'
@@ -19,6 +20,7 @@ import './assets/styles/responsive.css'
 
 // 注册所有图标
 library.add(fas)
+library.add(faGithub)
 
 const app = createApp(App)
 

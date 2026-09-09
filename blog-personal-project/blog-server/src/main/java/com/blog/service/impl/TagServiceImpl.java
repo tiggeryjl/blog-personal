@@ -14,6 +14,7 @@ import com.blog.pojo.entity.Category;
 import com.blog.pojo.entity.Tag;
 import com.blog.pojo.vo.CategoryVo;
 import com.blog.pojo.vo.OptionVO;
+import com.blog.pojo.vo.TagFrontVo;
 import com.blog.pojo.vo.TagVo;
 import com.blog.result.PageResult;
 import com.blog.service.TagService;
@@ -152,5 +153,14 @@ public class TagServiceImpl implements TagService {
     @Override
     public List<OptionVO> getTagOptions() {
         return tagMapper.getTagOptions();
+    }
+
+    /**
+     * 查询所有标签信息
+     * @return
+     */
+    @Override
+    public List<TagFrontVo> getTagList() {
+        return tagMapper.getTagList();
     }
 }

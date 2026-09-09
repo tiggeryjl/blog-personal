@@ -2,49 +2,48 @@
 import {
   SwitchButton,
   User,
-  Lock,
   HomeFilled,
   Document,
   Reading,
   Link,
   ChatDotRound,
   Position,
-  Setting, // 主题设置图标
-  Sunny, // 太阳图标
-  MoonNight, // 月亮图标
+  Setting,
+  Sunny,
+  MoonNight,
   Menu,
   UserFilled,
   Picture,
   Upload,
   Refresh,
-} from '@element-plus/icons-vue'
-import { useRouter, useRoute } from 'vue-router' // 引入路由
-import { setTheme } from '@/utils/theme' //主题色
-import { ElMessage } from 'element-plus'
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useUserStore } from '@/store/userloginstatus'
-import ScrollToTop from '@/components/ScrollToTop.vue'
-import MusicPlayer from '@/components/MusicPlayer.vue'
+} from '@element-plus/icons-vue';
+import { useRouter, useRoute } from 'vue-router'; // 引入路由
+import { setTheme } from '@/utils/theme'; //主题色
+import { ElMessage } from 'element-plus';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useUserStore } from '@/store/userloginstatus';
+import ScrollToTop from '@/components/ScrollToTop.vue';
+import MusicPlayer from '@/components/MusicPlayer.vue';
 
 // 获取路由对象
-const router = useRouter()
+const router = useRouter();
 
-const route = useRoute()
+const route = useRoute();
 //获取pinia登录状态
-const userStore = useUserStore()
+const userStore = useUserStore();
 //判断是否为登录状态
-const isLogin = computed(() => !!userStore.user_token)
+const isLogin = computed(() => !!userStore.user_token);
 // 手机菜单控制
-const showMobileMenu = ref(false)
+const showMobileMenu = ref(false);
 
 // 🔥 新增：点击外部关闭菜单
-const menuWrapperRef = ref(null)
-const menuBtnRef = ref(null)
+const menuWrapperRef = ref(null);
+const menuBtnRef = ref(null);
 
 // 点击外部关闭菜单的函数
 const handleClickOutside = (event) => {
-  const menuWrapper = menuWrapperRef.value
-  const menuBtn = menuBtnRef.value
+  const menuWrapper = menuWrapperRef.value;
+  const menuBtn = menuBtnRef.value;
 
   if (
     showMobileMenu.value &&
@@ -53,114 +52,114 @@ const handleClickOutside = (event) => {
     menuBtn &&
     !menuBtn.contains(event.target)
   ) {
-    showMobileMenu.value = false
+    showMobileMenu.value = false;
   }
-}
+};
 
 // 按 ESC 键关闭菜单
 const handleEscKey = (event) => {
   if (event.key === 'Escape' && showMobileMenu.value) {
-    showMobileMenu.value = false
+    showMobileMenu.value = false;
   }
-}
+};
 
 // 登录
 const goLogin = () => {
-  router.push('/login')
-}
+  router.push('/login');
+};
 
 const goProfile = () => {
-  router.push('/SettingLayout')
-}
+  router.push('/SettingLayout');
+};
 
 //导航栏跳转
 const goTo = (path) => {
-  router.push(path)
-}
+  router.push(path);
+};
 
 // 退出登录
 const logout = () => {
-  userStore.logout()
+  userStore.logout();
   // 跳转到登录页
-  router.push('/login')
-}
+  router.push('/login');
+};
 
 // 切换主题
 const changeTheme = (theme) => {
-  setTheme(theme)
-}
+  setTheme(theme);
+};
 
 // 背景图全套功能
-const bgEnabled = ref(JSON.parse(localStorage.getItem('bgEnabled') ?? 'true'))
+const bgEnabled = ref(JSON.parse(localStorage.getItem('bgEnabled') ?? 'true'));
 // 存储结构：{ id: 唯一标识, name: 文件名, base64: 压缩后base64, url: css url }
-const customBgList = ref(JSON.parse(localStorage.getItem('customBgList')) || [])
-const currentBg = ref(localStorage.getItem('currentBg') || '')
-const bgRotateEnabled = ref(JSON.parse(localStorage.getItem('bgRotateEnabled') ?? 'false'))
-const bgInput = ref(null)
-const bgDialog = ref(false)
+const customBgList = ref(JSON.parse(localStorage.getItem('customBgList')) || []);
+const currentBg = ref(localStorage.getItem('currentBg') || '');
+const bgRotateEnabled = ref(JSON.parse(localStorage.getItem('bgRotateEnabled') ?? 'false'));
+const bgInput = ref(null);
+const bgDialog = ref(false);
 
-let rotateTimer = null
+let rotateTimer = null;
 
 // 批量读取bg文件夹所有图片，打包全部打进dist
-const bgModules = import.meta.glob('@/assets/image/bg/*.{png,jpg,jpeg,webp}', { eager: true })
+const bgModules = import.meta.glob('@/assets/image/bg/*.{png,jpg,jpeg,webp}', { eager: true });
 // 转为可使用的图片地址数组
-const localBgArr = Object.values(bgModules).map((item) => item.default)
+const localBgArr = Object.values(bgModules).map((item) => item.default);
 
 // 应用背景（平滑切换）
 const applyBg = (url = null) => {
-  const container = document.querySelector('.common-layout')
-  if (!container) return
+  const container = document.querySelector('.common-layout');
+  if (!container) return;
 
   if (!bgEnabled.value) {
-    container.style.setProperty('--bg-opacity', '0')
-    stopRotate()
-    return
+    container.style.setProperty('--bg-opacity', '0');
+    stopRotate();
+    return;
   }
 
-  const defaultImg = localBgArr[0]
-  const finalUrl = url || currentBg.value || `url(${defaultImg})`
-  container.style.setProperty('--bg-url', finalUrl)
-  container.style.setProperty('--bg-opacity', '1')
-}
+  const defaultImg = localBgArr[0];
+  const finalUrl = url || currentBg.value || `url(${defaultImg})`;
+  container.style.setProperty('--bg-url', finalUrl);
+  container.style.setProperty('--bg-opacity', '1');
+};
 
 // 开关背景
 const toggleBg = () => {
-  bgEnabled.value = !bgEnabled.value
-  localStorage.setItem('bgEnabled', bgEnabled.value)
+  bgEnabled.value = !bgEnabled.value;
+  localStorage.setItem('bgEnabled', bgEnabled.value);
   if (!bgEnabled.value) {
-    stopRotate()
-    bgRotateEnabled.value = false
-    localStorage.setItem('bgRotateEnabled', false)
+    stopRotate();
+    bgRotateEnabled.value = false;
+    localStorage.setItem('bgRotateEnabled', false);
   }
-  applyBg()
-}
+  applyBg();
+};
 
 // 🔥 核心：无损压缩上传（体积小+不失真+不超限）
 const uploadBg = (e) => {
-  const file = e.target.files[0]
-  if (!file) return
+  const file = e.target.files[0];
+  if (!file) return;
 
-  const reader = new FileReader()
+  const reader = new FileReader();
   reader.onload = function (event) {
-    const img = new Image()
+    const img = new Image();
     img.onload = function () {
-      const canvas = document.createElement('canvas')
+      const canvas = document.createElement('canvas');
       // 限制最大宽度1920px，按比例缩放（视觉无损，体积骤降70%+）
-      const maxWidth = 1920
-      let width = img.width
-      let height = img.height
+      const maxWidth = 1920;
+      let width = img.width;
+      let height = img.height;
       if (width > maxWidth) {
-        height = height * (maxWidth / width)
-        width = maxWidth
+        height = height * (maxWidth / width);
+        width = maxWidth;
       }
-      canvas.width = width
-      canvas.height = height
+      canvas.width = width;
+      canvas.height = height;
 
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(img, 0, 0, width, height)
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
       // 质量0.92，肉眼完全无差别，体积大幅减小
-      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.92)
-      const cssUrl = `url("${compressedBase64}")`
+      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.92);
+      const cssUrl = `url("${compressedBase64}")`;
 
       // 生成唯一ID，避免重名
       const item = {
@@ -168,116 +167,116 @@ const uploadBg = (e) => {
         name: file.name,
         base64: compressedBase64,
         url: cssUrl,
-      }
+      };
 
-      customBgList.value.push(item)
-      localStorage.setItem('customBgList', JSON.stringify(customBgList.value))
+      customBgList.value.push(item);
+      localStorage.setItem('customBgList', JSON.stringify(customBgList.value));
 
-      currentBg.value = cssUrl
-      localStorage.setItem('currentBg', cssUrl)
-      applyBg(cssUrl)
+      currentBg.value = cssUrl;
+      localStorage.setItem('currentBg', cssUrl);
+      applyBg(cssUrl);
 
-      ElMessage.success('上传成功！')
-      bgInput.value.value = ''
-    }
-    img.src = event.target.result
-  }
-  reader.readAsDataURL(file)
-}
+      ElMessage.success('上传成功！');
+      bgInput.value.value = '';
+    };
+    img.src = event.target.result;
+  };
+  reader.readAsDataURL(file);
+};
 
 // 使用背景
 const useBg = (item) => {
-  if (!bgEnabled.value) return
-  currentBg.value = item.url
-  localStorage.setItem('currentBg', item.url)
-  applyBg(item.url)
-}
+  if (!bgEnabled.value) return;
+  currentBg.value = item.url;
+  localStorage.setItem('currentBg', item.url);
+  applyBg(item.url);
+};
 
 // 删除背景
 const deleteBg = (item) => {
-  const idx = customBgList.value.findIndex((i) => i.id === item.id)
+  const idx = customBgList.value.findIndex((i) => i.id === item.id);
   if (idx > -1) {
-    customBgList.value.splice(idx, 1)
-    localStorage.setItem('customBgList', JSON.stringify(customBgList.value))
+    customBgList.value.splice(idx, 1);
+    localStorage.setItem('customBgList', JSON.stringify(customBgList.value));
     // 如果删除的是当前背景，重置为默认
     if (currentBg.value === item.url) {
-      currentBg.value = ''
-      localStorage.removeItem('currentBg')
-      applyBg()
+      currentBg.value = '';
+      localStorage.removeItem('currentBg');
+      applyBg();
     }
-    ElMessage.success('删除成功')
+    ElMessage.success('删除成功');
   }
-}
+};
 
 // 轮换开关
 const toggleBgRotate = () => {
   if (!bgEnabled.value) {
-    ElMessage.warning('请先开启背景图')
-    return
+    ElMessage.warning('请先开启背景图');
+    return;
   }
 
-  bgRotateEnabled.value = !bgRotateEnabled.value
-  localStorage.setItem('bgRotateEnabled', bgRotateEnabled.value)
+  bgRotateEnabled.value = !bgRotateEnabled.value;
+  localStorage.setItem('bgRotateEnabled', bgRotateEnabled.value);
 
   if (bgRotateEnabled.value) {
-    startRotate()
-    ElMessage.success('已开启轮换')
+    startRotate();
+    ElMessage.success('已开启轮换');
   } else {
-    stopRotate()
-    ElMessage.success('已关闭轮换')
+    stopRotate();
+    ElMessage.success('已关闭轮换');
   }
-}
+};
 
 // 自动轮换
 const startRotate = () => {
-  if (!bgEnabled.value) return
-  stopRotate()
-  let i = 0
-  const userBgUrls = customBgList.value.map((item) => item.url)
-  const localUrls = localBgArr.map((src) => `url(${src})`)
-  const allBg = userBgUrls.length ? userBgUrls : localUrls
+  if (!bgEnabled.value) return;
+  stopRotate();
+  let i = 0;
+  const userBgUrls = customBgList.value.map((item) => item.url);
+  const localUrls = localBgArr.map((src) => `url(${src})`);
+  const allBg = userBgUrls.length ? userBgUrls : localUrls;
 
-  if (allBg.length === 0) return
+  if (allBg.length === 0) return;
   // const len = customBgList.value.length
   // if (len === 0) return
 
   rotateTimer = setInterval(() => {
     if (!bgEnabled.value) {
-      stopRotate()
-      return
+      stopRotate();
+      return;
     }
-    applyBg(allBg[i % allBg.length])
+    applyBg(allBg[i % allBg.length]);
     // useBg(customBgList.value[i % allBg.length])
-    i++
-  }, 6000)
-}
+    i++;
+  }, 6000);
+};
 
 const stopRotate = () => {
-  if (rotateTimer) clearInterval(rotateTimer)
-}
+  if (rotateTimer) clearInterval(rotateTimer);
+};
 
 onMounted(() => {
-  userStore.loadStorage()
+  userStore.loadStorage();
 
-  const savedList = JSON.parse(localStorage.getItem('customBgList')) || []
+  const savedList = JSON.parse(localStorage.getItem('customBgList')) || [];
   const restoredList = savedList.map((item) => {
-    if (item.blobUrl) return item
-    return { ...item, blobUrl: `url("${item.blobUrl}")` }
-  })
-  customBgList.value = restoredList
+    if (item.blobUrl) return item;
+    return { ...item, blobUrl: `url("${item.blobUrl}")` };
+  });
+  customBgList.value = restoredList;
 
-  applyBg()
-  if (bgEnabled.value && bgRotateEnabled.value) startRotate()
+  applyBg();
+  if (bgEnabled.value && bgRotateEnabled.value) startRotate();
 
-  document.addEventListener('click', handleClickOutside)
-  document.addEventListener('keydown', handleEscKey)
-})
+  document.addEventListener('click', handleClickOutside);
+  document.addEventListener('keydown', handleEscKey);
+});
 
 onUnmounted(() => {
-  stopRotate()
-  document.removeEventListener('click', handleClickOutside)
-  document.removeEventListener('keydown', handleEscKey)
-})
+  stopRotate();
+  document.removeEventListener('click', handleClickOutside);
+  document.removeEventListener('keydown', handleEscKey);
+});
 </script>
 
 <template>
@@ -428,9 +427,7 @@ onUnmounted(() => {
         <el-footer class="footer">
           <div class="footer-container">
             <!-- 左侧版权 -->
-            <div class="copyright">
-              © {{ new Date().getFullYear() }} 我的博客 &nbsp;|&nbsp; 用心记录生活
-            </div>
+            <div class="copyright">© {{ new Date().getFullYear() }} 我的博客 &nbsp;|&nbsp; 用心记录生活</div>
             <div class="version">Version 1.0.0</div>
           </div>
         </el-footer>
@@ -485,7 +482,7 @@ onUnmounted(() => {
 .common-layout {
   min-height: 100vh;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 
   background: var(--bg-color);
   background-attachment: fixed;
@@ -537,6 +534,7 @@ onUnmounted(() => {
 :deep(.el-main) {
   background-color: transparent !important;
   --el-main-padding: 5px 0px;
+  overflow: visible !important;
   padding-top: 80px !important;
 }
 

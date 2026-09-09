@@ -5,6 +5,7 @@ import com.blog.pojo.entity.Tag;
 import com.blog.pojo.dto.RecyclePageQueryDTO;
 import com.blog.pojo.vo.CategoryVo;
 import com.blog.pojo.vo.OptionVO;
+import com.blog.pojo.vo.TagFrontVo;
 import com.blog.pojo.vo.TagVo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -71,4 +72,10 @@ public interface TagMapper {
      * @return
      */
     List<OptionVO> getTagOptions();
+
+    /**
+     * 查询所有标签信息
+     * @return
+     */
+    List<TagFrontVo> getTagList();
 }

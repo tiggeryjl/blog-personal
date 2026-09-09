@@ -4,6 +4,7 @@ import com.blog.pojo.dto.UserPageQueryDTO;
 import com.blog.pojo.entity.SysRole;
 import com.blog.pojo.entity.SysUser;
 import com.blog.pojo.vo.UserPageVo;
+import com.blog.pojo.vo.UserSimpleVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;

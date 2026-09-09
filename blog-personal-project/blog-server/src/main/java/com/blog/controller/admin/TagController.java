@@ -18,7 +18,7 @@ import java.util.List;
  * 标签管理
  */
 @Slf4j
-@RestController
+@RestController("adminTagController")
 @RequestMapping("/admin/tags")
 public class TagController {
 
