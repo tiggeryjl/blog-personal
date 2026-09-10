@@ -19,6 +19,12 @@ export default defineConfig({
         secure: false,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+      // 通知WebSocket代理：手机/局域网访问时由开发服务器转发到后端
+      '/ws': {
+        target: 'http://localhost:8080',
+        ws: true,
+        changeOrigin: true,
       }
     }
   },

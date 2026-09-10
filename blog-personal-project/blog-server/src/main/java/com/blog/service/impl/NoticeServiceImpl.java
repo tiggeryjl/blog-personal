@@ -76,6 +76,12 @@ public class NoticeServiceImpl implements NoticeService {
         return sysNoticeMapper.updateAllRead() > 0;
     }
 
+    @Override
+    public Long getOnlineCount() {
+        //在线数量由WebSocket会话统计，同一管理员多端登录分别计数
+        return AdminNoticeWebSocket.getOnlineCount();
+    }
+
     private SysNoticeDTO convert(SysNotice e){
         SysNoticeDTO m = new SysNoticeDTO();
         m.setId(e.getId());

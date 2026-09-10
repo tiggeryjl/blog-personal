@@ -209,4 +209,34 @@ const valid = () => {
 .login-btn:active {
   transform: scale(0.98);
 }
+
+/* ==================== 移动端（手机）适配 ==================== */
+@media (max-width: 768px) {
+  .login-page {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .login-container {
+    padding: 0 16px;
+  }
+
+  /* 小屏下减小卡片内边距，避免内容过高 */
+  .login-box {
+    padding: 32px 20px;
+    border-radius: 12px;
+  }
+
+  .login-box h1 {
+    font-size: 22px;
+  }
+
+  .desc {
+    margin-bottom: 24px;
+  }
+
+  .input-item {
+    width: 100%;
+  }
+}
 </style>

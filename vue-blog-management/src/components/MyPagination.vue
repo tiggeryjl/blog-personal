@@ -128,6 +128,7 @@ const pageNumbers = computed(() => {
 .pagination {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   justify-content: center;
   margin: 20px 0;
@@ -184,5 +185,25 @@ const pageNumbers = computed(() => {
 .ellipsis {
   padding: 0 4px;
   color: #000000;
+}
+
+/* ==================== 移动端（手机）适配 ==================== */
+@media (max-width: 768px) {
+  /* 分页内容较多，窄屏下允许换行，避免撑出屏幕 */
+  .pagination {
+    gap: 6px;
+    margin: 14px 0;
+  }
+
+  .total,
+  .size-select {
+    margin-right: 0;
+    font-size: 13px;
+  }
+
+  .page-btn {
+    padding: 5px 10px;
+    font-size: 13px;
+  }
 }
 </style>

@@ -857,4 +857,44 @@ watch(messages, () => scrollToBottom(), { deep: true });
 .dialog-body::-webkit-scrollbar-thumb:hover {
   background: #c0c4cc;
 }
+
+/* ==================== 移动端（手机）适配 ==================== */
+@media (max-width: 768px) {
+  /* 悬浮按钮缩小并贴近右下角，减少对内容的遮挡 */
+  .ai-float-btn {
+    right: 16px;
+    bottom: 20px;
+    width: 56px;
+    height: 44px;
+  }
+
+  /* 弹窗在手机端宽度铺满、高度降低，避免超出可视区域 */
+  .ai-dialog {
+    width: 100%;
+    max-width: calc(100vw - 24px);
+    height: 78vh;
+    max-height: 78vh;
+    border-radius: 16px;
+  }
+
+  .dialog-header {
+    padding: 12px 14px;
+  }
+
+  .dialog-body {
+    padding: 12px 14px;
+  }
+
+  .quick-actions {
+    padding: 8px 14px;
+  }
+
+  .dialog-footer {
+    padding: 10px 14px 12px;
+  }
+
+  .empty-title {
+    font-size: 16px;
+  }
+}
 </style>

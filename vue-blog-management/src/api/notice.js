@@ -11,3 +11,6 @@ export const markReadSingleApi = (id) => request.put(`/admin/notice/read/${id}`)
 
 // 一键全部标记已读
 export const markReadAllApi = () => request.put('/admin/notice/readAll');
+
+// 统计当前在线的管理端数量
+export const getOnlineCountApi = () => request.get('/admin/notice/onlineCount');

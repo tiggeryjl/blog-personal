@@ -518,12 +518,54 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
+  /* 手机端：内容区内边距由外层布局统一控制，这里不再叠加 */
+  .home-container {
+    padding: 0;
+  }
+
+  .home-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .home-header h1 {
+    font-size: 18px;
+  }
+
   .group-cards {
     grid-template-columns: 1fr;
   }
 
   .stat-group-full .group-cards {
     grid-template-columns: 1fr;
+  }
+
+  .stat-group {
+    padding: 12px 14px 14px;
+  }
+
+  .stat-card {
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .stat-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .stat-value {
+    font-size: 18px;
+  }
+
+  /* 趋势区操作按钮换行展示，图表高度降低避免过高 */
+  .trend-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .trend-chart {
+    height: 260px;
   }
 }
 </style>

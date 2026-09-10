@@ -14,4 +14,6 @@ public interface NoticeService {
     boolean markReadSingle(Long id);
 
     boolean markReadAll();
+
+    Long getOnlineCount();
 }

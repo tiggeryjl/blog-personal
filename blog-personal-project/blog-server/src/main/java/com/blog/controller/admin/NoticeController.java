@@ -66,4 +66,13 @@ public class NoticeController {
         noticeService.markReadAll();
         return Result.success();
     }
+
+    /**
+     * 统计当前在线的管理端数量
+     * @return 在线数量
+     */
+    @GetMapping("/onlineCount")
+    public Result<Long> onlineCount() {
+        return Result.success(noticeService.getOnlineCount());
+    }
 }

@@ -1,14 +1,16 @@
 <script setup>
-import { h, onMounted, onUnmounted, computed, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { h, onMounted, onUnmounted, computed, ref, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useUserStore } from '@/stores/userloginstatus';
 import { usePermissionStore } from '@/stores/permission';
 import { editPwdApi, getRefreshTokenApi } from '@/api/admin';
-import { getInitUnreadApi, markReadSingleApi } from '@/api/notice';
+import { getInitUnreadApi, markReadSingleApi, getOnlineCountApi } from '@/api/notice';
+import { ONLINE_COUNT_REFRESH_INTERVAL } from '@/constants/noticeConstants';
 import { useNoticeStore } from '@/stores/notice';
 import { useNoticePopup } from '@/utils/useNoticePopup';
-import SidebarMenuItem from '@/components/SidebarMenuItem.vue';
+import { useMobile } from '@/utils/useResponsive';
+import SidebarMenu from '@/components/SidebarMenu.vue';
 import { ElMessage, ElMessageBox, ElNotification } from 'element-plus';
 import {
   EditPen,
@@ -24,16 +26,40 @@ import {
   InfoFilled,
   Document,
   Share,
+  Menu,
+  Monitor,
 } from '@element-plus/icons-vue';
 import AiAssistant from '@/components/AiAssistant.vue';
 
 //调用路由函数返回路由实例
 const router = useRouter();
+const route = useRoute();
 const userStore = useUserStore();
 const permissionStore = usePermissionStore();
 // 从pinia中响应式获取用户信息、动态菜单
 const { userInfo } = storeToRefs(userStore);
 const { dynamicRoutes } = storeToRefs(permissionStore);
+
+// 移动端布局：手机端侧边栏收起为抽屉，由头部按钮唤起
+const { isMobile } = useMobile();
+const drawerVisible = ref(false);
+// 抽屉宽度
+const MOBILE_DRAWER_SIZE = 240;
+
+// 切换路由后自动收起移动端抽屉
+watch(
+  () => route.path,
+  () => {
+    drawerVisible.value = false;
+  }
+);
+
+// 从移动端切回 PC 端时关闭抽屉
+watch(isMobile, (value) => {
+  if (!value) {
+    drawerVisible.value = false;
+  }
+});
 
 //当前登录的用户信息
 const loginName = ref(userInfo.value?.nickname || '');
@@ -48,7 +74,7 @@ const filterDynamicRoutes = computed(() => {
 const update = async () => {
   dialogFormVisible.value = true;
   password.value = { oldPassword: '', newPassword: '' };
-  //重置表单校验规则-提示信息
+  //重置表单校验规则
   if (updatepsw.value) {
     updatepsw.value.resetFields();
   }
@@ -63,15 +89,10 @@ const save = async () => {
         const result = await editPwdApi(password.value);
 
         if (result.code == 200) {
-          //成功
-          //给用户提示信息
           ElMessage.success('密码修改成功!');
 
-          //关闭Dialog表单
           dialogFormVisible.value = false;
         } else {
-          //失败
-          //给用户提示信息
           ElMessage.error(result.msg);
         }
       } else {
@@ -86,13 +107,11 @@ const save = async () => {
 
 //退出
 const loginout = () => {
-  //弹出确认框
   ElMessageBox.confirm('您确认要退出登录吗?', '提示', {
     confirmButtonText: '确认',
     cancelButtonText: '取消',
     type: 'warning',
   }).then(async () => {
-    //点击确认按钮
     userStore.logout();
     permissionStore.resetPermission();
     router.push('/login');
@@ -124,8 +143,24 @@ const rules = ref({
 const noticeStore = useNoticeStore();
 const { push } = useNoticePopup();
 let socket = null;
-// const WS_URL = 'ws://localhost:8080/ws/admin/notice';
-const WS_URL = import.meta.env.VITE_WS_URL;
+// 通知WebSocket地址，用当前访问的域名拼接
+const WS_PATH = import.meta.env.VITE_WS_URL || '/ws/admin/notice';
+const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}${WS_PATH}`;
+
+// 在线管理端数量
+const onlineCount = ref(0);
+let onlineTimer = null;
+
+const loadOnlineCount = async () => {
+  try {
+    const result = await getOnlineCountApi();
+    if (result.code === 200) {
+      onlineCount.value = Number(result.data) || 0;
+    }
+  } catch (error) {
+    console.warn('获取在线人数失败:', error);
+  }
+};
 
 const isTokenExpired = (token) => {
   try {
@@ -137,7 +172,7 @@ const isTokenExpired = (token) => {
 };
 
 const initWebSocket = async () => {
-  const token = localStorage.getItem('token');
+  let token = localStorage.getItem('token');
   if (!token) return;
 
   if (isTokenExpired(token)) {
@@ -165,6 +200,7 @@ const initWebSocket = async () => {
 
   socket.onopen = () => {
     console.log('WebSocket连接成功');
+    loadOnlineCount();
   };
 
   socket.onmessage = async (event) => {
@@ -224,24 +260,39 @@ const loadOfflineNotice = async () => {
 onMounted(async () => {
   await loadOfflineNotice();
   initWebSocket();
+  loadOnlineCount();
+  onlineTimer = setInterval(loadOnlineCount, ONLINE_COUNT_REFRESH_INTERVAL);
 });
 
 onUnmounted(() => {
   if (socket) socket.close();
+  if (onlineTimer) {
+    clearInterval(onlineTimer);
+    onlineTimer = null;
+  }
 });
 </script>
 
 <template>
   <div class="common-layout">
     <el-container>
-      <!-- Header 区域 -->
       <el-header class="header">
         <span class="title-box">
+          <!-- 移动端菜单按钮 -->
+          <el-icon v-if="isMobile" class="menu-toggle" @click="drawerVisible = true">
+            <Menu />
+          </el-icon>
           <img src="@/assets/images/logo.png" class="title-logo" alt="logo" />
           <span class="title">blog后台管理系统</span>
         </span>
 
         <div class="user-info">
+          <span class="online-box" title="当前在线的管理端数量（同一账号多端登录分别计数）">
+            <el-icon class="online-icon"><Monitor /></el-icon>
+            <span class="online-label">在线</span>
+            <span class="online-count">{{ onlineCount }}</span>
+          </span>
+
           <el-badge
             :value="noticeStore.unreadCount"
             max="99"
@@ -253,7 +304,7 @@ onUnmounted(() => {
             </div>
           </el-badge>
 
-          <el-dropdown trigger="hover">
+          <el-dropdown :trigger="isMobile ? 'click' : 'hover'">
             <div class="user-dropdown-trigger">
               <el-avatar :src="loginAvatar" size="32" />
               <span class="username">管理员：{{ loginName }}</span>
@@ -279,21 +330,9 @@ onUnmounted(() => {
       </el-header>
 
       <el-container>
-        <!-- 左侧菜单：删除所有写死菜单，改为动态循环 -->
-        <el-aside width="200px" class="aside">
-          <el-menu router :default-active="$route.path">
-            <template v-for="route in filterDynamicRoutes" :key="route.path">
-              <!-- 多个子菜单：交给递归组件渲染，支持任意层级 -->
-              <SidebarMenuItem v-if="route.children?.length > 1" :item="route" />
-              <!-- 没有/只有一个子菜单：保持单菜单项效果（如“布局设置”） -->
-              <el-menu-item v-else :index="route.children?.length ? route.children[0].path : route.path">
-                <el-icon>
-                  <component :is="route.meta.icon" />
-                </el-icon>
-                <span>{{ route.meta.title }}</span>
-              </el-menu-item>
-            </template>
-          </el-menu>
+        <!-- 左侧菜单：PC 端固定侧边栏 -->
+        <el-aside v-if="!isMobile" width="200px" class="aside">
+          <SidebarMenu :routes="filterDynamicRoutes" />
         </el-aside>
 
         <!-- 右侧核心区 -->
@@ -301,6 +340,17 @@ onUnmounted(() => {
           <router-view></router-view>
         </el-main>
       </el-container>
+
+      <!-- 移动端侧边栏抽屉 -->
+      <el-drawer
+        v-model="drawerVisible"
+        class="sidebar-drawer"
+        direction="ltr"
+        title="功能菜单"
+        :size="MOBILE_DRAWER_SIZE"
+      >
+        <SidebarMenu :routes="filterDynamicRoutes" @select="drawerVisible = false" />
+      </el-drawer>
 
       <AiAssistant />
     </el-container>
@@ -330,32 +380,44 @@ onUnmounted(() => {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  -webkit-text-size-adjust: 100%;
 }
 
 /* 最外层容器占满全屏 */
 .common-layout {
-  width: 100vw;
+  /* 顶部栏高度，移动端会通过媒体查询调小 */
+  --layout-header-height: 60px;
+  width: 100%;
+  max-width: 100%;
   height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
-/* 头部样式不变 */
 .header {
   background-image: linear-gradient(to right, #033796, #0040b7, #0092bb, #04bffd);
   padding: 0 20px;
-  height: 60px !important;
-  line-height: 60px;
+  height: var(--layout-header-height) !important;
+  line-height: var(--layout-header-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .title-box {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 .title-logo {
   height: 40px;
   padding-right: 5px;
   object-fit: contain;
+  flex-shrink: 0;
 }
 
 .title {
@@ -363,6 +425,16 @@ onUnmounted(() => {
   font-size: 40px;
   font-family: 楷体;
   font-weight: bolder;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu-toggle {
+  font-size: 22px;
+  color: #ffffff;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .right_tool {
@@ -370,16 +442,40 @@ onUnmounted(() => {
 }
 
 .user-info {
-  float: right;
-  height: 60px;
+  height: var(--layout-header-height);
   display: flex;
   align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .notice-badge {
   display: inline-flex;
   align-items: center;
   margin-right: 20px;
+}
+
+.online-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 12px;
+  margin-right: 16px;
+  border-radius: 16px;
+  background-color: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.online-icon {
+  font-size: 15px;
+}
+
+.online-count {
+  font-weight: 600;
 }
 /* 调整角标距离铃铛 */
 .notice-badge :deep(.el-badge__content) {
@@ -418,14 +514,17 @@ onUnmounted(() => {
 
 .username {
   font-size: 15px;
+  white-space: nowrap;
 }
 
 /* 左侧导航固定高度 + 自己滚动 */
 .aside {
   width: 220px !important;
   border-right: 1px solid #ccc;
-  height: calc(100vh - 60px);
+  height: calc(100vh - var(--layout-header-height));
+  height: calc(100dvh - var(--layout-header-height));
   overflow-y: auto;
+  flex-shrink: 0;
 
   position: sticky;
   top: 0;
@@ -435,8 +534,67 @@ onUnmounted(() => {
 
 /* 右侧内容区高度填满 + 独立滚动 */
 :deep(.el-main) {
-  height: calc(100vh - 60px);
+  height: calc(100vh - var(--layout-header-height));
+  height: calc(100dvh - var(--layout-header-height));
   overflow-y: auto;
   padding: 20px;
+}
+
+@media (max-width: 768px) {
+  .common-layout {
+    --layout-header-height: 56px;
+  }
+
+  .header {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .title-box {
+    gap: 8px;
+  }
+
+  .title-logo {
+    height: 28px;
+    padding-right: 0;
+  }
+
+  .title {
+    font-size: 16px;
+  }
+
+  .username {
+    display: none;
+  }
+
+  .online-box {
+    height: 28px;
+    padding: 0 8px;
+    margin-right: 6px;
+    gap: 3px;
+    font-size: 12px;
+  }
+
+  .online-label {
+    display: none;
+  }
+
+  .notice-badge {
+    margin-right: 8px;
+  }
+
+  .notice-badge :deep(.el-badge__content) {
+    top: 8px;
+    right: 8px;
+  }
+
+  .bell-wrap {
+    width: 34px;
+    height: 34px;
+  }
+
+  :deep(.el-main) {
+    padding: 10px;
+  }
 }
 </style>

@@ -10,9 +10,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -20,8 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @ServerEndpoint("/ws/admin/notice")
 public class AdminNoticeWebSocket {
 
-    //存放所有WebSocket握手成功的会话对象
-    private static final Map<Long, Session> ONLINE_SESSIONS = new ConcurrentHashMap<>();
+    //存放所有WebSocket握手成功的会话对象（同一管理员可能多端登录，所以一个管理员对应多个会话）
+    private static final Map<Long, Set<Session>> ONLINE_SESSIONS = new ConcurrentHashMap<>();
 
     private Session session;
 
@@ -53,8 +57,9 @@ public class AdminNoticeWebSocket {
         }
         adminId = jwtService.getUserId(token);
         session.getUserProperties().put("adminId", adminId);
-        ONLINE_SESSIONS.put(adminId, session);
-        log.info("【WS】管理员{}连接建立成功，当前在线数量：{}", adminId, ONLINE_SESSIONS.size());
+        //同一管理员多端登录时分别保存会话，避免互相覆盖
+        ONLINE_SESSIONS.computeIfAbsent(adminId, key -> ConcurrentHashMap.newKeySet()).add(session);
+        log.info("【WS】管理员{}连接建立成功，当前在线数量：{}", adminId, getOnlineCount());
     }
 
     /**
@@ -62,10 +67,10 @@ public class AdminNoticeWebSocket {
      */
     @OnClose
     public void onClose() {
-        if(adminId != null){
-            ONLINE_SESSIONS.remove(adminId);
+        if (adminId != null) {
+            removeSession(adminId, session);
         }
-        log.info("【WS】管理员{}连接断开，当前在线数量：{}", adminId, ONLINE_SESSIONS.size());
+        log.info("【WS】管理员{}连接断开，当前在线数量：{}", adminId, getOnlineCount());
     }
 
     /**
@@ -80,9 +85,18 @@ public class AdminNoticeWebSocket {
     @OnError
     public void onError(Session session,Throwable throwable){
         log.error("【WS】异常",throwable);
-        if(adminId != null){
-            ONLINE_SESSIONS.remove(adminId);
+        if (adminId != null) {
+            removeSession(adminId, session);
         }
+    }
+
+    /**
+     * 统计当前在线的管理端数量（同一管理员多端登录分别计数）
+     *
+     * @return 在线会话数量
+     */
+    public static long getOnlineCount() {
+        return ONLINE_SESSIONS.values().stream().mapToLong(Set::size).sum();
     }
 
     /**
@@ -92,7 +106,11 @@ public class AdminNoticeWebSocket {
      */
     public void broadcast(SysNoticeDTO message) {
         try {
-            if (ONLINE_SESSIONS.isEmpty()) {
+            //复制一份会话列表，避免遍历过程中集合被修改
+            List<Session> sessions = ONLINE_SESSIONS.values().stream()
+                    .flatMap(Set::stream)
+                    .collect(Collectors.toList());
+            if (sessions.isEmpty()) {
                 log.info("【WS】暂无在线客户端，无需推送");
                 return;
             }
@@ -103,7 +121,7 @@ public class AdminNoticeWebSocket {
                 log.error("【WS】消息序列化为JSON失败", e);
                 return;
             }
-            for (Session s : ONLINE_SESSIONS.values()) {
+            for (Session s : sessions) {
                 if (s.isOpen()) {
                     try {
                         s.getBasicRemote().sendText(json);
@@ -112,7 +130,7 @@ public class AdminNoticeWebSocket {
                         //发送失败直接剔除僵尸连接
                         Long aid = (Long)s.getUserProperties().get("adminId");
                         if(aid != null){
-                            ONLINE_SESSIONS.remove(aid);
+                            removeSession(aid, s);
                         }
                     }
                 }
@@ -126,16 +144,39 @@ public class AdminNoticeWebSocket {
      * 单点推送，发给指定管理员
      */
     public void sendToOne(Long targetAdminId, SysNoticeDTO message){
-        Session session = ONLINE_SESSIONS.get(targetAdminId);
-        if(session == null || !session.isOpen()){
+        Set<Session> sessions = ONLINE_SESSIONS.get(targetAdminId);
+        if (sessions == null || sessions.isEmpty()) {
             log.warn("管理员{}不在线，消息无法推送",targetAdminId);
             return;
         }
         try {
             String json = JSON.toJSONString(message);
-            session.getBasicRemote().sendText(json);
+            //同一管理员可能多端登录，每个会话都要推送
+            for (Session session : new ArrayList<>(sessions)) {
+                if (!session.isOpen()) {
+                    continue;
+                }
+                session.getBasicRemote().sendText(json);
+            }
         } catch (IOException e) {
             log.error("单点推送失败",e);
+        }
+    }
+
+    /**
+     * 移除管理员的指定会话，该管理员没有会话后清理掉对应的key
+     *
+     * @param adminId 管理员id
+     * @param session 需要移除的会话
+     */
+    private void removeSession(Long adminId, Session session) {
+        Set<Session> sessions = ONLINE_SESSIONS.get(adminId);
+        if (sessions == null) {
+            return;
+        }
+        sessions.remove(session);
+        if (sessions.isEmpty()) {
+            ONLINE_SESSIONS.remove(adminId);
         }
     }
 
