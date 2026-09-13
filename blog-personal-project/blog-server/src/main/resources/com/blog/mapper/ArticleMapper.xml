@@ -92,6 +92,7 @@
         <result property="userNickname" column="user_nickname"/>
         <result property="userAvatar" column="user_avatar"/>
         <result property="sort" column="sort"/>
+        <result property="deleteFlag" column="delete_flag"/>
         <result property="category" column="category_name"/>
         <!-- 标签名称列表 -->
         <result property="tags" column="tags_str"
@@ -100,37 +101,43 @@
                 typeHandler="com.blog.handler.StringListTypeHandler"/>
     </resultMap>
 
+    <!-- 文章列表公共查询字段，后台列表与用户端列表共用 -->
+    <sql id="articleVoColumns">
+        a.id,
+        a.title,
+        a.summary,
+        a.ai_suggest,
+        a.content,
+        a.category_id,
+        a.cover,
+        a.status,
+        a.is_top,
+        a.is_hot,
+        a.view_num,
+        a.like_num,
+        a.comment_num,
+        a.words_num,
+        a.create_time,
+        a.update_time,
+        a.publish_time,
+        a.timed_publish_time,
+        a.user_id,
+        a.sort,
+        u.nickname AS user_nickname,
+        u.avatar   AS user_avatar,
+        c.name     AS category_name,
+        (
+        SELECT GROUP_CONCAT(t.id SEPARATOR ',')
+        FROM tag t
+        INNER JOIN article_tag at ON t.id = at.tag_id
+        WHERE at.article_id = a.id
+        ) AS tags_str
+    </sql>
+
+    <!-- 后台文章列表：展示所有状态的文章 -->
     <select id="pageQurey" resultMap="ArticleVoResultMap">
         SELECT
-            a.id,
-            a.title,
-            a.summary,
-            a.ai_suggest,
-            a.content,
-            a.category_id,
-            a.cover,
-            a.status,
-            a.is_top,
-            a.is_hot,
-            a.view_num,
-            a.like_num,
-            a.comment_num,
-            a.words_num,
-            a.create_time,
-            a.update_time,
-            a.publish_time,
-            a.timed_publish_time,
-            a.user_id,
-            a.sort,
-            u.nickname AS user_nickname,
-            u.avatar   AS user_avatar,
-            c.name     AS category_name,
-            (
-            SELECT GROUP_CONCAT(t.id SEPARATOR ',')
-            FROM tag t
-            INNER JOIN article_tag at ON t.id = at.tag_id
-            WHERE at.article_id = a.id
-            ) AS tags_str
+        <include refid="articleVoColumns"/>
         FROM article a
         LEFT JOIN sys_user u ON a.user_id = u.id
         LEFT JOIN category c ON a.category_id = c.id
@@ -166,6 +173,102 @@
             </if>
         </where>
         ORDER BY a.is_top DESC, a.publish_time DESC, a.id DESC
+    </select>
+
+    <!-- 用户端文章列表 -->
+    <resultMap id="ArticleFrontVoResultMap" type="com.blog.pojo.vo.ArticleFrontVO">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="summary" column="summary"/>
+        <result property="cover" column="cover"/>
+        <result property="category" column="category_name"/>
+        <result property="status" column="status"/>
+        <result property="isTop" column="is_top"/>
+        <result property="isHot" column="is_hot"/>
+        <result property="viewNum" column="view_num"/>
+        <result property="likeNum" column="like_num"/>
+        <result property="commentNum" column="comment_num"/>
+        <result property="wordsNum" column="words_num"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="publishTime" column="publish_time"/>
+        <result property="sort" column="sort"/>
+        <result property="userNickname" column="user_nickname"/>
+        <result property="userAvatar" column="user_avatar"/>
+        <!-- 标签ID列表 -->
+        <result property="tags" column="tags_str"
+                typeHandler="com.blog.handler.LongListTypeHandler"/>
+        <!-- 标签名称列表 -->
+        <result property="tagNames" column="tag_names_str"
+                typeHandler="com.blog.handler.StringListTypeHandler"/>
+    </resultMap>
+
+    <select id="pageQueryUser" resultMap="ArticleFrontVoResultMap">
+        SELECT
+            a.id,
+            a.title,
+            a.summary,
+            a.cover,
+            a.status,
+            a.is_top,
+            a.is_hot,
+            a.view_num,
+            a.like_num,
+            a.comment_num,
+            a.words_num,
+            a.create_time,
+            a.update_time,
+            a.publish_time,
+            a.sort,
+            u.nickname AS user_nickname,
+            u.avatar   AS user_avatar,
+            c.name     AS category_name,
+            (
+            SELECT GROUP_CONCAT(t.id SEPARATOR ',')
+            FROM tag t
+            INNER JOIN article_tag at ON t.id = at.tag_id
+            WHERE at.article_id = a.id
+            ) AS tags_str,
+            (
+            SELECT GROUP_CONCAT(t.name SEPARATOR ',')
+            FROM tag t
+            INNER JOIN article_tag at ON t.id = at.tag_id
+            WHERE at.article_id = a.id
+            ) AS tag_names_str
+        FROM article a
+        LEFT JOIN sys_user u ON a.user_id = u.id
+        LEFT JOIN category c ON a.category_id = c.id
+        <where>
+            a.delete_flag = 0
+            AND a.status IN (1, 3)
+            <!-- 文章标题模糊查询 -->
+            <if test="title != null and title != ''">
+                AND a.title LIKE CONCAT('%', #{title}, '%')
+            </if>
+            <!-- 分类精确匹配 -->
+            <if test="categoryId != null and categoryId != ''">
+                AND c.id = #{categoryId}
+            </if>
+            <!-- 标签筛选 -->
+            <if test="tag != null and tag != ''">
+                AND a.id IN (
+                SELECT at.article_id
+                FROM article_tag at
+                INNER JOIN tag t ON at.tag_id = t.id
+                WHERE t.name = #{tag}
+                )
+            </if>
+            <!-- 置顶 -->
+            <if test="isTop != null">
+                AND a.is_top = #{isTop}
+            </if>
+            <!-- 发布时间区间 -->
+            <if test="begin != null and end != null">
+                AND a.publish_time BETWEEN #{begin} AND #{end}
+            </if>
+        </where>
+        <!-- 置顶优先，其余按排序权重倒序（sort越大越靠前） -->
+        ORDER BY a.is_top DESC, a.sort DESC, a.publish_time DESC, a.id DESC
     </select>
 
     <!-- 分页查询逻辑删除的文章（回收站） -->
@@ -258,7 +361,8 @@
             FROM tag t
             INNER JOIN article_tag at ON t.id = at.tag_id
             WHERE at.article_id = a.id
-            ) AS tag_names_str
+            ) AS tag_names_str,
+            a.delete_flag
         FROM article a
         LEFT JOIN sys_user u ON a.user_id = u.id
         LEFT JOIN category c ON a.category_id = c.id
@@ -301,14 +405,16 @@
         SELECT id,title,is_top,is_hot,create_time
         FROM (
             SELECT id,title,is_top,is_hot,create_time,
-                   ROW_NUMBER() OVER (ORDER BY is_top DESC, publish_time DESC, id DESC) AS rn
+                   ROW_NUMBER() OVER (ORDER BY is_top DESC, sort DESC, publish_time DESC, id DESC) AS rn
             FROM article
+            WHERE delete_flag = 0 AND status IN (1, 3)
         ) ranked
         WHERE rn = (
             SELECT rn - 1
             FROM (
-                SELECT id, ROW_NUMBER() OVER (ORDER BY is_top DESC, publish_time DESC, id DESC) AS rn
+                SELECT id, ROW_NUMBER() OVER (ORDER BY is_top DESC, sort DESC, publish_time DESC, id DESC) AS rn
                 FROM article
+                WHERE delete_flag = 0 AND status IN (1, 3)
             ) current
             WHERE id = #{id}
         )
@@ -318,14 +424,16 @@
         SELECT id,title,is_top,is_hot,create_time
         FROM (
             SELECT id,title,is_top,is_hot,create_time,
-                   ROW_NUMBER() OVER (ORDER BY is_top DESC, publish_time DESC, id DESC) AS rn
+                   ROW_NUMBER() OVER (ORDER BY is_top DESC, sort DESC, publish_time DESC, id DESC) AS rn
             FROM article
+            WHERE delete_flag = 0 AND status IN (1, 3)
         ) ranked
         WHERE rn = (
             SELECT rn + 1
             FROM (
-                SELECT id, ROW_NUMBER() OVER (ORDER BY is_top DESC, publish_time DESC, id DESC) AS rn
+                SELECT id, ROW_NUMBER() OVER (ORDER BY is_top DESC, sort DESC, publish_time DESC, id DESC) AS rn
                 FROM article
+                WHERE delete_flag = 0 AND status IN (1, 3)
             ) current
             WHERE id = #{id}
         )

@@ -2,6 +2,7 @@ package com.blog.mapper;
 
 import com.blog.pojo.dto.ArticlePageQueryDTO;
 import com.blog.pojo.entity.Article;
+import com.blog.pojo.vo.ArticleFrontVO;
 import com.blog.pojo.vo.ArticleVo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -32,6 +33,13 @@ public interface ArticleMapper {
      * @return
      */
     List<ArticleVo> pageQurey(ArticlePageQueryDTO params);
+
+    /**
+     * 分页查询用户端可见的文章列表（已发布、已归档，且未被逻辑删除）
+     * @param params
+     * @return
+     */
+    List<ArticleFrontVO> pageQueryUser(ArticlePageQueryDTO params);
 
     /**
      * 分页查询逻辑删除的文章（回收站）

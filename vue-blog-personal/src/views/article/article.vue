@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Expand, Menu, Grid, ChatLineSquare, Document, View } from '@element-plus/icons-vue';
 import MyPagination from '@/components/MyPagination.vue';
@@ -13,7 +13,10 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const getArticleList = async () => {
   try {
-    const result = await getArticleListApi();
+    const result = await getArticleListApi({
+      page: currentPage.value,
+      pageSize: pageSize.value,
+    });
     if (result.code === 200) {
       articleList.value = result.data.rows;
       total.value = result.data.total;
@@ -22,6 +25,11 @@ const getArticleList = async () => {
     console.error('获取文章列表异常', error);
   }
 };
+
+// 翻页 / 改变每页条数时重新拉取数据
+watch([currentPage, pageSize], () => {
+  getArticleList();
+});
 
 const goDetail = (id) => {
   router.push('/article/' + id);

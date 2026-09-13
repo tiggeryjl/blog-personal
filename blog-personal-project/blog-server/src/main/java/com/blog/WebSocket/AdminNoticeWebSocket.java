@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 @ServerEndpoint("/ws/admin/notice")
 public class AdminNoticeWebSocket {
 
-    //存放所有WebSocket握手成功的会话对象（同一管理员可能多端登录，所以一个管理员对应多个会话）
+    //存放所有WebSocket握手成功的会话对象
     private static final Map<Long, Set<Session>> ONLINE_SESSIONS = new ConcurrentHashMap<>();
 
     private Session session;

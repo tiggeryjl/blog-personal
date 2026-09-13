@@ -1,5 +1,8 @@
 package com.blog.controller.user;
 
+import com.blog.constant.ArticleStatusConstant;
+import com.blog.constant.DelStatusConstant;
+import com.blog.context.BaseContext;
 import com.blog.pojo.dto.ArticleDTO;
 import com.blog.pojo.dto.ArticlePageQueryDTO;
 import com.blog.pojo.vo.ArticleDetailVO;
@@ -33,7 +36,8 @@ public class ArticleController {
     @GetMapping("/getArticleList")
     public Result<PageResult> getArticleList(ArticlePageQueryDTO param){
         log.info("分页查询文章列表:{}",param);
-        PageResult pageResult=articleService.pageQurey(param);
+        // 用户端走独立查询：只返回已发布、已归档且未删除的文章，不会漏出草稿/私密内容
+        PageResult pageResult=articleService.pageQueryUser(param);
         return Result.success(pageResult);
     }
 
@@ -46,8 +50,23 @@ public class ArticleController {
     public Result<ArticleDetailVO> getArticleDetail(@PathVariable("id") Long id){
         log.info("文章id:{}",id);
         ArticleDetailVO articleDetailVO = articleService.getArticleById(id);
+        if (articleDetailVO == null || articleDetailVO.getArticleVo() == null) {
+            return Result.error("文章不存在");
+        }
+        // 未登录游客只能查看已发布且未被删除的文章，登录用户保持原有行为（可预览自己的文章）
+        if (BaseContext.getCurrentId() == null && !isPublicArticle(articleDetailVO.getArticleVo())) {
+            return Result.error("文章不存在或暂未公开");
+        }
         return Result.success(articleDetailVO);
     }
 
+    /**
+     * 判断文章是否对游客公开
+     */
+    private boolean isPublicArticle(ArticleVo articleVo) {
+        return (ArticleStatusConstant.PUBLISHED.equals(articleVo.getStatus())
+                || ArticleStatusConstant.ARCHIVED.equals(articleVo.getStatus()))
+                && !DelStatusConstant.DISABLE.equals(articleVo.getDeleteFlag());
+    }
 
 }

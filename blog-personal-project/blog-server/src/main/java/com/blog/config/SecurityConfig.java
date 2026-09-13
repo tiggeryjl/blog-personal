@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -61,10 +62,12 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // 权限配置
                 .authorizeHttpRequests(auth -> auth
+                        // 登录注册、刷新token、退出等无需认证
                         .requestMatchers("/user/user/login",
                                 "/user/user/register",
                                 "/user/user/refreshToken",
                                 "/user/user/logout",
+                                "/user/user/personalInfo",
                                 "/admin/admin/login",
                                 "/admin/admin/refreshToken",
                                 "/admin/admin/logout",
@@ -76,7 +79,17 @@ public class SecurityConfig {
                                 "/ws/admin/notice",
                                 "/error",
                                 "/favicon.ico").permitAll() // 放行登录
-                        .anyRequest().authenticated() // 其他接口必须认证
+                        // 游客可读接口：文章、分类、标签、评论列表，未登录也能浏览
+                        .requestMatchers(HttpMethod.GET,
+                                "/user/article/getArticleList",
+                                "/user/article/getArticleDetail/**",
+                                "/user/categorys/**",
+                                "/user/tags/**",
+                                "/user/comment/article/**",
+                                "/user/comment/daily/list",
+                                "/user/comment/message/list").permitAll()
+                        // 其他接口（发表评论、回复、点赞、修改资料等）必须认证
+                        .anyRequest().authenticated()
                 )
                 // 自定义401未登录、403权限不足异常返回
                 .exceptionHandling(ex -> ex

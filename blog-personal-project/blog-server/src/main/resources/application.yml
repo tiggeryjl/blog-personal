@@ -38,7 +38,7 @@ blog:
     api-key: ${DEEPSEEK_API_KEY}
     base-url: https://api.deepseek.com
     flash:
-      model: deepseek-v4-flash           # DeepSeek官方Flash模型名
+      model: deepseek-flash           # DeepSeek官方Flash模型名
       temperature: 0.7
     pro:
       model: deepseek-v4-pro          # DeepSeek官方Pro/推理模型名

@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { getRefreshTokenApi } from '@/api/auth.js';
+import { getRefreshTokenApi, queryUserInfoApi } from '@/api/auth.js';
 import { ElMessage } from 'element-plus';
 import LayoutView from '@/views/layout/index.vue';
 import IndexLayoutView from '@/views/layout/indexLayout.vue';
@@ -16,7 +16,6 @@ import BaseView from '@/views/setting/base.vue';
 import RepwdView from '@/views/setting/repwd.vue';
 import AccountView from '@/views/setting/account.vue';
 import { useUserStore } from '@/store/userloginstatus.js';
-import { queryUserInfoApi } from '@/api/auth.js';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -48,10 +47,12 @@ const router = createRouter({
           name: 'SettingLayout',
           component: SettingLayoutView,
           redirect: 'base',
+          // 个人中心相关页面必须登录后才能访问
+          meta: { requiresAuth: true },
           children: [
-            { path: '/base', name: 'base', component: BaseView },
-            { path: '/repwd', name: 'repwd', component: RepwdView },
-            { path: '/account', name: 'account', component: AccountView },
+            { path: '/base', name: 'base', component: BaseView, meta: { requiresAuth: true } },
+            { path: '/repwd', name: 'repwd', component: RepwdView, meta: { requiresAuth: true } },
+            { path: '/account', name: 'account', component: AccountView, meta: { requiresAuth: true } },
           ],
         },
         { path: 'friendlink', name: 'friendlink', component: FriendLinkView },
@@ -66,35 +67,61 @@ const router = createRouter({
   ],
 });
 
-let isRefreshing = false;
+// 静默恢复登录态：本地没有 token 时，尝试用 cookie 里的 refreshToken 换新 token
+// 只尝试一次，失败后不再重试，避免游客每次跳转都发请求
+let restorePromise = null;
+let restoreFailed = false;
 
+const restoreSession = () => {
+  if (restorePromise) return restorePromise;
+  if (restoreFailed) return Promise.reject(new Error('未登录'));
+
+  restorePromise = (async () => {
+    const res = await getRefreshTokenApi({ silent: true });
+    const newToken = res?.code === 200 ? res.data?.token : null;
+    if (!newToken) throw new Error('刷新token失败');
+    useUserStore().setToken(newToken);
+    const result = await queryUserInfoApi();
+    useUserStore().updateUserInfo(result.data);
+    return true;
+  })();
+
+  // 失败时静默处理
+  restorePromise.catch(() => {
+    restoreFailed = true;
+    restorePromise = null;
+  });
+
+  return restorePromise;
+};
+
+// 主动退出登录后调用：本次会话内不再用 cookie 静默恢复登录态
+export const stopSessionRestore = () => {
+  restoreFailed = true;
+  restorePromise = null;
+};
+
+// 公开页面（首页、文章、日常、友链、留言、关于等）游客可直接浏览
+// 只有设置 / 个人中心相关页面（meta.requiresAuth）才必须先登录
 router.beforeEach(async (to, from, next) => {
-  const whiteList = ['/login', '/404'];
-  if (whiteList.includes(to.path)) return next();
+  const needLogin = to.matched.some((record) => record.meta?.requiresAuth);
 
-  const localToken = localStorage.getItem('user_token');
-  if (localToken) {
-    // 已有token直接放行
-    next();
-  } else {
-    // 无本地token，静默刷新
-    if (isRefreshing) return next();
-    isRefreshing = true;
-    try {
-      const res = await getRefreshTokenApi();
-      const newToken = res.data.token;
-      localStorage.setItem('user_token', newToken);
-      const result = await queryUserInfoApi();
-      console.log('刷新token成功，获取用户信息', result.data);
-      useUserStore().updateUserInfo(result.data);
-      // 刷新路由上下文
-      next({ ...to, replace: true });
-    } catch (err) {
-      ElMessage.info('登录过期，请重新登录');
-      next('/login');
-    } finally {
-      isRefreshing = false;
-    }
+  // 已有本地 token，直接放行
+  if (localStorage.getItem('user_token')) return next();
+
+  if (!needLogin) {
+    // 游客直接浏览，同时后台静默尝试恢复登录态（有登录态就显示头像，没有就忽略）
+    restoreSession().catch(() => {});
+    return next();
+  }
+
+  // 需要登录的页面：先尝试静默恢复，失败再跳登录页，并记录来源用于登录后回跳
+  try {
+    await restoreSession();
+    next({ ...to, replace: true });
+  } catch (err) {
+    ElMessage.warning('请先登录后再访问该页面');
+    next({ path: '/login', query: { redirect: to.fullPath } });
   }
 });
 

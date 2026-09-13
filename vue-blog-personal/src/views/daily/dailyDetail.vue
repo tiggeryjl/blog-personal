@@ -6,6 +6,7 @@ import Emoji from '@/components/Emoji.vue'
 import CommentList from '@/components/Comment.vue'
 import { ZoomIn, ZoomOut, ChatDotRound, DArrowLeft } from '@element-plus/icons-vue'
 import { addDailyViewApi } from '@/api/daily'
+import { requireLogin } from '@/utils/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -48,6 +49,7 @@ const fetchDailyDetail = () => {
 
 // 点赞
 const toggleLike = (item) => {
+  if (!requireLogin('登录后才能点赞哦~')) return
   item.isLiked = !item.isLiked
   item.like += item.isLiked ? 1 : -1
 }
@@ -179,12 +181,14 @@ const getDefaultComments = (articleId) => {
 }
 
 const likeComment = (commentId) => {
+  if (!requireLogin('登录后才能点赞哦~')) return
   const list = currentCommentList.value
   const comment = list.find(c => c.id === commentId)
   if (comment) comment.like++
   ElMessage.success('点赞成功！')
 }
 const likeReply = (commentId, replyId) => {
+  if (!requireLogin('登录后才能点赞哦~')) return
   const list = currentCommentList.value
   const comment = list.find(c => c.id === commentId)
   if (!comment) return
@@ -204,6 +208,7 @@ const currentCommentList = computed(() => {
 })
 
 const publishComment = (commentId, replyId, content) => {
+  if (!requireLogin('登录后才能发表评论哦~')) return
   if (commentId === undefined && replyId === undefined && content === undefined) {
     if (!commentForm.value.content.trim()) {
       ElMessage.warning('评论内容不能为空~')

@@ -47,6 +47,16 @@ export const useUserStore = defineStore('user', {
       localStorage.removeItem('userInfo');
     },
 
+    // 更新本地 token（静默刷新、登录过期清理时使用）
+    setToken(token) {
+      this.user_token = token || '';
+      if (token) {
+        localStorage.setItem('user_token', token);
+      } else {
+        localStorage.removeItem('user_token');
+      }
+    },
+
     // 刷新页面时，从本地恢复数据
     loadStorage() {
       try {

@@ -24,6 +24,12 @@ public interface ArticleService {
     PageResult pageQurey(ArticlePageQueryDTO articlePageQueryDTO);
 
     /**
+     * 分页查询用户端文章列表（只含已发布、已归档的文章）
+     * @param articlePageQueryDTO
+     */
+    PageResult pageQueryUser(ArticlePageQueryDTO articlePageQueryDTO);
+
+    /**
      * 分页查询逻辑删除的文章（回收站）
      * @param articlePageQueryDTO
      */

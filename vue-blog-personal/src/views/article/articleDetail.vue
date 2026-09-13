@@ -8,9 +8,15 @@ import Emoji from '@/components/Emoji.vue';
 import { getArticleDetailApi } from '@/api/article.js';
 import { getArticleCommentListApi, addArticleCommentApi, addCommentReplyApi } from '@/api/comment.js';
 import { likeApi, LIKE_TARGET_TYPE } from '@/api/like.js';
+import { requireLogin } from '@/utils/auth';
+import { useUserStore } from '@/store/userloginstatus';
 
 const router = useRouter();
 const route = useRoute();
+const userStore = useUserStore();
+
+// 是否已登录（游客可以正常浏览文章，只有互动操作才需要登录）
+const isLogin = computed(() => !!userStore.user_token);
 
 const article = ref({
   id: '',
@@ -44,6 +50,8 @@ const getArticle = async () => {
       nextArticle.value = result.data.nextArticle || {};
       articleLiked.value = result.data.liked === true;
       getCommentList(article.value.id);
+    } else {
+      ElMessage.error(result.msg || '文章不存在或暂未公开');
     }
   } catch (error) {
     ElMessage.error('加载文章详情失败，请稍后重试');
@@ -82,6 +90,7 @@ const handleLike = async (targetType, targetId, onSuccess) => {
 //点赞文章
 const likeArticle = () => {
   if (!article.value.id) return;
+  if (!requireLogin('登录后才能点赞哦~')) return;
   if (articleLiked.value) {
     ElMessage.warning('你已经点过赞了');
     return;
@@ -94,6 +103,7 @@ const likeArticle = () => {
 
 // 点赞主评论
 const likeComment = (commentId) => {
+  if (!requireLogin('登录后才能点赞哦~')) return;
   const comment = currentCommentList.value.find((c) => c.id === commentId);
   if (!comment) return;
   if (comment.liked) {
@@ -108,6 +118,7 @@ const likeComment = (commentId) => {
 
 // 点赞回复
 const likeReply = (commentId, replyId) => {
+  if (!requireLogin('登录后才能点赞哦~')) return;
   const comment = currentCommentList.value.find((c) => c.id === commentId);
   if (!comment) return;
   const reply = comment.replies.find((r) => r.id === replyId);
@@ -152,6 +163,7 @@ const publishing = ref(false);
 
 // 发表评论/回复评论
 const publishComment = async (commentId, replyId, content) => {
+  if (!requireLogin('登录后才能发表评论哦~')) return false;
   // 发布新评论
   if (commentId === undefined && replyId === undefined && content === undefined) {
     if (!commentForm.value.content.trim()) {
@@ -427,7 +439,7 @@ onUnmounted(() => {
             <div class="comment-textarea-container">
               <textarea
                 v-model="commentForm.content"
-                placeholder="请输入评论内容..."
+                :placeholder="isLogin ? '请输入评论内容...' : '登录后即可发表评论~'"
                 maxlength="500"
                 class="comment-textarea"
               ></textarea>

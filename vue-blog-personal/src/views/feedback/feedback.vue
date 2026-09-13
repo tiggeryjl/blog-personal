@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import CommentList from '@/components/Comment.vue'
 import Emoji from '@/components/Emoji.vue'
+import { requireLogin } from '@/utils/auth'
 
 // 发布留言
 const commentForm = ref({
@@ -45,6 +46,7 @@ const commentList = ref([
 ])
 // 统一处理回复（主评论回复 或 回复的回复）
 const publishComment = (commentId, replyId, content) => {
+  if (!requireLogin('登录后才能留言哦~')) return
   // 发布新评论
   if (commentId === undefined && replyId === undefined && content === undefined) {
     if (!commentForm.value.nickname || !commentForm.value.content.trim()) {
@@ -90,6 +92,7 @@ const publishComment = (commentId, replyId, content) => {
 }
 // 点赞评论
 const likeComment = (commentId) => {
+  if (!requireLogin('登录后才能点赞哦~')) return
   const storageKey = `liked_comment_${commentId}`
   if (localStorage.getItem(storageKey)) {
     ElMessage.warning('你已经点过赞了')
@@ -105,6 +108,7 @@ const likeComment = (commentId) => {
 
 // 点赞回复
 const likeReply = (commentId, replyId) => {
+  if (!requireLogin('登录后才能点赞哦~')) return
   const storageKey = `liked_reply_${commentId}_${replyId}`
   if (localStorage.getItem(storageKey)) {
     ElMessage.warning('你已经点过赞了')

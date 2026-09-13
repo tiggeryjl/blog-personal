@@ -16,7 +16,10 @@ export const updateApi = (user) => request.put('/user/user/update', user);
 export const editPwdApi = (user) => request.put('/user/user/editPassword', user);
 
 // 刷新token
-export const getRefreshTokenApi = () => request.post(`/user/user/refreshToken`);
+export const getRefreshTokenApi = (config) => request.post(`/user/user/refreshToken`, null, config);
+
+// 退出登录（通知后端清除 HttpOnly 的 refreshToken cookie）
+export const logoutApi = () => request.post('/user/user/logout');
 
 // 获取个人信息
 export const getPersonalInfoApi = () => request.get(`/user/user/personalInfo`);

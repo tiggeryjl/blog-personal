@@ -22,6 +22,8 @@ import { setTheme } from '@/utils/theme'; //主题色
 import { ElMessage } from 'element-plus';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useUserStore } from '@/store/userloginstatus';
+import { stopSessionRestore } from '@/router';
+import { logoutApi } from '@/api/auth';
 import ScrollToTop from '@/components/ScrollToTop.vue';
 import MusicPlayer from '@/components/MusicPlayer.vue';
 
@@ -65,7 +67,8 @@ const handleEscKey = (event) => {
 
 // 登录
 const goLogin = () => {
-  router.push('/login');
+  // 记录当前页面，登录成功后回到这里
+  router.push({ path: '/login', query: { redirect: route.fullPath } });
 };
 
 const goProfile = () => {
@@ -78,10 +81,20 @@ const goTo = (path) => {
 };
 
 // 退出登录
-const logout = () => {
+const logout = async () => {
+  // 先清本地登录态，保证请求不再带过期的 token
   userStore.logout();
-  // 跳转到登录页
-  router.push('/login');
+  // 本次会话内不再尝试用 cookie 静默恢复登录态（接口异常时兜底）
+  stopSessionRestore();
+  try {
+    // 关键：通知后端清除 HttpOnly 的 refreshToken cookie，否则刷新页面会被自动登录回来
+    await logoutApi();
+  } catch (e) {
+    console.warn('退出登录接口异常：', e);
+  }
+  ElMessage.success('已退出登录');
+  // 退出后回到首页继续浏览（游客也能看文章）
+  router.push('/index');
 };
 
 // 切换主题

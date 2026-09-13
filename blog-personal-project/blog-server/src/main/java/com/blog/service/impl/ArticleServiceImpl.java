@@ -21,6 +21,7 @@ import com.blog.pojo.entity.Article;
 import com.blog.pojo.entity.SysUser;
 import com.blog.pojo.vo.ArticleDetailVO;
 import com.blog.pojo.vo.ArticleCountVO;
+import com.blog.pojo.vo.ArticleFrontVO;
 import com.blog.pojo.vo.ArticleVo;
 import com.blog.pojo.vo.SimpleArticleVO;
 import com.blog.result.PageResult;
@@ -139,7 +140,7 @@ public class ArticleServiceImpl implements ArticleService {
 
         //查缓存
         String md5 = genQueryMd5(articlePageQueryDTO);
-        String cacheKey = RedisConstant.ARTICLE_LIST_KEY + ":" + articlePageQueryDTO.getPage() + ":" + articlePageQueryDTO.getPageSize() + ":" + md5;
+        String cacheKey = RedisConstant.ARTICLE_LIST_KEY + ":admin:" + articlePageQueryDTO.getPage() + ":" + articlePageQueryDTO.getPageSize() + ":" + md5;
         Object articleCache = redisService.get(cacheKey,PageResult.class);
         if (articleCache != null) {
             PageResult pageResult = (PageResult) articleCache;
@@ -150,6 +151,36 @@ public class ArticleServiceImpl implements ArticleService {
         PageHelper.startPage(articlePageQueryDTO.getPage(), articlePageQueryDTO.getPageSize());
         List<ArticleVo> articleList = articleMapper.pageQurey(articlePageQueryDTO);
         PageInfo<ArticleVo> pageInfo = new PageInfo<>(articleList);
+        PageResult pageResult = new PageResult(pageInfo.getTotal(), pageInfo.getList());
+
+        //存入缓存 10分钟过期
+        redisService.set(cacheKey, pageResult, 600);
+        fillRealtimeCounts(pageResult.getRows());
+        return pageResult;
+    }
+
+    /**
+     * 用户端分页查询文章列表
+     * 只查询已发布、已归档且未被逻辑删除的文章（状态条件固定在SQL里）
+     *
+     * @param articlePageQueryDTO
+     */
+    @Override
+    public PageResult pageQueryUser(ArticlePageQueryDTO articlePageQueryDTO) {
+
+        // 用户端单独使用一份缓存，避免与后台列表的缓存互相污染
+        String md5 = genQueryMd5(articlePageQueryDTO);
+        String cacheKey = RedisConstant.ARTICLE_LIST_KEY + ":user:" + articlePageQueryDTO.getPage() + ":" + articlePageQueryDTO.getPageSize() + ":" + md5;
+        Object articleCache = redisService.get(cacheKey, PageResult.class);
+        if (articleCache != null) {
+            PageResult pageResult = (PageResult) articleCache;
+            fillRealtimeCounts(pageResult.getRows());
+            return pageResult;
+        }
+
+        PageHelper.startPage(articlePageQueryDTO.getPage(), articlePageQueryDTO.getPageSize());
+        List<ArticleFrontVO> articleList = articleMapper.pageQueryUser(articlePageQueryDTO);
+        PageInfo<ArticleFrontVO> pageInfo = new PageInfo<>(articleList);
         PageResult pageResult = new PageResult(pageInfo.getTotal(), pageInfo.getList());
 
         //存入缓存 10分钟过期
@@ -199,10 +230,13 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     /**
-     * 从已类型化ArticleVo或Redis反序列化的映射行中解析文章ID
+     * 从已类型化ArticleVo/ArticleFrontVO或Redis反序列化的映射行中解析文章ID
      */
     private Long resolveArticleId(Object row) {
         if (row instanceof ArticleVo vo) {
+            return vo.getId();
+        }
+        if (row instanceof ArticleFrontVO vo) {
             return vo.getId();
         }
         if (row instanceof Map<?, ?> map) {
@@ -220,6 +254,11 @@ public class ArticleServiceImpl implements ArticleService {
      */
     private void applyCounts(Object row, Long likeNum, Long commentNum) {
         if (row instanceof ArticleVo vo) {
+            vo.setLikeNum(likeNum);
+            vo.setCommentNum(commentNum);
+            return;
+        }
+        if (row instanceof ArticleFrontVO vo) {
             vo.setLikeNum(likeNum);
             vo.setCommentNum(commentNum);
             return;

@@ -1,12 +1,13 @@
 <script setup>
 import { ref } from 'vue'
 import LoginPage from '@/components/login/LoginPage.vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/userloginstatus'
 import { ElMessage } from 'element-plus';
 import { loginApi, registerApi } from '@/api/auth'
 
 const router = useRouter()
+const route = useRoute()
 const loginRef = ref();
 const userStore = useUserStore()
 
@@ -26,8 +27,9 @@ const handleLogin = async (payload) => {
     if (result.code == 200) {
       ElMessage.success("登录成功!");
       userStore.loginSuccess(result.data)
-      router.push('/index')
-      // router.go(-1)
+      // 从受保护页面跳过来的，登录后回到原页面，否则回首页
+      const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/index'
+      router.replace(redirect)
     } else {
       loginRef.value?.setError(result.msg)
     }

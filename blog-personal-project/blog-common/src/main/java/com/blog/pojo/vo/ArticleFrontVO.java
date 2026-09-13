@@ -1,21 +1,23 @@
 package com.blog.pojo.vo;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 用户端文章列表VO
+ * 只保留用户端列表真正展示的字段，正文、发布时间、定时发布时间、逻辑删除标识等不下发
+ */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ArticleVo implements Serializable {
+public class ArticleFrontVO implements Serializable {
 
     private Long id;
 
@@ -25,25 +27,19 @@ public class ArticleVo implements Serializable {
     //摘要
     private String summary;
 
-    //摘要是否ai生成
-    private Integer aiSuggest;
-
-    //内容
-    private String content;
-
-    //分类Id
-    private Long categoryId;
-
     //封面
     private String cover;
 
-    //文章状态 0草稿 1已发布 2已下架 3已归档 4定时发布 5私密
+    //分类名称
+    private String category;
+
+    //文章状态 1已发布 3已归档
     private Integer status;
 
-    //置顶
+    //是否置顶
     private Integer isTop;
 
-    //热门
+    //是否热门
     private Integer isHot;
 
     //阅读量
@@ -55,7 +51,7 @@ public class ArticleVo implements Serializable {
     //评论数
     private Long commentNum;
 
-    //文字数
+    //字数
     private Long wordsNum;
 
     //创建时间
@@ -67,25 +63,14 @@ public class ArticleVo implements Serializable {
     //发布时间
     private LocalDateTime publishTime;
 
-    //定时时间
-    private LocalDateTime timedPublishTime;
-
-    //用户id
-    private Long userId;
-
-    // 用户昵称
+    //作者昵称
     private String userNickname;
 
-    // 用户头像
+    //作者头像
     private String userAvatar;
 
     // 排序
     private Integer sort;
-
-    // 逻辑删除标识
-    private Integer deleteFlag;
-    //冗余分类
-    private String category;
 
     //冗余标签
     private List<Long> tags;

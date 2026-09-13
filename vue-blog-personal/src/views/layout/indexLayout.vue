@@ -416,7 +416,7 @@ onUnmounted(() => {
             <span class="site-stat-value">{{ siteStats.todayView }}</span>
           </div>
           <div class="site-stat-item">
-            <span class="site-stat-label">总流量</span>
+            <span class="site-stat-label">总浏览量</span>
             <span class="site-stat-value">{{ siteStats.totalTraffic }}</span>
           </div>
           <div class="site-stat-item">
