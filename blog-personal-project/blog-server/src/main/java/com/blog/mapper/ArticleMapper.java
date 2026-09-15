@@ -2,6 +2,7 @@ package com.blog.mapper;
 
 import com.blog.pojo.dto.ArticlePageQueryDTO;
 import com.blog.pojo.entity.Article;
+import com.blog.pojo.entity.ArticleViewRecord;
 import com.blog.pojo.vo.ArticleFrontVO;
 import com.blog.pojo.vo.ArticleVo;
 import org.apache.ibatis.annotations.Mapper;
@@ -132,4 +133,20 @@ public interface ArticleMapper {
      * @return 受影响行数
      */
     int changeLikeNum(@Param("id") Long id, @Param("delta") int delta);
+
+    /**
+     * 写入当日文章浏览记录，相同访客当天重复浏览不重复记录
+     *
+     * @param record 浏览记录
+     * @return 新增记录数
+     */
+    int insertViewRecord(ArticleViewRecord record);
+
+    /**
+     * 文章浏览量加一
+     *
+     * @param id 文章ID
+     * @return 受影响行数
+     */
+    int incrementViewNum(@Param("id") Long id);
 }

@@ -2,11 +2,14 @@
 import { initTheme } from './utils/theme'
 import { onMounted } from 'vue'
 import { useUserStore } from '@/store/userloginstatus'
+import { useUserNoticeWebSocket } from '@/utils/userNoticeWebSocket'
 
 initTheme()
 
+const userStore = useUserStore()
+useUserNoticeWebSocket()
+
 onMounted(() => {
-  const userStore = useUserStore()
   userStore.loadStorage() // 一进项目就恢复登录状态
 })
 </script>

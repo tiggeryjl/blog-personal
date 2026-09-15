@@ -2,6 +2,7 @@ package com.blog.mapper;
 
 import com.blog.pojo.vo.HomeStatisticsVO;
 import com.blog.pojo.vo.HomeTrendItemVO;
+import com.blog.pojo.vo.SiteStatisticsVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -20,6 +21,13 @@ public interface HomeMapper {
      * @return
      */
     HomeStatisticsVO getStatistics();
+
+    /**
+     * 查询用户端站点统计数据
+     *
+     * @return 站点统计数据
+     */
+    SiteStatisticsVO getSiteStatistics();
 
     /**
      * 统计文章增量趋势

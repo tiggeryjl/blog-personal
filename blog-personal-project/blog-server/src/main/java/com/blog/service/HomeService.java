@@ -2,6 +2,7 @@ package com.blog.service;
 
 import com.blog.pojo.vo.HomeStatisticsVO;
 import com.blog.pojo.vo.HomeTrendVO;
+import com.blog.pojo.vo.SiteStatisticsVO;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.List;
@@ -17,6 +18,13 @@ public interface HomeService {
      * @return
      */
     HomeStatisticsVO getStatistics();
+
+    /**
+     * 获取用户端站点实时统计
+     *
+     * @return 站点实时统计
+     */
+    SiteStatisticsVO getSiteStatistics();
 
     /**
      * 获取首页趋势数据

@@ -1,9 +1,3 @@
--- MySQL dump 10.13  Distrib 8.0.34, for Win64 (x86_64)
---
--- Host: 127.0.0.1    Database: blog
--- ------------------------------------------------------
--- Server version	8.0.34
-
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT = @@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS = @@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION = @@COLLATION_CONNECTION */;
@@ -198,6 +192,45 @@ CREATE TABLE `article_view_record` (
     UNIQUE KEY `uk_article_day_view` (`article_id`, `user_id`, `ip_address`, `view_date`),
     KEY `idx_article_time` (`article_id`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='文章每日浏览记录表';
+
+DROP TABLE IF EXISTS `rss_subscriptions`;
+CREATE TABLE `rss_subscriptions` (
+    `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `visitor_id` bigint unsigned NOT NULL COMMENT '访客ID',
+    `nickname` varchar(15) NOT NULL COMMENT '昵称',
+    `email` varchar(50) NOT NULL COMMENT '邮箱',
+    `is_active` tinyint NOT NULL DEFAULT 1 COMMENT '是否激活，0-否，1-是',
+    `subscribe_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '订阅时间',
+    `un_subscribe_time` datetime DEFAULT NULL COMMENT '取消订阅时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_email` (`email`),
+    KEY `idx_visitor_id` (`visitor_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Rss订阅记录表';
+
+DROP TABLE IF EXISTS `system_config`;
+CREATE TABLE `system_config` (
+    `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `config_key` varchar(50) NOT NULL COMMENT '配置键',
+    `config_value` text DEFAULT NULL COMMENT '配置值',
+    `config_type` varchar(20) DEFAULT NULL COMMENT '配置类型,string,number,boolean,json,date',
+    `description` varchar(255) DEFAULT NULL COMMENT '配置描述',
+    `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_config_key` (`config_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统配置表';
+
+-- 系统配置项,需要自行填入对应值
+-- 网站建立时间
+INSERT IGNORE INTO `system_config` (`config_key`, `config_value`, `config_type`, `description`,`create_time`,`update_time`)
+VALUES ('site.launch_time', DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s'), 'date', '网站正式运行起始时间',now(),now());
+-- icp备案信息
+insert into system_config(config_key, config_value, config_type, description, create_time, update_time)
+values ('icp-beian','xxx','string','icp备案',now(),now());
+-- 公安备案信息
+insert into system_config(config_key, config_value, config_type, description, create_time, update_time)
+values ('gongan-beian','xxx','string','公安备案',now(),now());
+
 
 /*!40103 SET TIME_ZONE = @OLD_TIME_ZONE */;
 

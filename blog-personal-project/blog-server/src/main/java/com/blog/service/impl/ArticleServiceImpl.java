@@ -2,6 +2,7 @@ package com.blog.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
+import com.blog.WebSocket.userNoticeWebSocket;
 import com.blog.constant.ArticleStatusConstant;
 import com.blog.constant.DelStatusConstant;
 import com.blog.constant.LikeConstant;
@@ -18,6 +19,7 @@ import com.blog.pojo.dto.ArticleDTO;
 import com.blog.pojo.dto.ArticlePageQueryDTO;
 import com.blog.pojo.dto.ArticleTagDTO;
 import com.blog.pojo.entity.Article;
+import com.blog.pojo.entity.ArticleViewRecord;
 import com.blog.pojo.entity.SysUser;
 import com.blog.pojo.vo.ArticleDetailVO;
 import com.blog.pojo.vo.ArticleCountVO;
@@ -29,6 +31,8 @@ import com.blog.service.AiService;
 import com.blog.service.ArticleService;
 import com.blog.service.RedisService;
 import com.blog.utils.ArticleUtil;
+import com.blog.utils.DeviceInfoUtil;
+import com.blog.utils.IpUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import org.springframework.beans.BeanUtils;
@@ -37,6 +41,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -69,6 +74,9 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Autowired
     private LikeMapper likeMapper;
+
+    @Autowired
+    private userNoticeWebSocket userNoticeWebSocket;
 
     /**
      * 新增文章
@@ -320,6 +328,34 @@ public class ArticleServiceImpl implements ArticleService {
             articleDetailVO.setNextArticle(nextArticleVO);
         }
         return articleDetailVO;
+    }
+
+    /**
+     * 记录公开文章浏览，同一访客当天重复访问不重复计数
+     *
+     * @param id      文章ID
+     * @param request 当前请求
+     * @return 是否产生新的有效浏览
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean recordArticleView(Long id, HttpServletRequest request) {
+        ArticleViewRecord record = ArticleViewRecord.builder()
+                .articleId(id)
+                .userId(BaseContext.getCurrentId())
+                .ipAddress(IpUtil.getClientIp(request))
+                .browser(DeviceInfoUtil.getBrowserInfo(request))
+                .os(DeviceInfoUtil.getOsInfo(request))
+                .deviceType(DeviceInfoUtil.getDeviceType(request))
+                .userAgent(request.getHeader("User-Agent"))
+                .build();
+        int inserted = articleMapper.insertViewRecord(record);
+        if (inserted == 0) {
+            return false;
+        }
+        articleMapper.incrementViewNum(id);
+        userNoticeWebSocket.broadcastSiteStatistics();
+        return true;
     }
 
     /**

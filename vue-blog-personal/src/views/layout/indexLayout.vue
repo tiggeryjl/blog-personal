@@ -1,11 +1,12 @@
 <script setup>
-import { useRouter, useRoute } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import WelcomeBanner from '@/components/WelcomeBanner.vue';
 import { ElMessage } from 'element-plus';
 import { getPersonalInfoApi } from '@/api/auth.js';
 import { getCategoryListApi } from '@/api/category.js';
 import { getTagListApi } from '@/api/tag.js';
+import { useSiteStatisticsStore } from '@/store/siteStatistics';
 
 const route = useRoute();
 
@@ -58,14 +59,17 @@ const getTagList = async () => {
   }
 };
 
-// 站点信息统计（当前为前端展示占位，后续接入后端接口后直接赋值）
-const siteStats = ref({
-  onlineVisitor: 0,
-  todayView: 0,
-  totalTraffic: 0,
-  totalVisitor: 0,
+// 站点信息由全局WebSocket实时更新
+const siteStats = useSiteStatisticsStore();
+const runningTimeText = computed(() => {
+  if (!siteStats.loaded) return '--';
+  const days = Math.floor(siteStats.runningSeconds / 86400);
+  const hours = Math.floor((siteStats.runningSeconds % 86400) / 3600);
+  const minutes = Math.floor((siteStats.runningSeconds % 3600) / 60);
+  const seconds = siteStats.runningSeconds % 60;
+  return `${days}天 ${hours}时 ${minutes}分 ${seconds}秒`;
 });
-const runningTimeText = ref('--');
+let runningTimer = null;
 
 // 默认展示分类排列，点击右上角按钮切换成标签排列
 const viewMode = ref('category');
@@ -251,10 +255,12 @@ onMounted(async () => {
   if (document.fonts?.ready) {
     document.fonts.ready.then(() => rescanTagOverflow());
   }
+  runningTimer = setInterval(() => siteStats.tickRunningTime(), 1000);
 });
 
 onUnmounted(() => {
   window.removeEventListener('resize', rescanTagOverflow);
+  if (runningTimer) clearInterval(runningTimer);
 });
 </script>
 
@@ -275,7 +281,7 @@ onUnmounted(() => {
         <div class="stats">
           <div class="stats-item">
             <span>文章</span>
-            <span>{{ 0 }}</span>
+            <span>{{ siteStats.articleCount }}</span>
           </div>
           <div class="stats-item">
             <span>分类</span>
@@ -409,23 +415,23 @@ onUnmounted(() => {
         <div class="site-stat-grid">
           <div class="site-stat-item">
             <span class="site-stat-label">在线访客</span>
-            <span class="site-stat-value">{{ siteStats.onlineVisitor }}</span>
+            <span class="site-stat-value">{{ siteStats.onlineVisitor ?? 0 }}</span>
           </div>
           <div class="site-stat-item">
             <span class="site-stat-label">今日浏览</span>
-            <span class="site-stat-value">{{ siteStats.todayView }}</span>
+            <span class="site-stat-value">{{ siteStats.todayView ?? 0 }}</span>
           </div>
           <div class="site-stat-item">
             <span class="site-stat-label">总浏览量</span>
-            <span class="site-stat-value">{{ siteStats.totalTraffic }}</span>
+            <span class="site-stat-value">{{ siteStats.totalView ?? 0 }}</span>
           </div>
           <div class="site-stat-item">
             <span class="site-stat-label">总访问量</span>
-            <span class="site-stat-value">{{ siteStats.totalVisitor }}</span>
+            <span class="site-stat-value">{{ siteStats.totalVisitor ?? 0 }}</span>
           </div>
           <div class="site-stat-uptime">
             <span class="site-stat-label">运行时长</span>
-            <span class="site-stat-uptime-value">{{ runningTimeText }}</span>
+            <span class="site-stat-uptime-value">{{ runningTimeText ?? 0 }}</span>
           </div>
         </div>
       </div>
@@ -890,6 +896,13 @@ onUnmounted(() => {
   padding: 8px 10px;
   border-radius: 8px;
   background: var(--card-secound-bg);
+}
+
+.site-stat-article {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .site-stat-label {

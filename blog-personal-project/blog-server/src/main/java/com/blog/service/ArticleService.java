@@ -5,6 +5,7 @@ import com.blog.pojo.dto.ArticlePageQueryDTO;
 import com.blog.pojo.vo.ArticleDetailVO;
 import com.blog.pojo.vo.ArticleVo;
 import com.blog.result.PageResult;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,6 +42,15 @@ public interface ArticleService {
      * @return
      */
     ArticleDetailVO getArticleById(Long id);
+
+    /**
+     * 记录公开文章浏览
+     *
+     * @param id      文章ID
+     * @param request 当前请求
+     * @return 是否产生新的有效浏览
+     */
+    boolean recordArticleView(Long id, HttpServletRequest request);
 
     /**
      * 修改文章

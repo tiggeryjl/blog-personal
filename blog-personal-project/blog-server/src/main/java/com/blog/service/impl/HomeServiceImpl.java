@@ -1,11 +1,15 @@
 package com.blog.service.impl;
 
+import com.blog.WebSocket.userNoticeWebSocket;
+import com.blog.constant.SystemConstant;
 import com.blog.mapper.HomeMapper;
 import com.blog.exception.CustomException;
 import com.blog.pojo.vo.HomeStatisticsVO;
 import com.blog.pojo.vo.HomeTrendItemVO;
 import com.blog.pojo.vo.HomeTrendVO;
+import com.blog.pojo.vo.SiteStatisticsVO;
 import com.blog.service.HomeService;
+import com.blog.service.SystemConfigService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.xssf.usermodel.XSSFCell;
@@ -19,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -38,6 +43,9 @@ public class HomeServiceImpl implements HomeService {
     @Autowired
     private HomeMapper homeMapper;
 
+    @Autowired
+    private SystemConfigService systemConfigService;
+
     /**
      * 获取首页网站统计数据
      *
@@ -46,6 +54,31 @@ public class HomeServiceImpl implements HomeService {
     @Override
     public HomeStatisticsVO getStatistics() {
         return homeMapper.getStatistics();
+    }
+
+    /**
+     * 获取用户端站点实时统计
+     *
+     * @return 站点实时统计
+     */
+    @Override
+    public SiteStatisticsVO getSiteStatistics() {
+        SiteStatisticsVO statistics = homeMapper.getSiteStatistics();
+        statistics.setOnlineVisitor(userNoticeWebSocket.getOnlineCount());
+        statistics.setRunningSeconds(getSiteRunningSeconds());
+        return statistics;
+    }
+
+    /**
+     * 根据系统配置中的网站正式运行时间计算累计运行秒数
+     */
+    private long getSiteRunningSeconds() {
+        LocalDateTime launchTime = systemConfigService.getDateTimeValue(
+                SystemConstant.SITE_LAUNCH_TIME_CONFIG_KEY);
+        if (launchTime == null) {
+            return 0L;
+        }
+        return Math.max(Duration.between(launchTime, LocalDateTime.now()).getSeconds(), 0L);
     }
 
     /**

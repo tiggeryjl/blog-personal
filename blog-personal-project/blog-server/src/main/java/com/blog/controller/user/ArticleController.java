@@ -10,6 +10,7 @@ import com.blog.pojo.vo.ArticleVo;
 import com.blog.result.PageResult;
 import com.blog.result.Result;
 import com.blog.service.ArticleService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -47,15 +48,20 @@ public class ArticleController {
      * @return
      */
     @GetMapping("/getArticleDetail/{id}")
-    public Result<ArticleDetailVO> getArticleDetail(@PathVariable("id") Long id){
+    public Result<ArticleDetailVO> getArticleDetail(@PathVariable("id") Long id, HttpServletRequest request){
         log.info("文章id:{}",id);
         ArticleDetailVO articleDetailVO = articleService.getArticleById(id);
         if (articleDetailVO == null || articleDetailVO.getArticleVo() == null) {
             return Result.error("文章不存在");
         }
-        // 未登录游客只能查看已发布且未被删除的文章，登录用户保持原有行为（可预览自己的文章）
-        if (BaseContext.getCurrentId() == null && !isPublicArticle(articleDetailVO.getArticleVo())) {
-            return Result.error("文章不存在或暂未公开");
+
+        boolean publicArticle = isPublicArticle(articleDetailVO.getArticleVo());
+//        if (BaseContext.getCurrentId() == null && !publicArticle) {
+//            return Result.error("文章不存在或暂未公开");
+//        }
+        if (publicArticle && articleService.recordArticleView(id, request)) {
+            Long viewNum = articleDetailVO.getArticleVo().getViewNum();
+            articleDetailVO.getArticleVo().setViewNum((viewNum == null ? 0 : viewNum) + 1);
         }
         return Result.success(articleDetailVO);
     }
