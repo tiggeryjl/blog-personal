@@ -403,7 +403,15 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
+    </aside>
 
+    <!-- 主内容区 -->
+    <main>
+      <router-view />
+    </main>
+
+    <!-- 右侧侧边栏 -->
+    <aside class="sidebar right-sidebar" aria-label="站点信息">
       <div class="category-card">
         <h4>
           <el-icon>
@@ -436,11 +444,6 @@ onUnmounted(() => {
         </div>
       </div>
     </aside>
-
-    <!-- 右侧主内容区 -->
-    <main>
-      <router-view />
-    </main>
   </div>
 
   <el-dialog
@@ -469,7 +472,7 @@ onUnmounted(() => {
   /* 减去导航栏高度 */
 }
 
-/* 左侧侧边栏 */
+/* 两侧栏共享宽度、吸顶和独立滚动行为 */
 .sidebar {
   width: 300px;
   /* 固定宽度 */
@@ -477,9 +480,37 @@ onUnmounted(() => {
   align-self: flex-start;
   position: sticky;
   top: 90px;
+  max-height: calc(100vh - 110px);
+  max-height: calc(100dvh - 110px);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.sidebar:hover {
+  scrollbar-color: var(--text-prompt-color) transparent;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  border-radius: 6px;
+  background: transparent;
+}
+
+.sidebar:hover::-webkit-scrollbar-thumb {
+  background: var(--text-prompt-color);
 }
 
 /* 个人信息卡片 */
@@ -944,12 +975,79 @@ main {
   overflow-x: hidden;
 }
 
+/* 三栏在平板和小屏笔记本上保持可读宽度 */
+@media (min-width: 931px) and (max-width: 1180px) {
+  .blog-layout {
+    gap: 12px !important;
+    padding: 15px !important;
+  }
+
+  .sidebar {
+    width: clamp(220px, 22vw, 260px) !important;
+    max-width: 260px !important;
+  }
+
+  .profile-card,
+  .category-card {
+    padding: 14px;
+  }
+
+  .search-card {
+    padding: 12px;
+  }
+
+  .profile-card .stats {
+    gap: 18px;
+  }
+
+  .category-nav-head,
+  .calendar-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .calendar-header {
+    margin-bottom: 12px;
+  }
+
+  .calendar-nav {
+    width: 100%;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 12px;
+  }
+
+  .calendar-days {
+    gap: 2px;
+  }
+
+  .calendar-day {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    line-height: 24px;
+  }
+
+  .right-sidebar .site-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .right-sidebar .site-stat-uptime {
+    grid-column: 1;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 /* 手机端侧栏不做吸顶，避免遮挡右侧内容 */
 @media (max-width: 930px) {
   .sidebar {
     position: static !important;
     max-height: none !important;
     overflow: visible !important;
+    overscroll-behavior-y: auto;
+    scrollbar-gutter: auto;
   }
 }
 </style>
