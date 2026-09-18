@@ -1,10 +1,9 @@
 <script setup>
-import { ref, computed } from 'vue'
-import { DArrowLeft } from '@element-plus/icons-vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, computed } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 
-const router = useRouter()
-const route = useRoute()
+const router = useRouter();
+const route = useRoute();
 
 // 菜单数据
 const menuList = ref([
@@ -13,14 +12,14 @@ const menuList = ref([
   // { key: '/account', name: '账号安全' },
   // { key: 'notify', name: '消息通知' },
   // { key: 'about', name: '关于本站' }
-])
+]);
 
 // 当前选中
-const activeKey = computed(() => route.path)
+const activeKey = computed(() => route.path);
 
 const goPage = (path) => {
-  router.push(path)
-}
+  router.push(path);
+};
 </script>
 
 <template>
@@ -31,8 +30,13 @@ const goPage = (path) => {
       <div class="settings-menu">
         <h2>账号与安全</h2>
         <div class="divider"></div>
-        <div v-for="item in menuList" :key="item.key" class="menu-item" :class="{ active: activeKey === item.key }"
-          @click="goPage(item.key)">
+        <div
+          v-for="item in menuList"
+          :key="item.key"
+          class="menu-item"
+          :class="{ active: activeKey === item.key }"
+          @click="goPage(item.key)"
+        >
           {{ item.name }}
         </div>
       </div>

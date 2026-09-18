@@ -1,5 +1,6 @@
 package com.blog.service;
 
+import com.blog.pojo.vo.ArticleFrontVO;
 import com.blog.pojo.vo.HomeStatisticsVO;
 import com.blog.pojo.vo.HomeTrendVO;
 import com.blog.pojo.vo.SiteStatisticsVO;
@@ -8,9 +9,16 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 
 /**
- * 首页统计 Service
+ * 首页 Service
  */
 public interface HomeService {
+
+    /**
+     * 获取用户端首页热门文章
+     *
+     * @return 最多20条热门文章
+     */
+    List<ArticleFrontVO> getPopularArticles();
 
     /**
      * 获取首页网站统计数据

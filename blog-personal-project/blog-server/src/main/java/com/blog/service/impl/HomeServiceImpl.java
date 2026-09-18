@@ -1,9 +1,11 @@
 package com.blog.service.impl;
 
 import com.blog.WebSocket.userNoticeWebSocket;
+import com.blog.constant.LayoutConstant;
 import com.blog.constant.SystemConstant;
 import com.blog.mapper.HomeMapper;
 import com.blog.exception.CustomException;
+import com.blog.pojo.vo.ArticleFrontVO;
 import com.blog.pojo.vo.HomeStatisticsVO;
 import com.blog.pojo.vo.HomeTrendItemVO;
 import com.blog.pojo.vo.HomeTrendVO;
@@ -34,7 +36,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 首页统计 Service 实现
+ * 首页 Service 实现
  */
 @Slf4j
 @Service
@@ -45,6 +47,16 @@ public class HomeServiceImpl implements HomeService {
 
     @Autowired
     private SystemConfigService systemConfigService;
+
+    /**
+     * 获取用户端首页热门文章
+     *
+     * @return 最多20条热门文章
+     */
+    @Override
+    public List<ArticleFrontVO> getPopularArticles() {
+        return homeMapper.selectPopularArticles(LayoutConstant.HOME_POPULAR_ARTICLE_LIMIT);
+    }
 
     /**
      * 获取首页网站统计数据

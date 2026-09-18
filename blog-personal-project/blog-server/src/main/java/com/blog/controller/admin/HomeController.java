@@ -20,7 +20,7 @@ import java.util.List;
  * 首页统计接口
  */
 @Slf4j
-@RestController
+@RestController("adminHomeController")
 @RequestMapping("/admin/home")
 public class HomeController {
 

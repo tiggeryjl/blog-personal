@@ -1,7 +1,8 @@
 <script setup>
-import { ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { DArrowRight, ChatLineSquare, Document, View, Reading } from '@element-plus/icons-vue';
+import { getPopularArticleListApi } from '@/api/home.js';
 
 const router = useRouter();
 
@@ -16,84 +17,62 @@ const notice = ref(`【公告】
 ▫️ 优化页面样式
 ▫️ 增加设置页面`);
 
-const articleList = ref([
-  {
-    id: 1,
-    title: '新起点 新动力！',
-    desc: '这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...',
-    category: '心得',
-    date: '2026-02-21 14:03',
-    cover: 'https://picsum.photos/400/250',
-    view: 636,
-    like: 7,
-    comment: 12,
-    words: 1077,
-  },
-  {
-    id: 2,
-    title: '新起点 新动力！',
-    desc: '这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...',
-    category: '心得',
-    date: '2026-02-21 14:03',
-    cover: 'https://picsum.photos/400/250',
-    view: 636,
-    like: 7,
-    comment: 12,
-    words: 1077,
-  },
-  {
-    id: 3,
-    title: '新起点 新动力！',
-    desc: '这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...',
-    category: '心得',
-    date: '2026-02-21 14:03',
-    cover: 'https://picsum.photos/400/250',
-    view: 636,
-    like: 7,
-    comment: 12,
-    words: 1077,
-  },
-  {
-    id: 4,
-    title: '新起点 新动力！',
-    desc: '这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...',
-    category: '心得',
-    date: '2026-02-21 14:03',
-    cover: 'https://picsum.photos/400/250',
-    view: 636,
-    like: 7,
-    comment: 12,
-    words: 1077,
-  },
-  {
-    id: 5,
-    title: '新起点 新动力！',
-    desc: '这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...',
-    category: '心得',
-    date: '2026-02-21 14:03',
-    cover: 'https://picsum.photos/400/250',
-    view: 636,
-    like: 7,
-    comment: 12,
-    words: 1077,
-  },
-  {
-    id: 6,
-    title: '新起点 新动力！',
-    desc: '这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...这是文章摘要内容，用来预览文章的核心观点...',
-    category: '心得',
-    date: '2026-02-21 14:03',
-    cover: 'https://picsum.photos/400/250',
-    view: 636,
-    like: 7,
-    comment: 12,
-    words: 1077,
-  },
-]);
+const articleList = ref([]);
+const articleLoading = ref(true);
+const layoutMode = ref(localStorage.getItem('blogLayout') || 'list');
+
+const updateLayout = () => {
+  layoutMode.value = localStorage.getItem('blogLayout') || 'list';
+};
+
+const hotTip = ref({
+  show: false,
+  x: 0,
+  y: 0,
+  text: '',
+});
+
+const showHotTip = (event, text) => {
+  const rect = event.currentTarget.getBoundingClientRect();
+  hotTip.value = {
+    show: true,
+    x: rect.left + rect.width / 2,
+    y: rect.top - 8,
+    text,
+  };
+};
+
+const hideHotTip = () => {
+  hotTip.value.show = false;
+};
+
+const getPopularArticleList = async () => {
+  articleLoading.value = true;
+  try {
+    const result = await getPopularArticleListApi();
+    if (result.code === 200 && Array.isArray(result.data)) {
+      articleList.value = result.data.slice(0, 20) || [];
+    }
+  } catch (error) {
+    articleList.value = [];
+    console.error('获取首页热门文章异常', error);
+  } finally {
+    articleLoading.value = false;
+  }
+};
 
 const goDetail = (id) => {
   router.push('/article/' + id);
 };
+
+onMounted(() => {
+  window.addEventListener('layoutChange', updateLayout);
+  getPopularArticleList();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('layoutChange', updateLayout);
+});
 </script>
 
 <template>
@@ -117,10 +96,7 @@ const goDetail = (id) => {
         <div class="line-bottom-left"></div>
         <div class="line-bottom-right"></div>
         <span
-          ><el-icon>
-            <Document /> </el-icon
-          >文章列表<el-icon>
-            <DArrowRight /> </el-icon
+          ><el-icon> <Document /> </el-icon>文章列表<el-icon> <DArrowRight /> </el-icon
         ></span>
       </div>
 
@@ -135,19 +111,24 @@ const goDetail = (id) => {
         <div class="line-bottom-left"></div>
         <div class="line-bottom-right"></div>
         <span
-          ><el-icon>
-            <Reading /> </el-icon
-          >日常分享<el-icon>
-            <DArrowRight /> </el-icon
+          ><el-icon> <Reading /> </el-icon>日常分享<el-icon> <DArrowRight /> </el-icon
         ></span>
       </div>
     </div>
 
-    <div>
-      <h2>热门文章</h2>
+    <div class="popular-articles">
+      <div class="header-row">
+        <h2>热门文章</h2>
+      </div>
       <div class="divider"></div>
-      <div class="article-list">
+      <div v-loading="articleLoading" class="article-list" :class="[layoutMode, { loading: articleLoading }]">
         <div class="article-item" v-for="item in articleList" :key="item.id" @click="goDetail(item.id)">
+          <span v-if="item.isTop" class="top-icon">
+            <span class="tooltip-inner">
+              <font-awesome-icon icon="fa-solid fa-thumbtack" size="lg" :style="{ color: '#0090f0' }" />
+              <span class="tooltip-text">置顶</span>
+            </span>
+          </span>
           <!-- 左侧图片 -->
           <div class="article-img">
             <img :src="item.cover" alt="文章封面" />
@@ -155,41 +136,64 @@ const goDetail = (id) => {
           <!-- 右侧内容 -->
           <div class="article-content">
             <div class="article-meta">
+              <img class="avatar" :src="item.userAvatar" alt="头像" />
+              <span class="nickname">{{ item.userNickname }}</span>
+              <span class="date">{{ item.createTime }}</span>
               <span class="category">{{ item.category }}</span>
-              <span class="date">{{ item.date }}</span>
             </div>
-            <h3 class="article-title">{{ item.title }}</h3>
-            <p class="article-desc">{{ item.desc }}</p>
+            <h3 class="article-title">
+              {{ item.title }}
+              <span
+                v-if="item.isHot"
+                class="hot-icon"
+                @mouseenter="showHotTip($event, '热门文章')"
+                @mouseleave="hideHotTip"
+              >
+                <font-awesome-icon icon="fa-solid fa-fire" size="xs" :style="{ color: '#ff5500' }" />
+              </span>
+            </h3>
+            <p class="article-desc">{{ item.summary }}</p>
             <div class="article-stats">
               <span
                 ><el-icon>
                   <View />
                 </el-icon>
-                {{ item.view }}</span
+                {{ item.viewNum }}</span
               >
-              <span><font-awesome-icon icon="fa-solid fa-thumbs-up" /> {{ item.like }}</span>
+              <span><font-awesome-icon icon="fa-solid fa-thumbs-up" /> {{ item.likeNum }}</span>
               <span
                 ><el-icon>
                   <ChatLineSquare />
                 </el-icon>
-                {{ item.comment }}</span
+                {{ item.commentNum }}</span
               >
               <span
                 ><el-icon>
                   <Document />
                 </el-icon>
-                {{ item.words }}字</span
+                {{ item.wordsNum }}字</span
               >
             </div>
           </div>
         </div>
       </div>
-      <div v-if="articleList.length === 0" class="empty-data">暂无文章数据</div>
+      <div v-if="!articleLoading && articleList.length === 0" class="empty-data">暂无热门文章</div>
+      <div v-show="hotTip.show" class="global-tooltip" :style="{ left: hotTip.x + 'px', top: hotTip.y + 'px' }">
+        {{ hotTip.text }}
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.article-stats :deep(.el-icon) {
+  font-size: 16px !important;
+  margin-right: 4px;
+  vertical-align: middle;
+  position: relative;
+  top: 0.1px;
+}
+
 .common-index {
   flex: 1;
   padding: 12px 12px;
@@ -397,8 +401,15 @@ const goDetail = (id) => {
   }
 }
 
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
 .header-row h2 {
-  margin: 0 0 8px;
+  margin: 2px 0;
   color: var(--text-color);
 }
 
@@ -414,6 +425,10 @@ const goDetail = (id) => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.article-list.loading {
+  min-height: 120px;
 }
 
 /* 双列网格 */
@@ -496,9 +511,9 @@ const goDetail = (id) => {
   padding: 0px;
   background-color: var(--card-bg);
   border-radius: 8px;
-  overflow: hidden;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   cursor: pointer;
+  position: relative;
   /* 鼠标移上去变小手 */
 }
 
@@ -508,10 +523,65 @@ const goDetail = (id) => {
   box-shadow: 0 8px 24px rgba(229, 199, 147, 0.426);
 }
 
+.top-icon {
+  margin-top: 3px;
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 10;
+  font-size: 18px;
+}
+
+.top-icon > :deep(.tooltip-inner) {
+  position: relative;
+  display: inline-flex;
+}
+
+.tooltip-text {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  background: #303133;
+  color: #ffffff;
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  transition: 0.2s ease;
+  z-index: 9999;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.top-icon > :deep(.tooltip-inner):hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+.global-tooltip {
+  position: fixed;
+  z-index: 99999;
+  transform: translate(-50%, -100%);
+  background: #303133;
+  color: #fff;
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.hot-icon {
+  display: inline-flex;
+  margin-left: 6px;
+}
+
 /* 左侧图片容器 */
 .article-img {
   width: 32%;
-  height: 100%;
+  height: 300px;
   overflow: hidden;
 }
 
@@ -539,10 +609,25 @@ const goDetail = (id) => {
 
 .article-meta {
   display: flex;
-  gap: 16px;
+  align-items: center;
+  gap: 8px;
   color: var(--text-secondary-color);
   font-size: 14px;
   margin-bottom: 12px;
+}
+
+.article-meta .avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+
+.article-meta .nickname {
+  color: var(--text-color);
+}
+
+.article-meta .date {
+  margin: 0px 12px;
 }
 
 .article-meta .category {

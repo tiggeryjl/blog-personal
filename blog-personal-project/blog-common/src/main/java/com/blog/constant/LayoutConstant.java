@@ -10,4 +10,6 @@ public class LayoutConstant {
 
     public static final Long REPLYID = 0L;
 
+    public static final int HOME_POPULAR_ARTICLE_LIMIT = 20;
+
 }

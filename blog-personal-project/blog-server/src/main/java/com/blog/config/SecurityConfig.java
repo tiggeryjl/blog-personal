@@ -80,8 +80,9 @@ public class SecurityConfig {
                                 "/ws/user/notice",
                                 "/error",
                                 "/favicon.ico").permitAll() // 放行登录
-                        // 游客可读接口：文章、分类、标签、评论列表，未登录也能浏览
+                        // 游客可读接口：首页、文章、分类、标签、评论列表，未登录也能浏览
                         .requestMatchers(HttpMethod.GET,
+                                "/user/home/popular",
                                 "/user/article/getArticleList",
                                 "/user/article/getArticleDetail/**",
                                 "/user/categorys/**",

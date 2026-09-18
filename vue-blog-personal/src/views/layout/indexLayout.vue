@@ -21,8 +21,10 @@ const userProfile = ref({
 
 const getPersonalInfo = async () => {
   try {
-    const response = await getPersonalInfoApi();
-    userProfile.value = response.data;
+    const result = await getPersonalInfoApi();
+    if (result.code === 200) {
+      userProfile.value = result.data;
+    }
   } catch (error) {
     console.error('获取个人信息失败:', error);
   }
@@ -41,7 +43,9 @@ const categoryList = ref([]);
 const getCategoryList = async () => {
   try {
     const result = await getCategoryListApi();
-    categoryList.value = result.data;
+    if (result.code === 200) {
+      categoryList.value = result.data;
+    }
   } catch (error) {
     console.error('获取分类列表失败:', error);
   }
@@ -52,7 +56,9 @@ const tagList = ref([]);
 const getTagList = async () => {
   try {
     const result = await getTagListApi();
-    tagList.value = result.data;
+    if (result.code === 200) {
+      tagList.value = result.data;
+    }
     await rescanTagOverflow();
   } catch (error) {
     console.error('获取标签列表失败:', error);

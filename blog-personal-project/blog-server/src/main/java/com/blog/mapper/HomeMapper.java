@@ -1,5 +1,6 @@
 package com.blog.mapper;
 
+import com.blog.pojo.vo.ArticleFrontVO;
 import com.blog.pojo.vo.HomeStatisticsVO;
 import com.blog.pojo.vo.HomeTrendItemVO;
 import com.blog.pojo.vo.SiteStatisticsVO;
@@ -10,10 +11,18 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 首页统计 Mapper
+ * 首页 Mapper
  */
 @Mapper
 public interface HomeMapper {
+
+    /**
+     * 查询用户端首页热门文章
+     *
+     * @param limit 最大返回数量
+     * @return 首页热门文章
+     */
+    List<ArticleFrontVO> selectPopularArticles(@Param("limit") int limit);
 
     /**
      * 统计首页网站数据
