@@ -5,8 +5,14 @@ import { storeToRefs } from 'pinia';
 import { useUserStore } from '@/stores/userloginstatus';
 import { usePermissionStore } from '@/stores/permission';
 import { editPwdApi, getRefreshTokenApi } from '@/api/admin';
-import { getInitUnreadApi, markReadSingleApi, getOnlineCountApi } from '@/api/notice';
-import { ONLINE_COUNT_REFRESH_INTERVAL } from '@/constants/noticeConstants';
+import { getInitUnreadApi, getOnlineCountApi } from '@/api/notice';
+import {
+  ADMIN_NOTICE_HEARTBEAT_INTERVAL,
+  ADMIN_NOTICE_RECONNECT_DELAY,
+  NOTICE_DEDUP_CACHE_SIZE,
+  ONLINE_COUNT_MESSAGE_TYPE,
+  ONLINE_COUNT_SUBSCRIBE_MESSAGE,
+} from '@/constants/noticeConstants';
 import { useNoticeStore } from '@/stores/notice';
 import { useNoticePopup } from '@/utils/useNoticePopup';
 import { useMobile } from '@/utils/useResponsive';
@@ -112,13 +118,11 @@ const loginout = () => {
     cancelButtonText: '取消',
     type: 'warning',
   }).then(async () => {
+    destroyed = true;
+    closeWebSocket();
     userStore.logout();
     permissionStore.resetPermission();
     router.push('/login');
-    if (socket) {
-      socket.close();
-      socket = null;
-    }
     ElMessage.success('退出成功');
   });
 };
@@ -142,24 +146,135 @@ const rules = ref({
 
 const noticeStore = useNoticeStore();
 const { push } = useNoticePopup();
+const shownNoticeIds = new Set();
 let socket = null;
+let reconnectTimer = null;
+let heartbeatTimer = null;
+let noticeSummaryTimer = null;
+let waitingPong = false;
+let destroyed = false;
+let hasRealtimeOnlineCount = false;
+let onlineCountVersion = -1;
+let unreadRequestVersion = 0;
+let lastAppliedUnreadVersion = 0;
 // 通知WebSocket地址，用当前访问的域名拼接
 const WS_PATH = import.meta.env.VITE_WS_URL || '/ws/admin/notice';
 const WS_URL = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}${WS_PATH}`;
+const HEARTBEAT_PING = 'ping';
+const HEARTBEAT_PONG = 'pong';
 
 // 在线管理端数量
 const onlineCount = ref(0);
-let onlineTimer = null;
 
-const loadOnlineCount = async () => {
-  try {
-    const result = await getOnlineCountApi();
-    if (result.code === 200) {
-      onlineCount.value = Number(result.data) || 0;
-    }
-  } catch (error) {
-    console.warn('获取在线人数失败:', error);
+const getNoticeDedupKey = (notice) => {
+  if (notice?.id != null) return `id:${notice.id}`;
+  const signature = [
+    notice?.type,
+    notice?.title,
+    notice?.actionText,
+    notice?.articleId,
+    notice?.operatorName,
+    notice?.content,
+    notice?.createTime,
+  ];
+  return signature.some((value) => value != null && value !== '') ? `content:${JSON.stringify(signature)}` : null;
+};
+
+const pushNotice = (notice) => {
+  const dedupKey = getNoticeDedupKey(notice);
+  if (!dedupKey) {
+    push(notice);
+    return true;
   }
+  if (shownNoticeIds.has(dedupKey)) return false;
+  shownNoticeIds.add(dedupKey);
+  while (shownNoticeIds.size > NOTICE_DEDUP_CACHE_SIZE) {
+    shownNoticeIds.delete(shownNoticeIds.values().next().value);
+  }
+  push(notice);
+  return true;
+};
+
+// const loadOnlineCountFallback = async () => {
+//   try {
+//     const result = await getOnlineCountApi();
+//     if (!destroyed && result.code === 200 && !hasRealtimeOnlineCount) {
+//       onlineCount.value = Number(result.data) || 0;
+//     }
+//   } catch (error) {
+//     console.warn('获取在线人数初始值失败:', error);
+//   }
+// };
+
+const clearReconnectTimer = () => {
+  if (!reconnectTimer) return;
+  clearTimeout(reconnectTimer);
+  reconnectTimer = null;
+};
+
+const stopHeartbeat = () => {
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+  waitingPong = false;
+};
+
+const clearNoticeSummaryTimer = () => {
+  if (noticeSummaryTimer) {
+    clearTimeout(noticeSummaryTimer);
+    noticeSummaryTimer = null;
+  }
+};
+
+const closeWebSocket = () => {
+  clearReconnectTimer();
+  stopHeartbeat();
+  clearNoticeSummaryTimer();
+  if (!socket) return;
+
+  const currentSocket = socket;
+  socket = null;
+  currentSocket.onopen = null;
+  currentSocket.onmessage = null;
+  currentSocket.onclose = null;
+  currentSocket.onerror = null;
+  if (currentSocket.readyState === WebSocket.OPEN || currentSocket.readyState === WebSocket.CONNECTING) {
+    currentSocket.close();
+  }
+};
+
+const handleExpiredSession = () => {
+  destroyed = true;
+  closeWebSocket();
+  userStore.$reset();
+  permissionStore.resetPermission();
+  localStorage.removeItem('user');
+  localStorage.removeItem('token');
+  sessionStorage.clear();
+  ElMessage.info('登录过期，请重新登录');
+  router.push('/login');
+};
+
+const startHeartbeat = () => {
+  stopHeartbeat();
+  heartbeatTimer = setInterval(() => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    if (waitingPong) {
+      socket.close();
+      return;
+    }
+    waitingPong = true;
+    socket.send(HEARTBEAT_PING);
+  }, ADMIN_NOTICE_HEARTBEAT_INTERVAL);
+};
+
+const scheduleReconnect = () => {
+  if (destroyed || reconnectTimer || !localStorage.getItem('token')) return;
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    initWebSocket();
+  }, ADMIN_NOTICE_RECONNECT_DELAY);
 };
 
 const isTokenExpired = (token) => {
@@ -172,66 +287,122 @@ const isTokenExpired = (token) => {
 };
 
 const initWebSocket = async () => {
+  if (destroyed) return;
+  if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+    return;
+  }
+
   let token = localStorage.getItem('token');
   if (!token) return;
 
   if (isTokenExpired(token)) {
     try {
       const result = await getRefreshTokenApi();
-      userStore.setToken(result.data.token);
-      token = result.data.token;
+      if (destroyed) return;
+      const refreshedToken = result?.data?.token;
+      if (result?.code === 401) {
+        handleExpiredSession();
+        return;
+      }
+      if (result?.code !== 200 || !refreshedToken) {
+        scheduleReconnect();
+        return;
+      }
+      userStore.setToken(refreshedToken);
+      token = refreshedToken;
     } catch (e) {
+      scheduleReconnect();
       return;
     }
   }
+  if (destroyed) return;
+
   try {
     if ('WebSocket' in window) {
       const wsUrl = `${WS_URL}?token=${token}`;
-      socket = new WebSocket(wsUrl);
+      const currentSocket = new WebSocket(wsUrl);
+      socket = currentSocket;
     } else {
       console.error('当前浏览器不支持WebSocket');
       return;
     }
   } catch (error) {
     console.error('WebSocket连接失败:', error);
-    setTimeout(initWebSocket, 3000);
+    scheduleReconnect();
     return;
   }
 
-  socket.onopen = () => {
+  const currentSocket = socket;
+  currentSocket.onopen = () => {
+    if (socket !== currentSocket) return;
     console.log('WebSocket连接成功');
-    loadOnlineCount();
+    onlineCountVersion = -1;
+    currentSocket.send(ONLINE_COUNT_SUBSCRIBE_MESSAGE);
   };
 
-  socket.onmessage = async (event) => {
-    const data = JSON.parse(event.data);
-    push(data);
-    // 收到通知消息，更新未读消息数量
-    const result = await getInitUnreadApi();
-    if (result.code === 200) {
-      noticeStore.setCount(result.data.unreadTotal);
+  currentSocket.onmessage = async (event) => {
+    if (socket !== currentSocket) return;
+    if (event.data === HEARTBEAT_PONG) {
+      waitingPong = false;
+      return;
+    }
+    try {
+      const data = JSON.parse(event.data);
+      if (data?.messageType === ONLINE_COUNT_MESSAGE_TYPE) {
+        const messageVersion = Number(data.version);
+        if (Number.isFinite(messageVersion) && messageVersion < onlineCountVersion) return;
+        if (Number.isFinite(messageVersion)) onlineCountVersion = messageVersion;
+        hasRealtimeOnlineCount = true;
+        onlineCount.value = Number(data.onlineCount) || 0;
+        if (!heartbeatTimer) startHeartbeat();
+        return;
+      }
+      pushNotice(data);
+      // 收到通知消息，更新未读消息数量
+      const requestVersion = ++unreadRequestVersion;
+      const result = await getInitUnreadApi();
+      if (destroyed) return;
+      if (result.code === 200 && requestVersion > lastAppliedUnreadVersion) {
+        noticeStore.setCount(result.data.unreadTotal);
+        lastAppliedUnreadVersion = requestVersion;
+      }
+    } catch (error) {
+      console.warn('WebSocket消息处理失败:', error);
     }
   };
 
-  socket.onclose = () => {
+  currentSocket.onclose = () => {
+    if (socket !== currentSocket) return;
+    socket = null;
+    stopHeartbeat();
     console.log('WebSocket连接断开');
-    if (!localStorage.getItem('token')) return;
-    setTimeout(initWebSocket, 3000);
+    scheduleReconnect();
   };
 
-  socket.onerror = () => {
-    socket.close();
+  currentSocket.onerror = () => {
+    currentSocket.close();
   };
 };
 
 const loadOfflineNotice = async () => {
-  const result = await getInitUnreadApi();
-  if (result.code === 200) {
-    noticeStore.setCount(result.data.unreadTotal);
-    if (result.data.latestList.length === 0) return;
-    result.data.latestList.forEach((item) => push(item));
+  const requestVersion = ++unreadRequestVersion;
+  try {
+    const result = await getInitUnreadApi();
+    if (destroyed) return;
+    if (result.code !== 200) return;
+    if (requestVersion > lastAppliedUnreadVersion) {
+      noticeStore.setCount(result.data.unreadTotal);
+      lastAppliedUnreadVersion = requestVersion;
+    }
+    const latestList = result.data.latestList || [];
+    const noticesToShow = [];
+    latestList.forEach((item) => {
+      if (pushNotice(item)) noticesToShow.push(item);
+    });
     if (result.data.unreadTotal > 5) {
-      setTimeout(() => {
+      noticeSummaryTimer = setTimeout(() => {
+        noticeSummaryTimer = null;
+        if (destroyed) return;
         ElNotification({
           title: '通知汇总',
           message: h('p', null, [
@@ -252,24 +423,21 @@ const loadOfflineNotice = async () => {
             ],
           },
         });
-      }, result.data.latestList.length * 750 + 500);
+      }, noticesToShow.length * 750 + 500);
     }
+  } catch (error) {
+    console.warn('加载离线通知失败:', error);
   }
 };
 
-onMounted(async () => {
-  await loadOfflineNotice();
+onMounted(() => {
   initWebSocket();
-  loadOnlineCount();
-  onlineTimer = setInterval(loadOnlineCount, ONLINE_COUNT_REFRESH_INTERVAL);
+  loadOfflineNotice();
 });
 
 onUnmounted(() => {
-  if (socket) socket.close();
-  if (onlineTimer) {
-    clearInterval(onlineTimer);
-    onlineTimer = null;
-  }
+  destroyed = true;
+  closeWebSocket();
 });
 </script>
 

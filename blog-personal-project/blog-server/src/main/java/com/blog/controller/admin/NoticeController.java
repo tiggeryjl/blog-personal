@@ -1,6 +1,5 @@
 package com.blog.controller.admin;
 
-import com.blog.pojo.dto.SysNoticeDTO;
 import com.blog.pojo.vo.InitNoticeVO;
 import com.blog.result.PageResult;
 import com.blog.result.Result;

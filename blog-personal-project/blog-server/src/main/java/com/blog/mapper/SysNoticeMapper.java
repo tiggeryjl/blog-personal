@@ -50,6 +50,10 @@ public interface SysNoticeMapper {
     @Update("UPDATE sys_notice SET is_read=1 WHERE is_read=0")
     int updateAllRead();
 
+    /**
+     * 插入消息通知
+     * @param notice
+     */
     void insert(SysNotice notice);
 
 }

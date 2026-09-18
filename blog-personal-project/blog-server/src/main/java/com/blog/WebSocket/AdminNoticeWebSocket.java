@@ -3,6 +3,7 @@ package com.blog.WebSocket;
 import com.alibaba.fastjson.JSON;
 import com.blog.config.SpringContextHolder;
 import com.blog.pojo.dto.SysNoticeDTO;
+import com.blog.pojo.vo.AdminOnlineCountVO;
 import com.blog.service.JwtService;
 import jakarta.websocket.*;
 import jakarta.websocket.server.ServerEndpoint;
@@ -16,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -26,6 +26,18 @@ public class AdminNoticeWebSocket {
 
     //存放所有WebSocket握手成功的会话对象
     private static final Map<Long, Set<Session>> ONLINE_SESSIONS = new ConcurrentHashMap<>();
+
+    private static final Object ONLINE_STATE_LOCK = new Object();
+
+    private static final String ONLINE_COUNT_SUBSCRIBE = "subscribeOnlineCount";
+
+    private static final String HEARTBEAT_PING = "ping";
+
+    private static final String HEARTBEAT_PONG = "pong";
+
+    private static final String ONLINE_COUNT_SUBSCRIBED = "onlineCountSubscribed";
+
+    private static long onlineCountVersion = 0L;
 
     private Session session;
 
@@ -58,8 +70,10 @@ public class AdminNoticeWebSocket {
         adminId = jwtService.getUserId(token);
         session.getUserProperties().put("adminId", adminId);
         //同一管理员多端登录时分别保存会话，避免互相覆盖
-        ONLINE_SESSIONS.computeIfAbsent(adminId, key -> ConcurrentHashMap.newKeySet()).add(session);
-        log.info("【WS】管理员{}连接建立成功，当前在线数量：{}", adminId, getOnlineCount());
+        AdminOnlineCountVO onlineCountMessage = addSession(adminId, session);
+        log.info("【WS】管理员{}连接建立成功，当前在线数量：{}", adminId,
+                onlineCountMessage.getOnlineCount());
+        broadcastOnlineCount(onlineCountMessage);
     }
 
     /**
@@ -67,10 +81,9 @@ public class AdminNoticeWebSocket {
      */
     @OnClose
     public void onClose() {
-        if (adminId != null) {
-            removeSession(adminId, session);
-        }
+        AdminOnlineCountVO onlineCountMessage = removeSession(adminId, session);
         log.info("【WS】管理员{}连接断开，当前在线数量：{}", adminId, getOnlineCount());
+        broadcastOnlineCount(onlineCountMessage);
     }
 
     /**
@@ -79,15 +92,37 @@ public class AdminNoticeWebSocket {
      * @param session
      */
     @OnMessage
-    public void onMessage(String msg,Session session){
+    public void onMessage(String msg, Session session) {
+        String message = msg.trim();
+        if (ONLINE_COUNT_SUBSCRIBE.equalsIgnoreCase(message)) {
+            synchronized (ONLINE_STATE_LOCK) {
+                session.getUserProperties().put(ONLINE_COUNT_SUBSCRIBED, true);
+            }
+            try {
+                sendOnlineCount(session);
+            } catch (IOException | RuntimeException e) {
+                log.error("【WS】管理员{}在线数初始消息发送失败", adminId, e);
+                handleFailedSession(session);
+            }
+            return;
+        }
+        if (!HEARTBEAT_PING.equalsIgnoreCase(message)) {
+            log.debug("【WS】收到管理员{}消息", adminId);
+            return;
+        }
+        try {
+            sendText(session, HEARTBEAT_PONG);
+            sendOnlineCount(session);
+        } catch (IOException | RuntimeException e) {
+            log.error("【WS】管理员{}心跳响应发送失败", adminId, e);
+            handleFailedSession(session);
+        }
     }
 
     @OnError
     public void onError(Session session,Throwable throwable){
         log.error("【WS】异常",throwable);
-        if (adminId != null) {
-            removeSession(adminId, session);
-        }
+        handleFailedSession(session);
     }
 
     /**
@@ -96,7 +131,9 @@ public class AdminNoticeWebSocket {
      * @return 在线会话数量
      */
     public static long getOnlineCount() {
-        return ONLINE_SESSIONS.values().stream().mapToLong(Set::size).sum();
+        synchronized (ONLINE_STATE_LOCK) {
+            return countSessionsLocked();
+        }
     }
 
     /**
@@ -105,61 +142,89 @@ public class AdminNoticeWebSocket {
      * @param message
      */
     public void broadcast(SysNoticeDTO message) {
-        try {
-            //复制一份会话列表，避免遍历过程中集合被修改
-            List<Session> sessions = ONLINE_SESSIONS.values().stream()
-                    .flatMap(Set::stream)
-                    .collect(Collectors.toList());
-            if (sessions.isEmpty()) {
-                log.info("【WS】暂无在线客户端，无需推送");
-                return;
-            }
-            String json;
-            try {
-                json = JSON.toJSONString(message);
-            } catch (Exception e) {
-                log.error("【WS】消息序列化为JSON失败", e);
-                return;
-            }
-            for (Session s : sessions) {
-                if (s.isOpen()) {
-                    try {
-                        s.getBasicRemote().sendText(json);
-                    } catch (IOException e) {
-                        log.error("推送消息失败，连接异常，准备移除会话",e);
-                        //发送失败直接剔除僵尸连接
-                        Long aid = (Long)s.getUserProperties().get("adminId");
-                        if(aid != null){
-                            removeSession(aid, s);
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+        broadcastPayload(message, false);
+    }
+
+    /**
+     * 向所有在线管理端推送最新在线数量
+     */
+    private void broadcastOnlineCount(AdminOnlineCountVO message) {
+        if (message != null) {
+            broadcastPayload(message, true);
         }
+    }
+
+    /**
+     * 向指定会话补发最新在线数量
+     */
+    private void sendOnlineCount(Session session) throws IOException {
+        sendText(session, JSON.toJSONString(getOnlineCountMessage()));
+    }
+
+    /**
+     * 广播WebSocket消息
+     */
+    private void broadcastPayload(Object message, boolean subscribedOnly) {
+        List<Session> sessions = getSessionsSnapshot(subscribedOnly);
+        if (sessions.isEmpty()) {
+            return;
+        }
+        String json;
+        try {
+            json = JSON.toJSONString(message);
+        } catch (Exception e) {
+            log.error("【WS】消息序列化为JSON失败", e);
+            return;
+        }
+        AdminOnlineCountVO correctionMessage = null;
+        for (Session onlineSession : sessions) {
+            if (!sendTextSafely(onlineSession, json)) {
+                Long aid = (Long) onlineSession.getUserProperties().get("adminId");
+                AdminOnlineCountVO removedMessage = removeSession(aid, onlineSession);
+                if (removedMessage != null) {
+                    correctionMessage = removedMessage;
+                }
+                closeSession(onlineSession);
+            }
+        }
+        broadcastOnlineCount(correctionMessage);
     }
 
     /**
      * 单点推送，发给指定管理员
      */
     public void sendToOne(Long targetAdminId, SysNoticeDTO message){
-        Set<Session> sessions = ONLINE_SESSIONS.get(targetAdminId);
-        if (sessions == null || sessions.isEmpty()) {
+        List<Session> sessions = getAdminSessionsSnapshot(targetAdminId);
+        if (sessions.isEmpty()) {
             log.warn("管理员{}不在线，消息无法推送",targetAdminId);
             return;
         }
-        try {
-            String json = JSON.toJSONString(message);
-            //同一管理员可能多端登录，每个会话都要推送
-            for (Session session : new ArrayList<>(sessions)) {
-                if (!session.isOpen()) {
-                    continue;
+        String json = JSON.toJSONString(message);
+        AdminOnlineCountVO correctionMessage = null;
+        //同一管理员可能多端登录，每个会话都要推送
+        for (Session targetSession : sessions) {
+            if (!sendTextSafely(targetSession, json)) {
+                AdminOnlineCountVO removedMessage = removeSession(targetAdminId, targetSession);
+                if (removedMessage != null) {
+                    correctionMessage = removedMessage;
                 }
-                session.getBasicRemote().sendText(json);
+                closeSession(targetSession);
             }
-        } catch (IOException e) {
-            log.error("单点推送失败",e);
+        }
+        broadcastOnlineCount(correctionMessage);
+    }
+
+    /**
+     * 原子添加管理端会话并生成当前在线数快照
+     */
+    private AdminOnlineCountVO addSession(Long adminId, Session session) {
+        synchronized (ONLINE_STATE_LOCK) {
+            Set<Session> sessions = ONLINE_SESSIONS.computeIfAbsent(adminId,
+                    key -> ConcurrentHashMap.newKeySet());
+            if (sessions.add(session)) {
+                onlineCountVersion++;
+            }
+            return buildOnlineCountMessageLocked();
         }
     }
 
@@ -168,15 +233,84 @@ public class AdminNoticeWebSocket {
      *
      * @param adminId 管理员id
      * @param session 需要移除的会话
+     * @return 在线数有变化时返回最新快照，否则返回null
      */
-    private void removeSession(Long adminId, Session session) {
-        Set<Session> sessions = ONLINE_SESSIONS.get(adminId);
-        if (sessions == null) {
-            return;
+    private AdminOnlineCountVO removeSession(Long adminId, Session session) {
+        if (adminId == null) {
+            return null;
         }
-        sessions.remove(session);
-        if (sessions.isEmpty()) {
-            ONLINE_SESSIONS.remove(adminId);
+        synchronized (ONLINE_STATE_LOCK) {
+            Set<Session> sessions = ONLINE_SESSIONS.get(adminId);
+            if (sessions == null || !sessions.remove(session)) {
+                return null;
+            }
+            if (sessions.isEmpty()) {
+                ONLINE_SESSIONS.remove(adminId, sessions);
+            }
+            onlineCountVersion++;
+            return buildOnlineCountMessageLocked();
+        }
+    }
+
+    private AdminOnlineCountVO getOnlineCountMessage() {
+        synchronized (ONLINE_STATE_LOCK) {
+            return buildOnlineCountMessageLocked();
+        }
+    }
+
+    private AdminOnlineCountVO buildOnlineCountMessageLocked() {
+        return AdminOnlineCountVO.builder()
+                .onlineCount(countSessionsLocked())
+                .version(onlineCountVersion)
+                .build();
+    }
+
+    private static long countSessionsLocked() {
+        return ONLINE_SESSIONS.values().stream()
+                .mapToLong(Set::size)
+                .sum();
+    }
+
+    private List<Session> getSessionsSnapshot(boolean subscribedOnly) {
+        synchronized (ONLINE_STATE_LOCK) {
+            return ONLINE_SESSIONS.values().stream()
+                    .flatMap(Set::stream)
+                    .filter(item -> !subscribedOnly
+                            || Boolean.TRUE.equals(item.getUserProperties().get(ONLINE_COUNT_SUBSCRIBED)))
+                    .toList();
+        }
+    }
+
+    private List<Session> getAdminSessionsSnapshot(Long targetAdminId) {
+        synchronized (ONLINE_STATE_LOCK) {
+            Set<Session> sessions = ONLINE_SESSIONS.get(targetAdminId);
+            return sessions == null ? List.of() : new ArrayList<>(sessions);
+        }
+    }
+
+    private void handleFailedSession(Session failedSession) {
+        Long failedAdminId = (Long) failedSession.getUserProperties().get("adminId");
+        AdminOnlineCountVO correctionMessage = removeSession(failedAdminId, failedSession);
+        closeSession(failedSession);
+        broadcastOnlineCount(correctionMessage);
+    }
+
+    private boolean sendTextSafely(Session targetSession, String message) {
+        try {
+            sendText(targetSession, message);
+            return true;
+        } catch (IOException | RuntimeException e) {
+            log.error("推送消息失败，连接异常，准备移除会话", e);
+            return false;
+        }
+    }
+
+    private void sendText(Session targetSession, String message) throws IOException {
+        synchronized (targetSession) {
+            if (!targetSession.isOpen()) {
+                throw new IOException("WebSocket会话已关闭");
+            }
+            targetSession.getBasicRemote().sendText(message);
         }
     }
 

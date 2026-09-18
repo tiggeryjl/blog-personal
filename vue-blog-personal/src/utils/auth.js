@@ -1,6 +1,6 @@
 import { ElMessage } from 'element-plus';
 
-// 是否已登录（以本地 token 为准）
+// 是否已登录
 export const isLoggedIn = () => !!localStorage.getItem('user_token');
 
 /**

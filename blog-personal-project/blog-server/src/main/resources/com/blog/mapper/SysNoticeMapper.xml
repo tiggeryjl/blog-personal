@@ -4,7 +4,7 @@
 <mapper namespace="com.blog.mapper.SysNoticeMapper">
 
 
-    <insert id="insert">
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO sys_notice(type, title, action_text, article_title, article_id, operator_name, content,is_read,create_time)
         VALUES (#{type},#{title},#{actionText},#{articleTitle},#{articleId},#{operatorName},#{content},#{isRead},#{createTime})
     </insert>
