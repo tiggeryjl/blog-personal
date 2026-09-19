@@ -71,14 +71,14 @@ flowchart LR
 
 ## 技术栈
 
-| 分层 | 主要技术 |
-| --- | --- |
-| 博客前台 | Vue 3、Vite 3、Vue Router、Pinia、Element Plus、Axios |
-| 管理后台 | Vue 3、Vite 3、Vue Router、Pinia、Element Plus、WangEditor、ECharts |
+| 分层     | 主要技术                                                                       |
+| -------- | ------------------------------------------------------------------------------ |
+| 博客前台 | Vue 3、Vite 3、Vue Router、Pinia、Element Plus、Axios                          |
+| 管理后台 | Vue 3、Vite 3、Vue Router、Pinia、Element Plus、WangEditor、ECharts            |
 | 后端服务 | Java 17、Spring Boot 3.3.8、Spring Security、JWT、WebSocket、Spring Scheduling |
-| 数据访问 | MySQL 8、MyBatis 3、PageHelper、Redis |
-| 外部能力 | Spring AI、DeepSeek、阿里云 OSS、阿里云验证码、Apache POI |
-| 其他 | Font Awesome、Lucide、xss |
+| 数据访问 | MySQL 8、MyBatis 3、PageHelper、Redis                                          |
+| 外部能力 | Spring AI、DeepSeek、阿里云 OSS、阿里云验证码、Apache POI                      |
+| 其他     | Font Awesome、Lucide、xss                                                      |
 
 ## 目录结构
 
@@ -104,14 +104,14 @@ blog-personal/
 
 ## 环境要求
 
-| 环境 | 版本/说明 |
-| --- | --- |
-| JDK | 17 |
-| Maven | 3.8 或更高版本，仓库未提供 Maven Wrapper |
-| Node.js | 18 或更高版本 |
-| npm | 9 或更高版本 |
-| MySQL | 8.0，初始化脚本使用 MySQL 8 排序规则 |
-| Redis | 推荐 7.x |
+| 环境    | 版本/说明      |
+| ------- | -------------- |
+| JDK     | 17             |
+| Maven   | 3.8 或更高版本 |
+| Node.js | 18 或更高版本  |
+| npm     | 9 或更高版本   |
+| MySQL   | 8.0            |
+| Redis   | 推荐 7.x       |
 
 阿里云 OSS、阿里云验证码和 DeepSeek 属于外部服务。当前后端配置会在启动时读取相关环境变量，因此启动前需要提供对应配置。
 
@@ -145,12 +145,12 @@ blogDevice.sql
 
 至少需要设置以下环境变量：
 
-| 变量 | 是否必需 | 用途 |
-| --- | --- | --- |
-| `OSS_ACCESS_KEY_ID` | 是 | 阿里云 OSS 与验证码 AccessKey ID |
-| `OSS_ACCESS_KEY_SECRET` | 是 | 阿里云 OSS 与验证码 AccessKey Secret |
-| `DEEPSEEK_API_KEY` | 是 | DeepSeek API 密钥 |
-| `SPRING_PROFILES_ACTIVE` | 否 | Spring Profile，默认值为 `dev` |
+| 变量                     | 是否必需 | 用途                                 |
+| ------------------------ | -------- | ------------------------------------ |
+| `OSS_ACCESS_KEY_ID`      | 是       | 阿里云 OSS 与验证码 AccessKey ID     |
+| `OSS_ACCESS_KEY_SECRET`  | 是       | 阿里云 OSS 与验证码 AccessKey Secret |
+| `DEEPSEEK_API_KEY`       | 是       | DeepSeek API 密钥                    |
+| `SPRING_PROFILES_ACTIVE` | 否       | Spring Profile，默认值为 `dev`       |
 
 PowerShell 示例：
 
@@ -202,18 +202,18 @@ npm run dev
 
 ### 7. 访问地址
 
-| 服务 | 地址 |
-| --- | --- |
+| 服务     | 地址                    |
+| -------- | ----------------------- |
 | 博客前台 | <http://localhost:5173> |
 | 管理后台 | <http://localhost:5174> |
 | 后端服务 | <http://localhost:8080> |
 
 初始化脚本提供以下后台测试账号：
 
-| 账号 | 密码 | 角色 |
-| --- | --- | --- |
+| 账号    | 密码     | 角色       |
+| ------- | -------- | ---------- |
 | `yesir` | `123456` | 超级管理员 |
-| `lisi` | `123456` | 业务管理员 |
+| `lisi`  | `123456` | 业务管理员 |
 
 首次登录后请立即修改默认密码。
 
@@ -221,11 +221,11 @@ npm run dev
 
 ### 后端配置
 
-| 文件 | 说明 |
-| --- | --- |
-| `application.yml` | 公共配置、Profile、文件上传、JWT、OSS 与 AI 配置 |
-| `application-dev.yml` | 开发环境端口、MySQL、Redis 和日志级别 |
-| `application-prod.yml` | 生产环境端口、MySQL、Redis 和日志级别 |
+| 文件                   | 说明                                             |
+| ---------------------- | ------------------------------------------------ |
+| `application.yml`      | 公共配置、Profile、文件上传、JWT、OSS 与 AI 配置 |
+| `application-dev.yml`  | 开发环境端口、MySQL、Redis 和日志级别            |
+| `application-prod.yml` | 生产环境端口、MySQL、Redis 和日志级别            |
 
 Spring Boot 配置均可通过环境变量覆盖，例如 `SPRING_DATASOURCE_URL`、`SPRING_DATASOURCE_USERNAME`、`SPRING_DATASOURCE_PASSWORD`、`SPRING_DATA_REDIS_HOST`、`SPRING_DATA_REDIS_PORT`、`SPRING_DATA_REDIS_PASSWORD`、`SPRING_DATA_REDIS_DATABASE`、`SERVER_PORT` 和 `BLOG_JWT_USERSECRETKEY`。
 
@@ -274,14 +274,14 @@ npm run build
 
 博客前台登录页面基于以下开源项目修改：
 
-| 项目 | 说明 |
-| --- | --- |
-| 原仓库 | <https://gitee.com/niumg9527/login-animation> |
-| 作者 | niumg9527 |
-| 协议 | MIT License |
+| 项目     | 说明                                                 |
+| -------- | ---------------------------------------------------- |
+| 原仓库   | <https://gitee.com/niumg9527/login-animation>        |
+| 作者     | niumg9527                                            |
+| 协议     | MIT License                                          |
 | 使用文件 | `LoginPage.vue`、`AnimatedCharacters.vue` 及其子组件 |
-| 修改内容 | 新增注册能力，并适配本项目的认证与提交逻辑 |
-| 原始协议 | [login-template-LICENSE](./login-template-LICENSE) |
+| 修改内容 | 新增注册能力，并适配本项目的认证与提交逻辑           |
+| 原始协议 | [login-template-LICENSE](./login-template-LICENSE)   |
 
 ## License
 
