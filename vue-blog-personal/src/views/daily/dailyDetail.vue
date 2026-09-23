@@ -1,166 +1,209 @@
 <script setup>
-import { useRoute, useRouter } from 'vue-router'
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import Emoji from '@/components/Emoji.vue'
-import CommentList from '@/components/Comment.vue'
-import { ZoomIn, ZoomOut, ChatDotRound, DArrowLeft } from '@element-plus/icons-vue'
-import { addDailyViewApi } from '@/api/daily'
-import { requireLogin } from '@/utils/auth'
+import { useRoute } from 'vue-router';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ElMessage } from 'element-plus';
+import Emoji from '@/components/Emoji.vue';
+import CommentList from '@/components/Comment.vue';
+import { ZoomIn, ZoomOut, ChatDotRound, DArrowLeft, Document } from '@element-plus/icons-vue';
+import { addDailyViewApi, getDailyDetailApi } from '@/api/daily';
+import { requireLogin } from '@/utils/auth';
 
-const router = useRouter()
-const route = useRoute()
+const route = useRoute();
 
-const dailyItem = ref(null)
+const dailyItem = ref(null);
+const detailLoading = ref(false);
+const detailMessage = ref('');
+const detailLoadFailed = ref(false);
+let latestDetailRequestId = 0;
 
-const fetchDailyDetail = () => {
-  const id = route.params.id
-  const mockList = [
-    {
-      id: 1,
-      userId: 101,
-      avatar: 'https://picsum.photos/64/64',
-      username: '张三',
-      content: '今天天气不错，分享一张随手拍～',
-      images: [
-        'https://picsum.photos/600/400?random=1',
-        'https://picsum.photos/600/400?random=2'
-      ],
-      createTime: '2025-12-20 15:30',
-      like: 23,
-      comment: 5,
-      isLiked: false
-    },
-    {
-      id: 2,
-      userId: 102,
-      avatar: 'https://picsum.photos/64/64?random=2',
-      username: '李四',
-      content: '记录一下今天的学习日常：Vue3 + ElementPlus 开发中',
-      images: [],
-      createTime: '2025-12-20 14:10',
-      like: 12,
-      comment: 3,
-      isLiked: false
+const normalizeImages = (images) => {
+  if (Array.isArray(images)) return images.filter(Boolean);
+  if (typeof images !== 'string') return [];
+  return images
+    .split(',')
+    .map((image) => image.trim())
+    .filter(Boolean);
+};
+
+const getFileNameFromUrl = (url) => {
+  try {
+    const decoded = decodeURIComponent(String(url).split('?')[0]);
+    return decoded.split('/').filter(Boolean).pop() || '附件';
+  } catch {
+    return String(url).split('/').filter(Boolean).pop() || '附件';
+  }
+};
+
+const normalizeFiles = (files) => {
+  const fileList = Array.isArray(files) ? files : typeof files === 'string' ? files.split(',') : [];
+  return fileList
+    .map((file) => (typeof file === 'string' ? file.trim() : file?.url))
+    .filter(Boolean)
+    .map((url) => ({ name: getFileNameFromUrl(url), url }));
+};
+
+const fetchDailyDetail = async (id) => {
+  const requestId = ++latestDetailRequestId;
+  dailyItem.value = null;
+  detailLoading.value = true;
+  detailMessage.value = '';
+  detailLoadFailed.value = false;
+
+  try {
+    const result = await getDailyDetailApi(id);
+    if (requestId !== latestDetailRequestId) return false;
+
+    if (result?.code !== 200 || !result.data) {
+      detailMessage.value = result?.msg || '日常不存在或暂未公开';
+      return false;
     }
-  ]
-  dailyItem.value = mockList.find(item => item.id == id)
-}
+
+    dailyItem.value = {
+      ...result.data,
+      images: normalizeImages(result.data.images),
+      files: normalizeFiles(result.data.files),
+      isLiked: false,
+    };
+    return true;
+  } catch (error) {
+    if (requestId !== latestDetailRequestId) return false;
+    detailLoadFailed.value = true;
+    detailMessage.value = '日常数据加载失败，请稍后重试';
+    console.error('获取日常详情异常', error);
+    return false;
+  } finally {
+    if (requestId === latestDetailRequestId) {
+      detailLoading.value = false;
+    }
+  }
+};
+
+const loadDailyDetail = async (id) => {
+  const loaded = await fetchDailyDetail(id);
+  if (loaded && String(route.params.id) === String(id)) {
+    // 浏览数 +1（失败静默，不影响详情展示）
+    addDailyViewApi(id).catch(() => {});
+  }
+};
 
 // 点赞
 const toggleLike = (item) => {
-  if (!requireLogin('登录后才能点赞哦~')) return
-  item.isLiked = !item.isLiked
-  item.like += item.isLiked ? 1 : -1
-}
+  if (!requireLogin('登录后才能点赞哦~')) return;
+  item.isLiked = !item.isLiked;
+  item.likeNum = (item.likeNum || 0) + (item.isLiked ? 1 : -1);
+};
 
-// ========== 图片预览（循环轮播 + 预加载 + loading） ==========
-const showImageModal = ref(false)
-const previewImageUrl = ref('')
-const scale = ref(1)
-const imageList = ref([])
-const currentImageIndex = ref(0)
-const imageLoading = ref(false)   // 加载状态
+// ========== 图片预览 ==========
+const showImageModal = ref(false);
+const previewImageUrl = ref('');
+const scale = ref(1);
+const imageList = ref([]);
+const currentImageIndex = ref(0);
+const imageLoading = ref(false); // 加载状态
 
 // 预加载单张图片
 const preloadImage = (url) => {
   return new Promise((resolve, reject) => {
-    const img = new Image()
-    img.onload = () => resolve(url)
-    img.onerror = (err) => reject(err)
-    img.src = url
-  })
-}
+    const img = new Image();
+    img.onload = () => resolve(url);
+    img.onerror = (err) => reject(err);
+    img.src = url;
+  });
+};
 
 // 预加载当前图片的相邻两张（循环）
 const preloadAdjacent = (list, currentIdx) => {
-  if (!list.length) return
-  const len = list.length
-  const prevIdx = (currentIdx - 1 + len) % len
-  const nextIdx = (currentIdx + 1) % len
-  if (list[prevIdx]) preloadImage(list[prevIdx]).catch(() => { })
-  if (list[nextIdx]) preloadImage(list[nextIdx]).catch(() => { })
-}
+  if (!list.length) return;
+  const len = list.length;
+  const prevIdx = (currentIdx - 1 + len) % len;
+  const nextIdx = (currentIdx + 1) % len;
+  if (list[prevIdx]) preloadImage(list[prevIdx]).catch(() => {});
+  if (list[nextIdx]) preloadImage(list[nextIdx]).catch(() => {});
+};
 
 // 切换到指定索引的图片（带loading）
 const switchToImage = async (newIndex) => {
-  if (imageLoading.value) return
-  const len = imageList.value.length
-  if (len === 0) return
+  if (imageLoading.value) return;
+  const len = imageList.value.length;
+  if (len === 0) return;
   // 确保索引在合法范围（实际上调用前已处理循环，但防御一下）
-  const safeIndex = (newIndex + len) % len
-  const targetUrl = imageList.value[safeIndex]
-  if (!targetUrl) return
+  const safeIndex = (newIndex + len) % len;
+  const targetUrl = imageList.value[safeIndex];
+  if (!targetUrl) return;
 
-  imageLoading.value = true
+  imageLoading.value = true;
   try {
-    await preloadImage(targetUrl)
-    currentImageIndex.value = safeIndex
-    previewImageUrl.value = targetUrl
-    scale.value = 1
+    await preloadImage(targetUrl);
+    currentImageIndex.value = safeIndex;
+    previewImageUrl.value = targetUrl;
+    scale.value = 1;
     // 预加载新的相邻图片
-    preloadAdjacent(imageList.value, safeIndex)
+    preloadAdjacent(imageList.value, safeIndex);
   } catch (err) {
-    console.warn('图片加载失败', err)
-    currentImageIndex.value = safeIndex
-    previewImageUrl.value = targetUrl
+    console.warn('图片加载失败', err);
+    currentImageIndex.value = safeIndex;
+    previewImageUrl.value = targetUrl;
   } finally {
-    imageLoading.value = false
+    imageLoading.value = false;
   }
-}
+};
 
 // 点击图片打开预览（基于日常条目和图片索引）
 const handleImageClick = async (item, idx) => {
-  const imgs = item.images
-  if (!imgs.length) return
-  imageList.value = imgs
-  currentImageIndex.value = idx
-  previewImageUrl.value = imgs[idx]
-  scale.value = 1
-  showImageModal.value = true
-  imageLoading.value = true
+  const imgs = item.images;
+  if (!imgs.length) return;
+  imageList.value = imgs;
+  currentImageIndex.value = idx;
+  previewImageUrl.value = imgs[idx];
+  scale.value = 1;
+  showImageModal.value = true;
+  imageLoading.value = true;
   try {
-    await preloadImage(imgs[idx])
-    preloadAdjacent(imgs, idx)
+    await preloadImage(imgs[idx]);
+    preloadAdjacent(imgs, idx);
   } catch (err) {
-    console.warn('图片加载失败', err)
+    console.warn('图片加载失败', err);
   } finally {
-    imageLoading.value = false
+    imageLoading.value = false;
   }
-}
+};
 
 // 上一张（循环）
 const prevImage = () => {
-  if (imageLoading.value) return
-  const len = imageList.value.length
-  if (len === 0) return
-  const newIndex = (currentImageIndex.value - 1 + len) % len
-  switchToImage(newIndex)
-}
+  if (imageLoading.value) return;
+  const len = imageList.value.length;
+  if (len === 0) return;
+  const newIndex = (currentImageIndex.value - 1 + len) % len;
+  switchToImage(newIndex);
+};
 
 // 下一张（循环）
 const nextImage = () => {
-  if (imageLoading.value) return
-  const len = imageList.value.length
-  if (len === 0) return
-  const newIndex = (currentImageIndex.value + 1) % len
-  switchToImage(newIndex)
-}
+  if (imageLoading.value) return;
+  const len = imageList.value.length;
+  if (len === 0) return;
+  const newIndex = (currentImageIndex.value + 1) % len;
+  switchToImage(newIndex);
+};
 
 // 放大/缩小
-const zoomIn = () => { scale.value = Math.min(scale.value + 0.2, 3) }
-const zoomOut = () => { scale.value = Math.max(scale.value - 0.2, 0.6) }
+const zoomIn = () => {
+  scale.value = Math.min(scale.value + 0.2, 3);
+};
+const zoomOut = () => {
+  scale.value = Math.max(scale.value - 0.2, 0.6);
+};
 
 // 关闭弹窗
 const closeModal = () => {
-  showImageModal.value = false
-  previewImageUrl.value = ''
-  scale.value = 1
-  imageLoading.value = false
-}
+  showImageModal.value = false;
+  previewImageUrl.value = '';
+  scale.value = 1;
+  imageLoading.value = false;
+};
 
 // 评论
-const commentForm = ref({ content: '' })
+const commentForm = ref({ content: '' });
 
 const getDefaultComments = (articleId) => {
   if (articleId === '1') {
@@ -173,46 +216,46 @@ const getDefaultComments = (articleId) => {
         time: '2025-01-01 12:00',
         isAdmin: true,
         like: 7,
-        replies: []
-      }
-    ]
+        replies: [],
+      },
+    ];
   }
-  return []
-}
+  return [];
+};
 
 const likeComment = (commentId) => {
-  if (!requireLogin('登录后才能点赞哦~')) return
-  const list = currentCommentList.value
-  const comment = list.find(c => c.id === commentId)
-  if (comment) comment.like++
-  ElMessage.success('点赞成功！')
-}
+  if (!requireLogin('登录后才能点赞哦~')) return;
+  const list = currentCommentList.value;
+  const comment = list.find((c) => c.id === commentId);
+  if (comment) comment.like++;
+  ElMessage.success('点赞成功！');
+};
 const likeReply = (commentId, replyId) => {
-  if (!requireLogin('登录后才能点赞哦~')) return
-  const list = currentCommentList.value
-  const comment = list.find(c => c.id === commentId)
-  if (!comment) return
-  const reply = comment.replies.find(r => r.id === replyId)
-  if (reply) reply.like++
-  ElMessage.success('点赞成功！')
-}
+  if (!requireLogin('登录后才能点赞哦~')) return;
+  const list = currentCommentList.value;
+  const comment = list.find((c) => c.id === commentId);
+  if (!comment) return;
+  const reply = comment.replies.find((r) => r.id === replyId);
+  if (reply) reply.like++;
+  ElMessage.success('点赞成功！');
+};
 
-const commentsStore = ref({})
-const currentArticleId = computed(() => route.params.id)
-const currentCommentList = computed(() => {
-  const id = currentArticleId.value
+const commentsStore = ref({});
+const currentDailyId = computed(() => route.params.id);
+const currentCommentList = computed(() => commentsStore.value[currentDailyId.value] || []);
+
+const initDailyComments = (id) => {
   if (!commentsStore.value[id]) {
-    commentsStore.value[id] = getDefaultComments(id)
+    commentsStore.value[id] = getDefaultComments(String(id));
   }
-  return commentsStore.value[id]
-})
+};
 
 const publishComment = (commentId, replyId, content) => {
-  if (!requireLogin('登录后才能发表评论哦~')) return
+  if (!requireLogin('登录后才能发表评论哦~')) return;
   if (commentId === undefined && replyId === undefined && content === undefined) {
     if (!commentForm.value.content.trim()) {
-      ElMessage.warning('评论内容不能为空~')
-      return
+      ElMessage.warning('评论内容不能为空~');
+      return;
     }
     const newComment = {
       id: Date.now(),
@@ -222,21 +265,21 @@ const publishComment = (commentId, replyId, content) => {
       time: new Date().toLocaleString(),
       isAdmin: false,
       like: 0,
-      replies: []
-    }
-    commentsStore.value[currentArticleId.value].unshift(newComment)
-    ElMessage.success('评论发布成功！')
-    commentForm.value.content = ''
-    return
+      replies: [],
+    };
+    commentsStore.value[currentDailyId.value].unshift(newComment);
+    ElMessage.success('评论发布成功！');
+    commentForm.value.content = '';
+    return;
   }
 
-  const parentComment = currentCommentList.value.find(c => c.id === commentId)
-  if (!parentComment) return
+  const parentComment = currentCommentList.value.find((c) => c.id === commentId);
+  if (!parentComment) return;
 
-  let replyToName = parentComment.nickname
+  let replyToName = parentComment.nickname;
   if (replyId) {
-    const targetReply = parentComment.replies.find(r => r.id === replyId)
-    if (targetReply) replyToName = targetReply.nickname
+    const targetReply = parentComment.replies.find((r) => r.id === replyId);
+    if (targetReply) replyToName = targetReply.nickname;
   }
 
   parentComment.replies.unshift({
@@ -246,93 +289,126 @@ const publishComment = (commentId, replyId, content) => {
     content: content,
     replyTo: replyToName,
     time: new Date().toLocaleString(),
-    like: 0
-  })
-  ElMessage.success('回复成功！')
-}
+    like: 0,
+  });
+  ElMessage.success('回复成功！');
+};
 
 // 表情
-const showEmoji = ref(false)
+const showEmoji = ref(false);
 const closeEmojiOutside = (e) => {
-  const emojiBox = document.querySelector('.emoji-panel')
-  const emojiBtn = document.querySelector('.emoji-btn')
+  const emojiBox = document.querySelector('.emoji-panel');
+  const emojiBtn = document.querySelector('.emoji-btn');
   if (emojiBox && !emojiBox.contains(e.target) && !emojiBtn.contains(e.target)) {
-    showEmoji.value = false
+    showEmoji.value = false;
   }
-}
+};
 const insertEmoji = (code) => {
-  commentForm.value.content += code
-  closeEmoji()
-}
+  commentForm.value.content += code;
+  closeEmoji();
+};
 const closeEmoji = () => {
-  showEmoji.value = false
-}
+  showEmoji.value = false;
+};
 
 // 路由切换刷新
-watch(() => route.params.id, () => {
-  fetchDailyDetail()
-  commentForm.value.content = ''
-})
+watch(
+  () => route.params.id,
+  (id) => {
+    initDailyComments(id);
+    commentForm.value.content = '';
+    closeModal();
+    loadDailyDetail(id);
+  },
+  { immediate: true }
+);
 
 onMounted(() => {
-  fetchDailyDetail()
-  // 浏览数 +1（失败静默，不影响页面）
-  addDailyViewApi(route.params.id).catch(() => {})
-  document.addEventListener('click', closeEmojiOutside)
-})
+  document.addEventListener('click', closeEmojiOutside);
+});
 
 onUnmounted(() => {
-  document.removeEventListener('click', closeEmojiOutside)
-})
+  latestDetailRequestId += 1;
+  document.removeEventListener('click', closeEmojiOutside);
+});
 </script>
 
 <template>
   <div class="common-article-detail">
-    <div class="article-detail">
+    <div v-loading="detailLoading" class="article-detail">
       <button class="button-return" @click="$router.go(-1)">
-        <el-icon>
-          <DArrowLeft />
-        </el-icon>返回
+        <el-icon> <DArrowLeft /> </el-icon>返回
       </button>
       <div class="divider"></div>
 
       <div class="daily-item" v-if="dailyItem">
         <div class="card-header">
-          <el-avatar :src="dailyItem.avatar" size="50" />
+          <el-avatar :src="dailyItem.userAvatar" :size="50" />
           <div class="info">
-            <div class="username">{{ dailyItem.username }}</div>
-            <div class="time">{{ dailyItem.createTime }}</div>
+            <div class="username">{{ dailyItem.userNickname }}</div>
+            <div class="time">{{ dailyItem.publishTime || dailyItem.createTime }}</div>
           </div>
         </div>
 
         <div class="card-content">{{ dailyItem.content }}</div>
 
         <div class="card-images" v-if="dailyItem.images.length">
-          <img v-for="(img, idx) in dailyItem.images" :key="img" :src="img"
-            @click.stop="handleImageClick(dailyItem, idx)" draggable="false" />
+          <img
+            v-for="(img, idx) in dailyItem.images"
+            :key="`${dailyItem.id}-${idx}`"
+            :src="img"
+            @click.stop="handleImageClick(dailyItem, idx)"
+            draggable="false"
+          />
+        </div>
+
+        <div v-if="dailyItem.files.length" class="card-files">
+          <el-link
+            v-for="(file, idx) in dailyItem.files"
+            :key="`${dailyItem.id}-file-${idx}`"
+            :href="file.url"
+            target="_blank"
+            rel="noopener noreferrer"
+            type="primary"
+            class="file-link"
+            :underline="false"
+          >
+            <el-icon class="file-icon"><Document /></el-icon>
+            <span class="file-name">{{ file.name }}</span>
+          </el-link>
         </div>
 
         <div class="card-actions">
           <button class="like-btn" :class="{ active: dailyItem.isLiked }" @click.stop="toggleLike(dailyItem)">
-            <font-awesome-icon icon="fa-solid fa-thumbs-up" /> {{ dailyItem.like }}
+            <font-awesome-icon icon="fa-solid fa-thumbs-up" /> {{ dailyItem.likeNum || 0 }}
           </button>
           <button class="comment-btn">
             <el-icon>
               <ChatDotRound />
-            </el-icon> {{ dailyItem.comment }}
+            </el-icon>
+            {{ dailyItem.commentNum || 0 }}
           </button>
         </div>
       </div>
 
-      <div v-else class="empty-data">暂无日常数据</div>
+      <div v-else-if="!detailLoading" class="empty-data">
+        <span>{{ detailMessage || '暂无日常数据' }}</span>
+        <el-button v-if="detailLoadFailed" type="primary" link @click="loadDailyDetail(route.params.id)">
+          重新加载
+        </el-button>
+      </div>
 
-      <div class="comment-section">
+      <div v-if="dailyItem" class="comment-section">
         <div class="comment-publish-box">
           <h3>留下你的想法~</h3>
           <div class="publish-form">
             <div class="comment-textarea-container">
-              <textarea v-model="commentForm.content" placeholder="请输入评论内容..." maxlength="500"
-                class="comment-textarea"></textarea>
+              <textarea
+                v-model="commentForm.content"
+                placeholder="请输入评论内容..."
+                maxlength="500"
+                class="comment-textarea"
+              ></textarea>
               <div class="emoji-btn" @click.stop="showEmoji = !showEmoji">
                 <font-awesome-icon :icon="['fa', 'face-smile']" />
               </div>
@@ -345,8 +421,12 @@ onUnmounted(() => {
         </div>
 
         <h3>评论</h3>
-        <CommentList :comment-list="currentCommentList" @like-comment="likeComment" @like-reply="likeReply"
-          @send-reply="publishComment" />
+        <CommentList
+          :comment-list="currentCommentList"
+          @like-comment="likeComment"
+          @like-reply="likeReply"
+          @send-reply="publishComment"
+        />
       </div>
     </div>
 
@@ -357,19 +437,21 @@ onUnmounted(() => {
         <div class="loading-spinner"></div>
         <span>加载中...</span>
       </div>
-      <img :src="previewImageUrl" class="preview-image" :style="{ transform: `scale(${scale})` }" draggable="false">
+      <img :src="previewImageUrl" class="preview-image" :style="{ transform: `scale(${scale})` }" draggable="false" />
       <div class="img-next" @click="nextImage">›</div>
       <div class="img-zoom">
-        <div @click="zoomOut"><el-icon>
+        <div @click="zoomOut">
+          <el-icon>
             <ZoomOut />
-          </el-icon></div>
-        <div @click="zoomIn"><el-icon>
-            <ZoomIn />
-          </el-icon></div>
-        <!-- 图片计数器（循环时提示当前位置） -->
-        <div class="image-counter" v-if="imageList.length">
-          {{ currentImageIndex + 1 }} / {{ imageList.length }}
+          </el-icon>
         </div>
+        <div @click="zoomIn">
+          <el-icon>
+            <ZoomIn />
+          </el-icon>
+        </div>
+        <!-- 图片计数器（循环时提示当前位置） -->
+        <div class="image-counter" v-if="imageList.length">{{ currentImageIndex + 1 }} / {{ imageList.length }}</div>
       </div>
     </div>
   </div>
@@ -479,6 +561,49 @@ onUnmounted(() => {
   transform: scale(1.03);
 }
 
+.card-files {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.file-link {
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+  justify-content: flex-start;
+  line-height: 1.5;
+}
+
+.file-link :deep(.el-link__inner) {
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 100%;
+  text-align: left;
+}
+
+.file-icon {
+  flex: 0 0 auto;
+  margin-top: 0.2em;
+}
+
+.file-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.file-link:hover .file-name,
+.file-link:focus-visible .file-name {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
 .card-actions {
   display: flex;
   justify-content: flex-start;
@@ -510,6 +635,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   color: var(--text-secondary-color);
   font-size: 16px;
   padding: 60px 0;
@@ -680,7 +806,7 @@ onUnmounted(() => {
 }
 
 .comment-publish-box h3::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   top: 4px;
@@ -702,7 +828,6 @@ onUnmounted(() => {
 
 /* 模拟输入框容器，完全控制边框和内边距 */
 .comment-textarea-container {
-
   position: relative;
   width: 100%;
   border: 1px solid var(--border-color);

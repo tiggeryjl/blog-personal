@@ -3,6 +3,7 @@ package com.blog.service;
 import com.blog.pojo.dto.DailyDTO;
 import com.blog.pojo.dto.DailyPageQueryDTO;
 import com.blog.pojo.entity.Daily;
+import com.blog.pojo.vo.DailyFrontVO;
 import com.blog.result.PageResult;
 
 import java.util.List;
@@ -18,6 +19,20 @@ public interface DailyService {
      * @return 分页结果
      */
     PageResult pageQuery(DailyPageQueryDTO dailyPageQueryDTO);
+
+    /**
+     * 分页查询用户端公开日常列表
+     * @param dailyPageQueryDTO 查询参数
+     * @return 分页结果
+     */
+    PageResult pageQueryUser(DailyPageQueryDTO dailyPageQueryDTO);
+
+    /**
+     * 根据ID查询用户端公开日常详情
+     * @param id 日常ID
+     * @return 日常详情，不存在或未公开时返回null
+     */
+    DailyFrontVO getDetailById(Long id);
 
     /**
      * 新增日常

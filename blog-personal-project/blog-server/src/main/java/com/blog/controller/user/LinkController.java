@@ -16,7 +16,7 @@ import java.util.List;
  */
 @Slf4j
 @RestController("userLinkController")
-@RequestMapping("/link")
+@RequestMapping("/user/link")
 public class LinkController {
 
     @Autowired

@@ -2,6 +2,7 @@ package com.blog.mapper;
 
 import com.blog.pojo.dto.DailyPageQueryDTO;
 import com.blog.pojo.entity.Daily;
+import com.blog.pojo.vo.DailyFrontVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -20,6 +21,20 @@ public interface DailyMapper {
      * @return 日常列表
      */
     List<Daily> pageQuery(DailyPageQueryDTO params);
+
+    /**
+     * 分页查询用户端公开日常列表
+     * @param params 查询参数
+     * @return 用户端日常列表
+     */
+    List<DailyFrontVO> pageQueryUser(DailyPageQueryDTO params);
+
+    /**
+     * 根据ID查询用户端公开日常详情
+     * @param id 日常ID
+     * @return 日常详情
+     */
+    DailyFrontVO getDetailById(Long id);
 
     /**
      * 分页查询逻辑删除的日常（回收站）

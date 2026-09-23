@@ -3,6 +3,24 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.blog.mapper.DailyMapper">
 
+    <resultMap id="DailyFrontVoResultMap" type="com.blog.pojo.vo.DailyFrontVO">
+        <id property="id" column="id"/>
+        <result property="content" column="content"/>
+        <result property="images" column="images"
+                typeHandler="com.blog.handler.StringListTypeHandler"/>
+        <result property="files" column="files"
+                typeHandler="com.blog.handler.StringListTypeHandler"/>
+        <result property="type" column="type"/>
+        <result property="userNickname" column="user_nickname"/>
+        <result property="userAvatar" column="user_avatar"/>
+        <result property="isTop" column="is_top"/>
+        <result property="likeNum" column="like_num"/>
+        <result property="commentNum" column="comment_num"/>
+        <result property="viewNum" column="view_num"/>
+        <result property="createTime" column="create_time"/>
+        <result property="publishTime" column="publish_time"/>
+    </resultMap>
+
     <!-- 分页查询正常列表的日常 -->
     <select id="pageQuery" resultType="com.blog.pojo.entity.Daily">
         SELECT *
@@ -29,6 +47,40 @@
             </if>
         </where>
         ORDER BY is_top DESC, publish_time DESC, create_time DESC
+    </select>
+
+    <!-- 分页查询用户端公开日常列表 -->
+    <select id="pageQueryUser" resultMap="DailyFrontVoResultMap">
+        SELECT id, content, images, files, type, user_nickname, user_avatar, is_top,
+               like_num, comment_num, view_num, create_time, publish_time
+        FROM daily
+        <where>
+            delete_flag = 0
+            AND status = 1
+            <if test="content != null and content != ''">
+                AND content LIKE CONCAT('%', #{content}, '%')
+            </if>
+            <if test="type != null">
+                AND type = #{type}
+            </if>
+            <if test="begin != null">
+                AND create_time &gt;= #{begin}
+            </if>
+            <if test="end != null">
+                AND create_time &lt;= #{end}
+            </if>
+        </where>
+        ORDER BY is_top DESC, publish_time DESC, create_time DESC, id DESC
+    </select>
+
+    <!-- 根据ID查询用户端公开日常详情 -->
+    <select id="getDetailById" resultMap="DailyFrontVoResultMap">
+        SELECT id, content, images, files, type, user_nickname, user_avatar, is_top,
+               like_num, comment_num, view_num, create_time, publish_time
+        FROM daily
+        WHERE id = #{id}
+          AND delete_flag = 0
+          AND status = 1
     </select>
 
     <!-- 分页查询逻辑删除的日常（回收站） -->
@@ -73,6 +125,7 @@
         SET view_num = IFNULL(view_num, 0) + 1
         WHERE id = #{id}
           AND delete_flag = 0
+          AND status = 1
     </update>
 
     <!-- 新增日常 -->

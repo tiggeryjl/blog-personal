@@ -1,5 +1,8 @@
 package com.blog.pojo.dto;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -53,12 +56,17 @@ public class DailyPageQueryDTO implements Serializable {
     /**
      * 页码
      */
+    @NotNull(message = "页码不能为空")
+    @Min(value = 1, message = "页码必须大于0")
     @Builder.Default
     private Integer page = 1;
 
     /**
      * 每页显示的记录数
      */
+    @NotNull(message = "每页显示条数不能为空")
+    @Min(value = 1, message = "每页显示条数必须大于0")
+    @Max(value = 100, message = "每页显示条数不能超过100")
     @Builder.Default
     private Integer pageSize = 10;
 }

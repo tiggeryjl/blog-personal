@@ -11,6 +11,7 @@ import com.blog.pojo.dto.DailyDTO;
 import com.blog.pojo.dto.DailyPageQueryDTO;
 import com.blog.pojo.entity.Daily;
 import com.blog.pojo.entity.SysUser;
+import com.blog.pojo.vo.DailyFrontVO;
 import com.blog.result.PageResult;
 import com.blog.service.DailyService;
 import com.github.pagehelper.PageHelper;
@@ -48,6 +49,28 @@ public class DailyServiceImpl implements DailyService {
         List<Daily> dailyList = dailyMapper.pageQuery(dailyPageQueryDTO);
         PageInfo<Daily> pageInfo = new PageInfo<>(dailyList);
         return new PageResult(pageInfo.getTotal(), pageInfo.getList());
+    }
+
+    /**
+     * 分页查询用户端公开日常列表
+     */
+    @Override
+    public PageResult pageQueryUser(DailyPageQueryDTO dailyPageQueryDTO) {
+        PageHelper.startPage(dailyPageQueryDTO.getPage(), dailyPageQueryDTO.getPageSize());
+        List<DailyFrontVO> dailyList = dailyMapper.pageQueryUser(dailyPageQueryDTO);
+        PageInfo<DailyFrontVO> pageInfo = new PageInfo<>(dailyList);
+        return new PageResult(pageInfo.getTotal(), pageInfo.getList());
+    }
+
+    /**
+     * 根据ID查询用户端公开日常详情
+     */
+    @Override
+    public DailyFrontVO getDetailById(Long id) {
+        if (id == null || id <= 0) {
+            return null;
+        }
+        return dailyMapper.getDetailById(id);
     }
 
     /**

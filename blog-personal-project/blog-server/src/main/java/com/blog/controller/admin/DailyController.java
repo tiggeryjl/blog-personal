@@ -14,10 +14,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 日常回收站管理
+ * 日常管理
  */
 @Slf4j
-@RestController
+@RestController("adminDailyController")
 @RequestMapping("/admin/daily")
 public class DailyController {
 
