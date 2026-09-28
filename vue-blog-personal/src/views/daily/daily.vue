@@ -2,9 +2,11 @@
 import { useRouter } from 'vue-router';
 import { ref, watch, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
-import { ZoomIn, ZoomOut, ChatDotRound, Document } from '@element-plus/icons-vue';
+import { ZoomIn, ZoomOut, ChatDotRound, Document, View } from '@element-plus/icons-vue';
 import MyPagination from '@/components/MyPagination.vue';
 import { getDailyListApi } from '@/api/daily.js';
+import { likeApi, LIKE_TARGET_TYPE } from '@/api/like.js';
+import { requireLogin } from '@/utils/auth.js';
 
 const router = useRouter();
 
@@ -73,7 +75,7 @@ const getDailyList = async () => {
       ...item,
       images: normalizeImages(item.images),
       files: normalizeFiles(item.files),
-      isLiked: false,
+      isLiked: item.liked === true,
     }));
     total.value = nextTotal;
     loadFailed.value = false;
@@ -98,10 +100,32 @@ onMounted(() => {
   getDailyList();
 });
 
-// 点赞
-const toggleLike = (item) => {
-  item.isLiked = !item.isLiked;
-  item.likeNum = (item.likeNum || 0) + (item.isLiked ? 1 : -1);
+// 日常点赞中的目标集合，防止重复提交
+const likingDailyIds = new Set();
+const toggleLike = async (item) => {
+  if (!requireLogin('登录后才能点赞哦~')) return;
+  if (item.isLiked) {
+    ElMessage.warning('你已经点过赞了');
+    return;
+  }
+  const key = String(item.id);
+  if (likingDailyIds.has(key)) return;
+  likingDailyIds.add(key);
+  try {
+    const result = await likeApi({ targetType: LIKE_TARGET_TYPE.DAILY, targetId: item.id });
+    if (result?.code === 200) {
+      const data = result.data || {};
+      item.isLiked = data.liked === true;
+      if (typeof data.likeCount === 'number') item.likeNum = data.likeCount;
+      ElMessage.success('点赞成功！');
+    } else {
+      ElMessage.error(result?.msg || '点赞失败，请稍后重试');
+    }
+  } catch (error) {
+    ElMessage.error('点赞失败，请稍后重试');
+  } finally {
+    likingDailyIds.delete(key);
+  }
 };
 
 // 去评论页
@@ -277,6 +301,12 @@ const closeModal = () => {
 
         <!-- 点赞 + 评论 -->
         <div class="card-actions">
+          <span
+            ><el-icon>
+              <View />
+            </el-icon>
+            {{ item.viewNum }}</span
+          >
           <button class="like-btn" :class="{ active: item.isLiked }" @click.stop="toggleLike(item)">
             <font-awesome-icon icon="fa-solid fa-thumbs-up" /> {{ item.likeNum || 0 }}
           </button>

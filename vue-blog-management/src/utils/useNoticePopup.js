@@ -1,6 +1,15 @@
 import { ElNotification, ElButton } from 'element-plus';
 import { createVNode } from 'vue';
 import { useRouter } from 'vue-router';
+import {
+  NOTICE_TARGET_TYPE,
+  getNoticeActionButtonText,
+  getNoticeActionDescription,
+  getNoticeTargetLabel,
+  getNoticeTargetRoute,
+  getNoticeTargetTitle,
+  getNoticeTargetType,
+} from '@/constants/noticeConstants';
 
 export function useNoticePopup() {
   const router = useRouter();
@@ -16,11 +25,10 @@ export function useNoticePopup() {
 
   function buildVNode(item, close) {
     const isComment = item.type === 'comment';
-    const isLink = item.type === 'link';
-    const isLinkUrge = isLink && (item.actionText || '').includes('催促');
+    const isLink = item.type === 'link' || getNoticeTargetType(item) === NOTICE_TARGET_TYPE.LINK;
     const color = TYPE_COLOR[item.type] || TYPE_COLOR.like;
-    // 正文动作文案：友链分为“申请友链”和“催促审核”两种
-    const middleText = isLink ? (isLinkUrge ? ' 催促审核了友链：' : ' 申请了友链：') : ` ${item.actionText}了文章：`;
+    const targetTitle = getNoticeTargetTitle(item) || getNoticeTargetLabel(item);
+    const targetRoute = getNoticeTargetRoute(item);
     return createVNode('div', { class: 'notice-body' }, [
       createVNode(
         'div',
@@ -31,8 +39,8 @@ export function useNoticePopup() {
       ),
       createVNode('div', { style: 'font-size:14px;color:#606266;line-height:1.6;word-break:break-all;' }, [
         createVNode('span', { style: 'font-weight:bold;color:#303133;' }, item.operatorName),
-        createVNode('span', null, middleText),
-        createVNode('span', { style: 'color:#409EFF;' }, item.articleTitle),
+        createVNode('span', null, getNoticeActionDescription(item)),
+        createVNode('span', { style: 'color:#409EFF;' }, targetTitle),
       ]),
       (isComment || isLink) && item.content
         ? createVNode(
@@ -51,8 +59,12 @@ export function useNoticePopup() {
             'display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:6px;border-top:1px solid #ebeef5;',
         },
         [
-          createVNode('span', { style: 'font-size:12px;color:#909399;' }, item.actionText + '时间:' + item.createTime),
-          item.articleId
+          createVNode(
+            'span',
+            { style: 'font-size:12px;color:#909399;' },
+            `${item.actionText || '通知'}时间：${item.createTime || '-'}`
+          ),
+          targetRoute
             ? createVNode(
                 ElButton,
                 {
@@ -60,11 +72,11 @@ export function useNoticePopup() {
                   type: 'primary',
                   plain: true,
                   onClick: () => {
-                    router.push(isLink ? '/linkInfo' : `/articleDetail?id=${item.articleId}`);
+                    router.push(targetRoute);
                     close();
                   },
                 },
-                () => (isLink && isLinkUrge ? '去审核' : '查看详情')
+                () => getNoticeActionButtonText(item)
               )
             : null,
         ]

@@ -3,8 +3,7 @@ package com.blog.controller.user;
 import com.blog.pojo.dto.ArticleCommentDTO;
 import com.blog.pojo.dto.CommentPageQueryDTO;
 import com.blog.pojo.dto.CommentReplyDTO;
-import com.blog.pojo.dto.CommentStatusDTO;
-import com.blog.pojo.entity.Comment;
+import com.blog.pojo.dto.DailyCommentDTO;
 import com.blog.pojo.vo.CommentVo;
 import com.blog.result.PageResult;
 import com.blog.result.Result;
@@ -12,7 +11,6 @@ import com.blog.service.CommentService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -49,23 +47,37 @@ public class CommentController {
      */
     @PostMapping("/article/{articleId}")
     public Result addArticleComment(@PathVariable("articleId") Long articleId,
-                                          @Valid @RequestBody ArticleCommentDTO articleCommentDTO) {
+                                    @Valid @RequestBody ArticleCommentDTO articleCommentDTO) {
         log.info("发表文章id为{}的评论:{}", articleId, articleCommentDTO);
         commentService.addArticleComment(articleId, articleCommentDTO.getContent());
         return Result.success();
     }
 
     /**
-     * 分页查询日常评论
+     * 根据日常ID查询用户端可见评论
      *
-     * @param param 查询参数
-     * @return 分页结果
+     * @param id 日常ID
+     * @return 评论树
      */
-    @GetMapping("/daily/list")
-    public Result<PageResult> getDailyCommentList(CommentPageQueryDTO param) {
-        param.setType(1);
-        log.info("分页查询日常评论:{}", param);
-        return Result.success(commentService.pageQuery(param));
+    @GetMapping("/daily/{id}")
+    public Result<List<CommentVo>> getDailyById(@PathVariable("id") Long id) {
+        log.info("查询日常id为{}的评论", id);
+        return Result.success(commentService.getDailyById(id));
+    }
+
+    /**
+     * 发表日常顶级评论
+     *
+     * @param dailyId         日常ID
+     * @param dailyCommentDTO 评论内容
+     * @return 统一结果
+     */
+    @PostMapping("/daily/{dailyId}")
+    public Result addDailyComment(@PathVariable("dailyId") Long dailyId,
+                                  @Valid @RequestBody DailyCommentDTO dailyCommentDTO) {
+        log.info("发表日常id为{}的评论:{}", dailyId, dailyCommentDTO);
+        commentService.addDailyComment(dailyId, dailyCommentDTO.getContent());
+        return Result.success();
     }
 
     /**
@@ -81,7 +93,6 @@ public class CommentController {
         return Result.success(commentService.pageQuery(param));
     }
 
-
     /**
      * 回复评论
      *
@@ -91,7 +102,7 @@ public class CommentController {
     @PostMapping("/reply")
     public Result reply(@Valid @RequestBody CommentReplyDTO commentReplyDTO) {
         log.info("回复评论:{}", commentReplyDTO);
-        commentService.addReply(commentReplyDTO);
+        commentService.addUserReply(commentReplyDTO);
         return Result.success();
     }
 

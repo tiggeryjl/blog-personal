@@ -4,17 +4,25 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import Emoji from '@/components/Emoji.vue';
 import CommentList from '@/components/Comment.vue';
-import { ZoomIn, ZoomOut, ChatDotRound, DArrowLeft, Document } from '@element-plus/icons-vue';
+import { ZoomIn, ZoomOut, ChatDotRound, DArrowLeft, Document, View } from '@element-plus/icons-vue';
 import { addDailyViewApi, getDailyDetailApi } from '@/api/daily';
+import { addCommentReplyApi, addDailyCommentApi, getDailyCommentListApi } from '@/api/comment.js';
+import { likeApi, LIKE_TARGET_TYPE } from '@/api/like.js';
 import { requireLogin } from '@/utils/auth';
+import { useUserStore } from '@/store/userloginstatus';
 
 const route = useRoute();
+const userStore = useUserStore();
+const isLogin = computed(() => !!userStore.user_token);
 
 const dailyItem = ref(null);
 const detailLoading = ref(false);
 const detailMessage = ref('');
 const detailLoadFailed = ref(false);
 let latestDetailRequestId = 0;
+let componentUnmounted = false;
+
+const isCurrentDaily = (id) => !componentUnmounted && String(route.params.id) === String(id);
 
 const normalizeImages = (images) => {
   if (Array.isArray(images)) return images.filter(Boolean);
@@ -62,7 +70,7 @@ const fetchDailyDetail = async (id) => {
       ...result.data,
       images: normalizeImages(result.data.images),
       files: normalizeFiles(result.data.files),
-      isLiked: false,
+      isLiked: result.data.liked === true,
     };
     return true;
   } catch (error) {
@@ -86,11 +94,36 @@ const loadDailyDetail = async (id) => {
   }
 };
 
-// 点赞
-const toggleLike = (item) => {
+// 点赞日常
+const likingDailyIds = new Set();
+const toggleLike = async (item) => {
   if (!requireLogin('登录后才能点赞哦~')) return;
-  item.isLiked = !item.isLiked;
-  item.likeNum = (item.likeNum || 0) + (item.isLiked ? 1 : -1);
+  if (item.isLiked) {
+    ElMessage.warning('你已经点过赞了');
+    return;
+  }
+  const dailyId = item.id;
+  const key = String(dailyId);
+  if (likingDailyIds.has(key)) return;
+  likingDailyIds.add(key);
+  try {
+    const result = await likeApi({ targetType: LIKE_TARGET_TYPE.DAILY, targetId: dailyId });
+    if (!isCurrentDaily(dailyId)) return;
+    if (result?.code === 200) {
+      const data = result.data || {};
+      item.isLiked = data.liked === true;
+      if (typeof data.likeCount === 'number') item.likeNum = data.likeCount;
+      ElMessage.success('点赞成功！');
+    } else {
+      ElMessage.error(result?.msg || '点赞失败，请稍后重试');
+    }
+  } catch (error) {
+    if (isCurrentDaily(dailyId)) {
+      ElMessage.error('点赞失败，请稍后重试');
+    }
+  } finally {
+    likingDailyIds.delete(key);
+  }
 };
 
 // ========== 图片预览 ==========
@@ -202,96 +235,177 @@ const closeModal = () => {
   imageLoading.value = false;
 };
 
-// 评论
-const commentForm = ref({ content: '' });
-
-const getDefaultComments = (articleId) => {
-  if (articleId === '1') {
-    return [
-      {
-        id: 1,
-        nickname: '小叶同学',
-        avatar: 'https://picsum.photos/100/100?1',
-        content: '欢迎来到我的博客！大家可以在这里随意留言～',
-        time: '2025-01-01 12:00',
-        isAdmin: true,
-        like: 7,
-        replies: [],
-      },
-    ];
+// 评论点赞中的目标集合，防止连点
+const likingTargets = new Set();
+const handleCommentLike = async (targetId, onSuccess) => {
+  const dailyId = route.params.id;
+  const likeKey = `${LIKE_TARGET_TYPE.COMMENT}_${targetId}`;
+  if (likingTargets.has(likeKey)) return;
+  likingTargets.add(likeKey);
+  try {
+    const result = await likeApi({ targetType: LIKE_TARGET_TYPE.COMMENT, targetId });
+    if (!isCurrentDaily(dailyId)) return;
+    if (result.code === 200) {
+      const data = result.data || {};
+      onSuccess(data);
+      ElMessage.success(data.liked ? '点赞成功！' : '已取消点赞');
+    } else {
+      ElMessage.error(result.msg || '操作失败，请稍后重试');
+    }
+  } catch (error) {
+    if (isCurrentDaily(dailyId)) {
+      ElMessage.error('点赞失败，请稍后重试');
+    }
+  } finally {
+    likingTargets.delete(likeKey);
   }
-  return [];
 };
 
+// 点赞主评论
 const likeComment = (commentId) => {
   if (!requireLogin('登录后才能点赞哦~')) return;
-  const list = currentCommentList.value;
-  const comment = list.find((c) => c.id === commentId);
-  if (comment) comment.like++;
-  ElMessage.success('点赞成功！');
-};
-const likeReply = (commentId, replyId) => {
-  if (!requireLogin('登录后才能点赞哦~')) return;
-  const list = currentCommentList.value;
-  const comment = list.find((c) => c.id === commentId);
+  const comment = currentCommentList.value.find((item) => item.id === commentId);
   if (!comment) return;
-  const reply = comment.replies.find((r) => r.id === replyId);
-  if (reply) reply.like++;
-  ElMessage.success('点赞成功！');
-};
-
-const commentsStore = ref({});
-const currentDailyId = computed(() => route.params.id);
-const currentCommentList = computed(() => commentsStore.value[currentDailyId.value] || []);
-
-const initDailyComments = (id) => {
-  if (!commentsStore.value[id]) {
-    commentsStore.value[id] = getDefaultComments(String(id));
-  }
-};
-
-const publishComment = (commentId, replyId, content) => {
-  if (!requireLogin('登录后才能发表评论哦~')) return;
-  if (commentId === undefined && replyId === undefined && content === undefined) {
-    if (!commentForm.value.content.trim()) {
-      ElMessage.warning('评论内容不能为空~');
-      return;
-    }
-    const newComment = {
-      id: Date.now(),
-      nickname: '游客' + Math.random().toString().slice(-6),
-      avatar: `https://picsum.photos/100/100?${Math.random()}`,
-      content: commentForm.value.content,
-      time: new Date().toLocaleString(),
-      isAdmin: false,
-      like: 0,
-      replies: [],
-    };
-    commentsStore.value[currentDailyId.value].unshift(newComment);
-    ElMessage.success('评论发布成功！');
-    commentForm.value.content = '';
+  if (comment.liked) {
+    ElMessage.warning('你已经点过赞了');
     return;
   }
+  handleCommentLike(commentId, (data) => {
+    comment.liked = data.liked === true;
+    if (typeof data.likeCount === 'number') comment.likeNum = data.likeCount;
+  });
+};
 
-  const parentComment = currentCommentList.value.find((c) => c.id === commentId);
-  if (!parentComment) return;
+// 点赞回复
+const likeReply = (commentId, replyId) => {
+  if (!requireLogin('登录后才能点赞哦~')) return;
+  const comment = currentCommentList.value.find((item) => item.id === commentId);
+  if (!comment) return;
+  const reply = comment.replies.find((item) => item.id === replyId);
+  if (!reply) return;
+  if (reply.liked) {
+    ElMessage.warning('你已经点过赞了');
+    return;
+  }
+  handleCommentLike(replyId, (data) => {
+    reply.liked = data.liked === true;
+    if (typeof data.likeCount === 'number') reply.likeNum = data.likeCount;
+  });
+};
 
-  let replyToName = parentComment.nickname;
-  if (replyId) {
-    const targetReply = parentComment.replies.find((r) => r.id === replyId);
-    if (targetReply) replyToName = targetReply.nickname;
+const currentCommentList = ref([]);
+const commentLoading = ref(false);
+const commentLoadFailed = ref(false);
+let latestCommentRequestId = 0;
+
+const getCommentList = async (id, reset = false) => {
+  const requestId = ++latestCommentRequestId;
+  if (reset) currentCommentList.value = [];
+  commentLoading.value = true;
+  commentLoadFailed.value = false;
+  try {
+    const result = await getDailyCommentListApi(id);
+    if (requestId !== latestCommentRequestId) return false;
+    if (result?.code === 200) {
+      currentCommentList.value = Array.isArray(result.data) ? result.data : [];
+      if (dailyItem.value && String(dailyItem.value.id) === String(id)) {
+        dailyItem.value.commentNum = countComments(currentCommentList.value);
+      }
+      return true;
+    }
+    commentLoadFailed.value = true;
+    ElMessage.error(result?.msg || '获取评论失败，请稍后重试');
+    return false;
+  } catch (error) {
+    if (requestId === latestCommentRequestId) {
+      commentLoadFailed.value = true;
+      ElMessage.error('获取评论失败，请稍后重试');
+    }
+    return false;
+  } finally {
+    if (requestId === latestCommentRequestId) {
+      commentLoading.value = false;
+    }
+  }
+};
+
+const countComments = (list) => {
+  if (!list) return 0;
+  return list.reduce((sum, item) => sum + 1 + countComments(item.replies), 0);
+};
+const commentTotal = computed(() => countComments(currentCommentList.value));
+
+const commentForm = ref({ content: '' });
+const publishing = ref(false);
+let latestPublishRequestId = 0;
+
+// 发表评论/回复评论
+const publishComment = async (commentId, replyId, content) => {
+  if (!requireLogin('登录后才能发表评论哦~')) return false;
+  if (commentId === undefined && replyId === undefined && content === undefined) {
+    const draftContent = commentForm.value.content;
+    const submittedContent = draftContent.trim();
+    if (!submittedContent) {
+      ElMessage.warning('评论内容不能为空~');
+      return false;
+    }
+    const dailyId = dailyItem.value?.id;
+    if (!dailyId || publishing.value) return false;
+    const requestId = ++latestPublishRequestId;
+    publishing.value = true;
+    try {
+      const result = await addDailyCommentApi(dailyId, submittedContent);
+      if (requestId !== latestPublishRequestId || !isCurrentDaily(dailyId)) {
+        return false;
+      }
+      if (result?.code === 200) {
+        if (commentForm.value.content === draftContent) {
+          commentForm.value.content = '';
+        }
+        ElMessage.success('评论发布成功！');
+        await getCommentList(dailyId);
+        return true;
+      }
+      ElMessage.error(result?.msg || '评论发布失败，请稍后重试');
+      return false;
+    } catch (error) {
+      if (requestId === latestPublishRequestId && isCurrentDaily(dailyId)) {
+        ElMessage.error('评论发布失败，请稍后重试');
+      }
+      return false;
+    } finally {
+      if (requestId === latestPublishRequestId) {
+        publishing.value = false;
+      }
+    }
   }
 
-  parentComment.replies.unshift({
-    id: Date.now(),
-    nickname: '游客' + Math.random().toString().slice(-6),
-    avatar: `https://picsum.photos/100/100?${Math.random()}`,
-    content: content,
-    replyTo: replyToName,
-    time: new Date().toLocaleString(),
-    like: 0,
-  });
-  ElMessage.success('回复成功！');
+  if (!content || !content.trim()) {
+    ElMessage.warning('回复内容不能为空');
+    return false;
+  }
+  const parentId = replyId || commentId;
+  const dailyId = dailyItem.value?.id;
+  if (!parentId || !dailyId) return false;
+  try {
+    const result = await addCommentReplyApi({
+      parentId,
+      content: content.trim(),
+    });
+    if (!isCurrentDaily(dailyId)) return false;
+    if (result?.code === 200) {
+      ElMessage.success('回复成功！');
+      await getCommentList(dailyId);
+      return true;
+    }
+    ElMessage.error(result?.msg || '回复失败，请稍后重试');
+    return false;
+  } catch (error) {
+    if (isCurrentDaily(dailyId)) {
+      ElMessage.error('回复失败，请稍后重试');
+    }
+    return false;
+  }
 };
 
 // 表情
@@ -315,10 +429,12 @@ const closeEmoji = () => {
 watch(
   () => route.params.id,
   (id) => {
-    initDailyComments(id);
+    latestPublishRequestId += 1;
+    publishing.value = false;
     commentForm.value.content = '';
     closeModal();
     loadDailyDetail(id);
+    getCommentList(id, true);
   },
   { immediate: true }
 );
@@ -328,7 +444,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  componentUnmounted = true;
   latestDetailRequestId += 1;
+  latestCommentRequestId += 1;
+  latestPublishRequestId += 1;
   document.removeEventListener('click', closeEmojiOutside);
 });
 </script>
@@ -379,6 +498,12 @@ onUnmounted(() => {
         </div>
 
         <div class="card-actions">
+          <span
+            ><el-icon>
+              <View />
+            </el-icon>
+            {{ dailyItem.viewNum }}</span
+          >
           <button class="like-btn" :class="{ active: dailyItem.isLiked }" @click.stop="toggleLike(dailyItem)">
             <font-awesome-icon icon="fa-solid fa-thumbs-up" /> {{ dailyItem.likeNum || 0 }}
           </button>
@@ -398,14 +523,14 @@ onUnmounted(() => {
         </el-button>
       </div>
 
-      <div v-if="dailyItem" class="comment-section">
+      <div v-if="dailyItem" v-loading="commentLoading" class="comment-section">
         <div class="comment-publish-box">
           <h3>留下你的想法~</h3>
           <div class="publish-form">
             <div class="comment-textarea-container">
               <textarea
                 v-model="commentForm.content"
-                placeholder="请输入评论内容..."
+                :placeholder="isLogin ? '请输入评论内容...' : '登录后即可发表评论~'"
                 maxlength="500"
                 class="comment-textarea"
               ></textarea>
@@ -413,19 +538,33 @@ onUnmounted(() => {
                 <font-awesome-icon :icon="['fa', 'face-smile']" />
               </div>
               <Emoji v-if="showEmoji" :show="showEmoji" @select="insertEmoji" @close="closeEmoji" />
-              <el-button type="primary" size="small" @click="publishComment()" class="publish-btn">
+              <el-button
+                type="primary"
+                size="small"
+                :loading="publishing"
+                @click="publishComment()"
+                class="publish-btn"
+              >
                 发表评论
               </el-button>
             </div>
           </div>
         </div>
 
-        <h3>评论</h3>
+        <h3>
+          评论
+          <span>({{ commentTotal }})</span>
+        </h3>
+        <div v-if="commentLoadFailed" class="comment-load-error">
+          <span>评论加载失败</span>
+          <el-button type="primary" link @click="getCommentList(route.params.id)">重新加载</el-button>
+        </div>
         <CommentList
+          v-if="!commentLoadFailed || currentCommentList.length > 0"
           :comment-list="currentCommentList"
+          :on-send-reply="publishComment"
           @like-comment="likeComment"
           @like-reply="likeReply"
-          @send-reply="publishComment"
         />
       </div>
     </div>
@@ -643,6 +782,15 @@ onUnmounted(() => {
 
 .comment-section {
   margin-top: 20px;
+}
+
+.comment-load-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 56px;
+  color: var(--text-secondary-color);
 }
 
 .image-modal {

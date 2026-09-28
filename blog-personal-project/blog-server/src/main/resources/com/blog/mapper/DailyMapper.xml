@@ -128,6 +128,15 @@
           AND status = 1
     </update>
 
+    <!-- 修改公开日常点赞数 -->
+    <update id="changeLikeNum">
+        UPDATE daily
+        SET like_num = GREATEST(IFNULL(like_num, 0) + #{delta}, 0)
+        WHERE id = #{id}
+          AND delete_flag = 0
+          AND status = 1
+    </update>
+
     <!-- 新增日常 -->
     <insert id="add" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO daily(content, images, files, user_id, user_nickname, user_avatar,

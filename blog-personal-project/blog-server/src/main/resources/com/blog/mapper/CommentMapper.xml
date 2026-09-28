@@ -190,6 +190,31 @@
         GROUP BY source_id
     </select>
 
+    <!-- 批量统计日常可见评论数 -->
+    <select id="countByDailyIds" resultType="com.blog.pojo.vo.DailyCountVO">
+        WITH RECURSIVE visible_daily_comments AS (
+            SELECT id, source_id
+            FROM comment
+            WHERE type = 1
+              AND parent_id = 0
+              AND delete_flag = 0
+              AND status = 1
+              AND source_id IN
+              <foreach collection="dailyIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+            UNION ALL
+            SELECT child.id, child.source_id
+            FROM comment child
+            INNER JOIN visible_daily_comments parent ON child.parent_id = parent.id
+            WHERE child.type = 1
+              AND child.source_id = parent.source_id
+              AND child.delete_flag = 0
+              AND child.status = 1
+        )
+        SELECT source_id AS dailyId, COUNT(*) AS countNum
+        FROM visible_daily_comments
+        GROUP BY source_id
+    </select>
+
     <!-- 批量逻辑删除(含其下二级回复) -->
     <update id="logicDelete">
         UPDATE comment
@@ -227,6 +252,19 @@
 
     <select id="getArticle" resultType="com.blog.pojo.entity.Comment">
         SELECT * FROM comment
+        WHERE type = #{type}
+          AND source_id = #{sourceId}
+          AND delete_flag = 0
+          AND status = 1
+        ORDER BY is_top DESC, create_time DESC
+    </select>
+
+    <!-- 用户端评论只返回展示所需字段，不暴露IP和设备信息 -->
+    <select id="getPublicComments" resultType="com.blog.pojo.vo.CommentVo">
+        SELECT id, type, source_id, msg_type, parent_id, reply_user_id, reply_user_nickname,
+               user_id, user_nickname, user_avatar, content, like_num, status, is_top,
+               create_time, update_time
+        FROM comment
         WHERE type = #{type}
           AND source_id = #{sourceId}
           AND delete_flag = 0

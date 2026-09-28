@@ -44,6 +44,13 @@ public interface CommentService {
     void addReply(CommentReplyDTO commentReplyDTO);
 
     /**
+     * 用户端回复可见评论
+     *
+     * @param commentReplyDTO 被回复评论ID与回复内容
+     */
+    void addUserReply(CommentReplyDTO commentReplyDTO);
+
+    /**
      * 置顶/取消置顶评论
      *
      * @param id 评论ID
@@ -79,6 +86,14 @@ public interface CommentService {
     List<CommentVo> getArticleById(Long id);
 
     /**
+     * 根据日常ID查询用户端可见评论
+     *
+     * @param id 日常ID
+     * @return 评论树
+     */
+    List<CommentVo> getDailyById(Long id);
+
+    /**
      * 发表文章顶级评论
      *
      * @param articleId 文章ID
@@ -86,4 +101,12 @@ public interface CommentService {
      * @return 新评论ID
      */
     void addArticleComment(Long articleId, String content);
+
+    /**
+     * 发表日常顶级评论
+     *
+     * @param dailyId 日常ID
+     * @param content 评论内容
+     */
+    void addDailyComment(Long dailyId, String content);
 }

@@ -2,15 +2,20 @@ package com.blog.service.impl;
 
 import com.blog.constant.DailyStatusConstant;
 import com.blog.constant.DelStatusConstant;
+import com.blog.constant.LikeConstant;
 import com.blog.constant.StatusConstant;
 import com.blog.context.BaseContext;
 import com.blog.exception.CustomException;
+import com.blog.mapper.CommentMapper;
 import com.blog.mapper.DailyMapper;
+import com.blog.mapper.LikeMapper;
 import com.blog.mapper.SysUserMapper;
 import com.blog.pojo.dto.DailyDTO;
 import com.blog.pojo.dto.DailyPageQueryDTO;
 import com.blog.pojo.entity.Daily;
 import com.blog.pojo.entity.SysUser;
+import com.blog.pojo.vo.ArticleCountVO;
+import com.blog.pojo.vo.DailyCountVO;
 import com.blog.pojo.vo.DailyFrontVO;
 import com.blog.result.PageResult;
 import com.blog.service.DailyService;
@@ -24,7 +29,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -38,6 +46,12 @@ public class DailyServiceImpl implements DailyService {
     private DailyMapper dailyMapper;
 
     @Autowired
+    private CommentMapper commentMapper;
+
+    @Autowired
+    private LikeMapper likeMapper;
+
+    @Autowired
     private SysUserMapper sysUserMapper;
 
     /**
@@ -48,6 +62,7 @@ public class DailyServiceImpl implements DailyService {
         PageHelper.startPage(dailyPageQueryDTO.getPage(), dailyPageQueryDTO.getPageSize());
         List<Daily> dailyList = dailyMapper.pageQuery(dailyPageQueryDTO);
         PageInfo<Daily> pageInfo = new PageInfo<>(dailyList);
+        fillAdminCommentCounts(pageInfo.getList());
         return new PageResult(pageInfo.getTotal(), pageInfo.getList());
     }
 
@@ -59,6 +74,7 @@ public class DailyServiceImpl implements DailyService {
         PageHelper.startPage(dailyPageQueryDTO.getPage(), dailyPageQueryDTO.getPageSize());
         List<DailyFrontVO> dailyList = dailyMapper.pageQueryUser(dailyPageQueryDTO);
         PageInfo<DailyFrontVO> pageInfo = new PageInfo<>(dailyList);
+        fillRealtimeInteractionStats(pageInfo.getList());
         return new PageResult(pageInfo.getTotal(), pageInfo.getList());
     }
 
@@ -70,7 +86,75 @@ public class DailyServiceImpl implements DailyService {
         if (id == null || id <= 0) {
             return null;
         }
-        return dailyMapper.getDetailById(id);
+        DailyFrontVO daily = dailyMapper.getDetailById(id);
+        if (daily != null) {
+            fillRealtimeInteractionStats(List.of(daily));
+        }
+        return daily;
+    }
+
+    /**
+     * 填充用户端实时点赞数、评论数和当前用户点赞状态
+     */
+    private void fillRealtimeInteractionStats(List<DailyFrontVO> dailyList) {
+        if (dailyList == null || dailyList.isEmpty()) {
+            return;
+        }
+        List<Long> dailyIds = dailyList.stream()
+                .map(DailyFrontVO::getId)
+                .filter(id -> id != null)
+                .distinct()
+                .collect(Collectors.toList());
+        if (dailyIds.isEmpty()) {
+            return;
+        }
+
+        Map<Long, Long> commentCounts = getVisibleCommentCounts(dailyIds);
+        Map<Long, Long> likeCounts = likeMapper.countByTargetIds(
+                        LikeConstant.TARGET_DAILY, dailyIds)
+                .stream()
+                .collect(Collectors.toMap(ArticleCountVO::getArticleId,
+                        ArticleCountVO::getCountNum, (a, b) -> a));
+
+        Set<Long> likedIds = new HashSet<>();
+        Long currentUserId = BaseContext.getCurrentId();
+        if (currentUserId != null) {
+            likedIds.addAll(likeMapper.selectLikedIds(
+                    currentUserId, LikeConstant.TARGET_DAILY, dailyIds));
+        }
+        for (DailyFrontVO daily : dailyList) {
+            daily.setCommentNum(commentCounts.getOrDefault(daily.getId(), 0L).intValue());
+            daily.setLikeNum(likeCounts.getOrDefault(daily.getId(), 0L).intValue());
+            daily.setLiked(likedIds.contains(daily.getId()));
+        }
+    }
+
+    /**
+     * 后台日常列表也使用可见评论实时统计，避免依赖未同步的冗余字段。
+     */
+    private void fillAdminCommentCounts(List<Daily> dailyList) {
+        if (dailyList == null || dailyList.isEmpty()) {
+            return;
+        }
+        List<Long> dailyIds = dailyList.stream()
+                .map(Daily::getId)
+                .filter(id -> id != null)
+                .distinct()
+                .collect(Collectors.toList());
+        if (dailyIds.isEmpty()) {
+            return;
+        }
+        Map<Long, Long> commentCounts = getVisibleCommentCounts(dailyIds);
+        for (Daily daily : dailyList) {
+            daily.setCommentNum(commentCounts.getOrDefault(daily.getId(), 0L).intValue());
+        }
+    }
+
+    private Map<Long, Long> getVisibleCommentCounts(List<Long> dailyIds) {
+        return commentMapper.countByDailyIds(dailyIds)
+                .stream()
+                .collect(Collectors.toMap(DailyCountVO::getDailyId,
+                        DailyCountVO::getCountNum, (a, b) -> a));
     }
 
     /**

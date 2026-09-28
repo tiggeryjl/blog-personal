@@ -12,6 +12,9 @@ import {
   NOTICE_DEDUP_CACHE_SIZE,
   ONLINE_COUNT_MESSAGE_TYPE,
   ONLINE_COUNT_SUBSCRIBE_MESSAGE,
+  getNoticeTargetId,
+  getNoticeTargetTitle,
+  getNoticeTargetType,
 } from '@/constants/noticeConstants';
 import { useNoticeStore } from '@/stores/notice';
 import { useNoticePopup } from '@/utils/useNoticePopup';
@@ -172,7 +175,9 @@ const getNoticeDedupKey = (notice) => {
     notice?.type,
     notice?.title,
     notice?.actionText,
-    notice?.articleId,
+    getNoticeTargetType(notice),
+    getNoticeTargetId(notice),
+    getNoticeTargetTitle(notice),
     notice?.operatorName,
     notice?.content,
     notice?.createTime,

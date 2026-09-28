@@ -127,9 +127,30 @@
     </select>
 
     <select id="selectTopDailyByLikes" resultType="map">
+        WITH RECURSIVE visible_daily_comments AS (
+            SELECT id, source_id
+            FROM comment
+            WHERE type = 1
+              AND parent_id = 0
+              AND delete_flag = 0
+              AND status = 1
+            UNION ALL
+            SELECT child.id, child.source_id
+            FROM comment child
+            INNER JOIN visible_daily_comments parent ON child.parent_id = parent.id
+            WHERE child.type = 1
+              AND child.source_id = parent.source_id
+              AND child.delete_flag = 0
+              AND child.status = 1
+        ), daily_comment_counts AS (
+            SELECT source_id, COUNT(*) AS comment_num
+            FROM visible_daily_comments
+            GROUP BY source_id
+        )
         SELECT d.id, LEFT(d.content, 50) AS content, d.like_num AS likeNum,
-               d.comment_num AS commentNum, d.publish_time AS publishTime
+               COALESCE(dcc.comment_num, 0) AS commentNum, d.publish_time AS publishTime
         FROM daily d
+        LEFT JOIN daily_comment_counts dcc ON dcc.source_id = d.id
         WHERE d.delete_flag = 0
         ORDER BY d.like_num DESC, d.id ASC
         LIMIT #{limit}

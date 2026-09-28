@@ -88,7 +88,7 @@ public class SecurityConfig {
                                 "/user/categorys/**",
                                 "/user/tags/**",
                                 "/user/comment/article/**",
-                                "/user/comment/daily/list",
+                                "/user/comment/daily/**",
                                 "/user/comment/message/list").permitAll()
                         // 其他接口（发表评论、回复、点赞、修改资料等）必须认证
                         .anyRequest().authenticated()

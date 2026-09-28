@@ -2,6 +2,7 @@ package com.blog.WebSocket;
 
 import com.alibaba.fastjson.JSON;
 import com.blog.config.SpringContextHolder;
+import com.blog.permission.AdminAccessChecker;
 import com.blog.pojo.dto.SysNoticeDTO;
 import com.blog.pojo.vo.AdminOnlineCountVO;
 import com.blog.service.JwtService;
@@ -68,6 +69,12 @@ public class AdminNoticeWebSocket {
             return;
         }
         adminId = jwtService.getUserId(token);
+        AdminAccessChecker adminAccessChecker = SpringContextHolder.getBean(AdminAccessChecker.class);
+        if (!adminAccessChecker.hasAccess(adminId)) {
+            log.warn("【WS】用户{}无后台通知访问权限，关闭连接", adminId);
+            closeSession(session);
+            return;
+        }
         session.getUserProperties().put("adminId", adminId);
         //同一管理员多端登录时分别保存会话，避免互相覆盖
         AdminOnlineCountVO onlineCountMessage = addSession(adminId, session);

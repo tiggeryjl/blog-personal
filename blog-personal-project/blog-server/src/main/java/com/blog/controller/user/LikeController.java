@@ -24,8 +24,7 @@ public class LikeController {
     private LikeService likeService;
 
     /**
-     * 点赞文章/评论
-     *
+     * 点赞文章、日常或评论
      * @param likeDTO 点赞类型与目标ID
      * @return 点赞结果
      */

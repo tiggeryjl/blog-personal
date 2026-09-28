@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import MyPagination from '@/components/MyPagination.vue';
 import PermissionViewTip from '@/components/PermissionViewTip.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -46,6 +47,8 @@ import {
   getDailyTypeTag,
   computeDailyType,
 } from '@/constants/dailyConstants';
+
+const route = useRoute();
 
 // ====================== 查询条件 ======================
 const queryForm = reactive({
@@ -507,6 +510,51 @@ const viewDaily = (row) => {
   previewImages.value = splitUrlList(row.images).map((f) => f.url);
   previewDialogVisible.value = true;
 };
+
+const normalizeQueryValue = (value) => {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  return rawValue == null ? '' : String(rawValue).trim();
+};
+
+let previewRequestVersion = 0;
+let lastPreviewKey = '';
+
+const openNoticePreview = async (previewIdValue, noticeIdValue) => {
+  const previewId = normalizeQueryValue(previewIdValue);
+  const noticeId = normalizeQueryValue(noticeIdValue);
+  if (!/^[1-9]\d*$/.test(previewId)) {
+    previewRequestVersion += 1;
+    lastPreviewKey = '';
+    previewDialogVisible.value = false;
+    return;
+  }
+
+  const previewKey = `${previewId}:${noticeId}`;
+  if (previewKey === lastPreviewKey) return;
+  lastPreviewKey = previewKey;
+  const requestVersion = ++previewRequestVersion;
+  previewDialogVisible.value = false;
+
+  try {
+    const result = await getDailyDetailApi(previewId);
+    if (requestVersion !== previewRequestVersion) return;
+    if (result.code === 200 && result.data) {
+      viewDaily(result.data);
+    } else {
+      ElMessage.error(result.msg || '获取日常详情失败');
+    }
+  } catch (error) {
+    if (requestVersion !== previewRequestVersion) return;
+    console.error('获取通知对应的日常详情异常', error);
+    ElMessage.error('获取日常详情失败，请稍后重试');
+  }
+};
+
+watch(
+  [() => route.query.previewId, () => route.query.noticeId],
+  ([previewId, noticeId]) => openNoticePreview(previewId, noticeId),
+  { immediate: true }
+);
 
 const previewFiles = computed(() => splitUrlList(previewRow.value.files));
 

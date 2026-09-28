@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 /**
- * 后台回复评论参数
+ * 回复评论参数
  */
 @Data
 @Builder

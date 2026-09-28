@@ -4,6 +4,12 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { getNoticeListApi, markReadSingleApi, markReadAllApi, getInitUnreadApi } from '@/api/notice';
 import { useNoticeStore } from '@/stores/notice';
 import { useRouter } from 'vue-router';
+import {
+  getNoticeActionButtonText,
+  getNoticeTargetLabel,
+  getNoticeTargetRoute,
+  getNoticeTargetTitle,
+} from '@/constants/noticeConstants';
 
 const router = useRouter();
 const noticeStore = useNoticeStore();
@@ -61,9 +67,10 @@ const handleReadAll = async () => {
   noticeStore.clearCount();
 };
 
-const goArticle = (row) => {
-  if (!row.articleId) return;
-  router.push(`/articleDetail?id=${row.articleId}`);
+const goTarget = (row) => {
+  const targetRoute = getNoticeTargetRoute(row);
+  if (!targetRoute) return;
+  router.push(targetRoute);
 };
 
 onMounted(() => fetchList());
@@ -91,7 +98,11 @@ onMounted(() => fetchList());
           </template>
         </el-table-column>
         <el-table-column label="用户" prop="operatorName" width="140" align="center" />
-        <el-table-column label="文章标题" prop="articleTitle" width="140" align="center" />
+        <el-table-column label="来源" min-width="180" align="center">
+          <template #default="scope">
+            {{ getNoticeTargetLabel(scope.row) }}：{{ getNoticeTargetTitle(scope.row) || '-' }}
+          </template>
+        </el-table-column>
         <el-table-column label="内容" prop="content" min-width="300" align="center" />
         <el-table-column label="状态" width="100" align="center">
           <template #default="scope">
@@ -106,8 +117,12 @@ onMounted(() => fetchList());
             <el-button size="small" @click="handleReadSingle(scope.row)" :disabled="scope.row.isRead"
               >标记已读</el-button
             >
-            <el-button size="small" type="primary" @click="goArticle(scope.row)" v-if="scope.row.articleId"
-              >查看文章</el-button
+            <el-button
+              v-if="getNoticeTargetRoute(scope.row)"
+              size="small"
+              type="primary"
+              @click="goTarget(scope.row)"
+              >{{ getNoticeActionButtonText(scope.row) }}</el-button
             >
           </template>
         </el-table-column>

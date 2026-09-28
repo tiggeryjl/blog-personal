@@ -4,6 +4,7 @@ import com.blog.pojo.dto.CommentPageQueryDTO;
 import com.blog.pojo.entity.Comment;
 import com.blog.pojo.vo.ArticleCountVO;
 import com.blog.pojo.vo.CommentVo;
+import com.blog.pojo.vo.DailyCountVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -73,7 +74,7 @@ public interface CommentMapper {
     void update(Comment comment);
 
     /**
-     * 新增评论(后台回复)
+     * 新增评论(回复评论)
      *
      * @param comment 评论
      */
@@ -86,6 +87,14 @@ public interface CommentMapper {
      * @return 各文章ID对应的评论数
      */
     List<ArticleCountVO> countByArticleIds(@Param("articleIds") Collection<Long> articleIds);
+
+    /**
+     * 批量统计多条日常的可见评论数
+     *
+     * @param dailyIds 日常ID集合
+     * @return 各日常ID对应的评论数
+     */
+    List<DailyCountVO> countByDailyIds(@Param("dailyIds") Collection<Long> dailyIds);
 
     /**
      * 批量逻辑删除(含其下二级回复)
@@ -114,6 +123,14 @@ public interface CommentMapper {
      * @return
      */
     List<Comment> getArticle(Comment comment);
+
+    /**
+     * 根据类型和来源ID查询用户端可见评论
+     *
+     * @param comment 评论类型与来源ID
+     * @return 前台评论列表
+     */
+    List<CommentVo> getPublicComments(Comment comment);
 
     /**
      * 变更评论点赞数

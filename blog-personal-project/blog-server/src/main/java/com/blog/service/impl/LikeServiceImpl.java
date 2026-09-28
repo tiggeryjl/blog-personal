@@ -1,8 +1,10 @@
 package com.blog.service.impl;
 
 import com.blog.constant.CommentConstant;
+import com.blog.constant.DailyStatusConstant;
 import com.blog.constant.DelStatusConstant;
 import com.blog.constant.LikeConstant;
+import com.blog.constant.NoticeConstant;
 import com.blog.constant.StatusConstant;
 import com.blog.constant.SystemConstant;
 import com.blog.context.BaseContext;
@@ -10,17 +12,20 @@ import com.blog.exception.LikeException;
 import com.blog.exception.UserNotLoginException;
 import com.blog.mapper.ArticleMapper;
 import com.blog.mapper.CommentMapper;
+import com.blog.mapper.DailyMapper;
 import com.blog.mapper.LikeMapper;
 import com.blog.mapper.SysUserMapper;
 import com.blog.mapper.SysUserRoleMapper;
 import com.blog.pojo.entity.Article;
 import com.blog.pojo.entity.Comment;
+import com.blog.pojo.entity.Daily;
 import com.blog.pojo.entity.SysUser;
 import com.blog.pojo.entity.UserLike;
 import com.blog.pojo.vo.ArticleCountVO;
 import com.blog.pojo.vo.LikeVo;
 import com.blog.service.LikeService;
 import com.blog.service.NoticeService;
+import com.blog.utils.NoticeTextUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,8 +33,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * 点赞服务实现
@@ -48,6 +55,9 @@ public class LikeServiceImpl implements LikeService {
     private CommentMapper commentMapper;
 
     @Autowired
+    private DailyMapper dailyMapper;
+
+    @Autowired
     private SysUserMapper sysUserMapper;
 
     @Autowired
@@ -57,7 +67,7 @@ public class LikeServiceImpl implements LikeService {
     private NoticeService noticeService;
 
     /**
-     * 点赞文章/评论
+     * 点赞文章、日常或评论
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -72,10 +82,31 @@ public class LikeServiceImpl implements LikeService {
         if (LikeConstant.TARGET_ARTICLE.equals(targetType)) {
             return likeArticle(userId, targetId);
         }
+        if (LikeConstant.TARGET_DAILY.equals(targetType)) {
+            return likeDaily(userId, targetId);
+        }
         if (LikeConstant.TARGET_COMMENT.equals(targetType)) {
             return likeComment(userId, targetId);
         }
         throw new LikeException("暂不支持该类型点赞");
+    }
+
+    /**
+     * 点赞公开日常
+     */
+    private LikeVo likeDaily(Long userId, Long dailyId) {
+        Daily daily = getPublicDaily(dailyId);
+        if (saveLikeRecord(userId, LikeConstant.TARGET_DAILY, dailyId)) {
+            if (dailyMapper.changeLikeNum(dailyId, 1) == 0) {
+                throw new LikeException("日常不存在或暂未公开");
+            }
+            notifyDailyLike(userId, daily);
+        }
+        List<ArticleCountVO> counts = likeMapper.countByTargetIds(
+                LikeConstant.TARGET_DAILY, Collections.singletonList(dailyId));
+        long likeCount = counts.isEmpty() || counts.get(0).getCountNum() == null
+                ? 0L : counts.get(0).getCountNum();
+        return LikeVo.builder().liked(true).likeCount((int) likeCount).build();
     }
 
     /**
@@ -105,6 +136,10 @@ public class LikeServiceImpl implements LikeService {
         if (comment == null || DelStatusConstant.DISABLE.equals(comment.getDeleteFlag())
                 || !StatusConstant.ENABLE.equals(comment.getStatus())) {
             throw new LikeException("评论不存在或已删除");
+        }
+        if (CommentConstant.ONE.equals(comment.getType())) {
+            validateVisibleReplyChain(comment);
+            getPublicDaily(comment.getSourceId());
         }
         if (saveLikeRecord(userId, LikeConstant.TARGET_COMMENT, commentId)) {
             commentMapper.changeLikeNum(commentId, 1);
@@ -141,25 +176,94 @@ public class LikeServiceImpl implements LikeService {
                 || sysUserRoleMapper.hasRole(userId, SystemConstant.SUPER_ADMIN_ROLE)) {
             return;
         }
-        noticeService.createNotice("like", "收到新点赞", "点赞",
-                article.getTitle(), article.getId(), getOperatorName(userId), null);
+        noticeService.createNotice(NoticeConstant.TYPE_LIKE, "收到新点赞", "点赞",
+                NoticeConstant.TARGET_ARTICLE, article.getTitle(), article.getId(),
+                getOperatorName(userId), null);
     }
 
     /**
-     * 点赞文章评论时给博主推送通知
+     * 点赞日常时给后台推送通知
      */
-    private void notifyCommentLike(Long userId, Comment comment) {
-        if (!CommentConstant.ZERO.equals(comment.getType())
-                || Objects.equals(comment.getUserId(), userId)
+    private void notifyDailyLike(Long userId, Daily daily) {
+        if (Objects.equals(daily.getUserId(), userId)
                 || sysUserRoleMapper.hasRole(userId, SystemConstant.SUPER_ADMIN_ROLE)) {
             return;
         }
-        Article article = articleMapper.getArticleById(comment.getSourceId());
-        if (article == null) {
+        noticeService.createNotice(NoticeConstant.TYPE_LIKE, "收到新点赞", "点赞",
+                NoticeConstant.TARGET_DAILY,
+                NoticeTextUtil.dailySummary(daily.getContent(), daily.getId()),
+                daily.getId(), getOperatorName(userId), null);
+    }
+
+    /**
+     * 点赞文章或日常评论时给后台推送通知
+     *
+     * 通知面向后台通知中心，评论作者点赞自己的评论同样推送，
+     * 仅博主本人（超级管理员）操作不通知
+     */
+    private void notifyCommentLike(Long userId, Comment comment) {
+        if (sysUserRoleMapper.hasRole(userId, SystemConstant.SUPER_ADMIN_ROLE)) {
             return;
         }
-        noticeService.createNotice("like", "收到新点赞", "点赞评论",
-                article.getTitle(), article.getId(), getOperatorName(userId), null);
+
+        if (CommentConstant.ZERO.equals(comment.getType())) {
+            Article article = articleMapper.getArticleById(comment.getSourceId());
+            if (article == null) {
+                return;
+            }
+            noticeService.createNotice(NoticeConstant.TYPE_LIKE, "收到新点赞", "点赞评论",
+                    NoticeConstant.TARGET_ARTICLE, article.getTitle(), article.getId(),
+                    getOperatorName(userId), null);
+            return;
+        }
+
+        if (CommentConstant.ONE.equals(comment.getType())) {
+            Daily daily = getPublicDaily(comment.getSourceId());
+            noticeService.createNotice(NoticeConstant.TYPE_LIKE, "收到新点赞", "点赞评论",
+                    NoticeConstant.TARGET_DAILY,
+                    NoticeTextUtil.dailySummary(daily.getContent(), daily.getId()),
+                    daily.getId(), getOperatorName(userId), null);
+        }
+    }
+
+    private Daily getPublicDaily(Long dailyId) {
+        Daily daily = dailyMapper.getById(dailyId);
+        if (daily == null || DelStatusConstant.DISABLE.equals(daily.getDeleteFlag())
+                || !DailyStatusConstant.PUBLISHED.equals(daily.getStatus())) {
+            throw new LikeException("日常不存在或暂未公开");
+        }
+        return daily;
+    }
+
+    /**
+     * 点赞回复时确保从当前评论到顶级评论的整条链路均可见且来源一致
+     */
+    private void validateVisibleReplyChain(Comment target) {
+        Integer type = target.getType();
+        Long sourceId = target.getSourceId();
+        Comment current = target;
+        Set<Long> visitedIds = new HashSet<>();
+
+        while (current != null) {
+            if (current.getId() == null || !visitedIds.add(current.getId())) {
+                throw new LikeException("评论回复关系异常");
+            }
+            if (DelStatusConstant.DISABLE.equals(current.getDeleteFlag())
+                    || !StatusConstant.ENABLE.equals(current.getStatus())) {
+                throw new LikeException("评论不存在或已隐藏");
+            }
+            if (!Objects.equals(type, current.getType())
+                    || !Objects.equals(sourceId, current.getSourceId())) {
+                throw new LikeException("评论回复关系异常");
+            }
+            if (current.getParentId() == null || current.getParentId() == 0L) {
+                return;
+            }
+            current = commentMapper.getById(current.getParentId());
+            if (current == null) {
+                throw new LikeException("评论回复关系异常");
+            }
+        }
     }
 
     /**

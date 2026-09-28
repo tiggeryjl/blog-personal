@@ -28,4 +28,9 @@ public interface SysUserRoleMapper {
      * 根据用户id 判断该用户是否拥有指定角色
      */
     boolean hasRole(@Param("userId") Long userId, @Param("roleKey") String roleKey);
+
+    /**
+     * 判断用户当前是否具备后台访问资格。
+     */
+    boolean hasActiveAdminAccess(@Param("userId") Long userId);
 }

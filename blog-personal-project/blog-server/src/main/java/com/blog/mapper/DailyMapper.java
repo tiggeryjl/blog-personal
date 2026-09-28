@@ -57,6 +57,15 @@ public interface DailyMapper {
     void incrementView(Long id);
 
     /**
+     * 修改公开日常的点赞数
+     *
+     * @param id 日常ID
+     * @param delta 变化量
+     * @return 受影响行数
+     */
+    int changeLikeNum(@Param("id") Long id, @Param("delta") int delta);
+
+    /**
      * 新增日常
      * @param daily 日常信息
      */

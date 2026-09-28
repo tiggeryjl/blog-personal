@@ -7,8 +7,11 @@ export const getArticleCommentListApi = (id) => request.get(`/user/comment/artic
 export const addArticleCommentApi = (articleId, content) =>
   request.post(`/user/comment/article/${articleId}`, { content });
 
-// 分页查询日常评论
-export const getDailyCommentListApi = (data) => request.get(`/user/comment/daily/list`, { params: data });
+// 根据日常ID查询评论
+export const getDailyCommentListApi = (id) => request.get(`/user/comment/daily/${id}`);
+
+// 发表日常顶级评论
+export const addDailyCommentApi = (dailyId, content) => request.post(`/user/comment/daily/${dailyId}`, { content });
 
 // 分页查询留言评论
 export const getMessageCommentListApi = (data) => request.get(`/user/comment/message/list`, { params: data });

@@ -2,6 +2,7 @@ package com.blog.service.impl;
 
 import com.blog.constant.DelStatusConstant;
 import com.blog.constant.LinkStatusConstant;
+import com.blog.constant.NoticeConstant;
 import com.blog.constant.StatusConstant;
 import com.blog.context.BaseContext;
 import com.blog.exception.LinkException;
@@ -230,9 +231,10 @@ public class LinkServiceImpl implements LinkService {
             operatorName = atIndex > 0 ? raw.substring(0, atIndex) : raw;
         }
         noticeService.createNotice(
-                "link",
+                NoticeConstant.TYPE_LINK,
                 "友链申请",
                 "申请",
+                NoticeConstant.TARGET_LINK,
                 safeName,
                 linkId,
                 operatorName,
@@ -276,9 +278,10 @@ public class LinkServiceImpl implements LinkService {
         String linkName = link.getLinkName() == null ? "友链" : link.getLinkName();
         String operatorName = user.getNickname() == null ? "访客" : user.getNickname();
         noticeService.createNotice(
-                "link",
+                NoticeConstant.TYPE_LINK,
                 "友链审核提醒",
                 "催促审核",
+                NoticeConstant.TARGET_LINK,
                 linkName,
                 link.getId(),
                 operatorName,

@@ -1,6 +1,5 @@
 package com.blog.mapper;
 
-import com.blog.pojo.dto.SysNoticeDTO;
 import com.blog.pojo.entity.SysNotice;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -19,7 +18,7 @@ public interface SysNoticeMapper {
      * @return
      */
     @Select("SELECT *  FROM sys_notice ORDER BY create_time DESC")
-    List<SysNoticeDTO> pageQuery(Integer page, Integer pageSize);
+    List<SysNotice> pageQuery(Integer page, Integer pageSize);
 
     /**
      * 统计未读个数

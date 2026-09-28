@@ -67,6 +67,11 @@ public class DailyFrontVO implements Serializable {
     private Integer likeNum;
 
     /**
+     * 当前登录用户是否已点赞
+     */
+    private boolean liked;
+
+    /**
      * 评论数
      */
     private Integer commentNum;

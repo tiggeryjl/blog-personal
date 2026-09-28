@@ -5,6 +5,7 @@ import com.blog.context.BaseContext;
 import com.blog.exception.CommentException;
 import com.blog.mapper.ArticleMapper;
 import com.blog.mapper.CommentMapper;
+import com.blog.mapper.DailyMapper;
 import com.blog.mapper.LikeMapper;
 import com.blog.mapper.SysUserMapper;
 import com.blog.mapper.SysUserRoleMapper;
@@ -15,14 +16,15 @@ import com.blog.pojo.entity.Article;
 import com.blog.pojo.entity.Comment;
 import com.blog.pojo.entity.SysUser;
 import com.blog.pojo.vo.CommentVo;
+import com.blog.pojo.vo.DailyFrontVO;
 import com.blog.result.PageResult;
 import com.blog.service.CommentService;
 import com.blog.service.NoticeService;
 import com.blog.utils.CommentTreeUtil;
+import com.blog.utils.NoticeTextUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +49,9 @@ public class CommentServiceImpl implements CommentService {
 
     @Autowired
     private ArticleMapper articleMapper;
+
+    @Autowired
+    private DailyMapper dailyMapper;
 
     @Autowired
     private SysUserMapper sysUserMapper;
@@ -182,9 +187,31 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void addReply(CommentReplyDTO commentReplyDTO) {
+        addReply(commentReplyDTO, false);
+    }
+
+    /**
+     * 用户端回复可见评论
+     *
+     * @param commentReplyDTO 被回复评论ID与回复内容
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addUserReply(CommentReplyDTO commentReplyDTO) {
+        addReply(commentReplyDTO, true);
+    }
+
+    private void addReply(CommentReplyDTO commentReplyDTO, boolean validateVisibility) {
         Comment parent = commentMapper.getById(commentReplyDTO.getParentId());
         if (parent == null || DelStatusConstant.DISABLE.equals(parent.getDeleteFlag())) {
             throw new CommentException("回复的评论不存在");
+        }
+        if (validateVisibility) {
+            validateVisibleReplyChain(parent);
+            if (CommentConstant.ONE.equals(parent.getType())
+                    && dailyMapper.getDetailById(parent.getSourceId()) == null) {
+                throw new CommentException("日常不存在或暂未公开");
+            }
         }
 
         SysUser user = sysUserMapper.getByUserId(BaseContext.getCurrentId());
@@ -211,7 +238,41 @@ public class CommentServiceImpl implements CommentService {
                 .updateTime(LocalDateTime.now())
                 .build();
         commentMapper.add(reply);
-        notifyAdminForComment(reply, null);
+        if (validateVisibility) {
+            notifyAdminForComment(reply, null);
+        }
+    }
+
+    /**
+     * 用户端回复时校验目标评论到顶级评论的完整可见链路
+     */
+    private void validateVisibleReplyChain(Comment target) {
+        Integer type = target.getType();
+        Long sourceId = target.getSourceId();
+        Comment current = target;
+        Set<Long> visitedIds = new HashSet<>();
+
+        while (current != null) {
+            if (current.getId() == null || !visitedIds.add(current.getId())) {
+                throw new CommentException("评论回复关系异常");
+            }
+            if (DelStatusConstant.DISABLE.equals(current.getDeleteFlag())
+                    || !StatusConstant.ENABLE.equals(current.getStatus())) {
+                throw new CommentException("回复的评论已被隐藏");
+            }
+            if (!type.equals(current.getType()) || !sourceId.equals(current.getSourceId())) {
+                throw new CommentException("评论回复关系异常");
+            }
+
+            Long parentId = current.getParentId();
+            if (parentId == null || LayoutConstant.PARENTID.equals(parentId)) {
+                return;
+            }
+            current = commentMapper.getById(parentId);
+            if (current == null) {
+                throw new CommentException("回复的评论不存在");
+            }
+        }
     }
 
     /**
@@ -264,13 +325,64 @@ public class CommentServiceImpl implements CommentService {
     }
 
     /**
-     * 非博主的用户发表/回复文章评论时，记录通知并推送管理员
+     * 发表日常顶级评论
      *
-     * @param comment        新评论
-     * @param fallbackTitle  文章标题（回复场景可传空，由内部补充）
+     * @param dailyId 日常ID
+     * @param content 评论内容
      */
-    private void notifyAdminForComment(Comment comment, String fallbackTitle) {
-        if (comment == null || !CommentConstant.ZERO.equals(comment.getType())) {
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addDailyComment(Long dailyId, String content) {
+        String trimmed = content == null ? "" : content.trim();
+        if (trimmed.isEmpty()) {
+            throw new CommentException("评论内容不能为空");
+        }
+        if (trimmed.length() > 500) {
+            throw new CommentException("评论内容最多500字");
+        }
+
+        DailyFrontVO daily = dailyMapper.getDetailById(dailyId);
+        if (daily == null) {
+            throw new CommentException("日常不存在或暂未公开");
+        }
+
+        SysUser user = sysUserMapper.getByUserId(BaseContext.getCurrentId());
+        if (user == null) {
+            throw new CommentException("当前用户不存在或登录已失效");
+        }
+
+        Comment comment = Comment.builder()
+                .type(CommentConstant.ONE)
+                .sourceId(dailyId)
+                .msgType(CommentConstant.ZERO)
+                .parentId(LayoutConstant.PARENTID)
+                .replyUserId(LayoutConstant.REPLYID)
+                .userId(user.getId())
+                .userNickname(user.getNickname())
+                .userAvatar(user.getAvatar())
+                .content(trimmed)
+                .likeNum(0)
+                .status(StatusConstant.ENABLE)
+                .isTop(StatusConstant.DISABLE)
+                .deleteFlag(DelStatusConstant.ENABLE)
+                .createTime(LocalDateTime.now())
+                .updateTime(LocalDateTime.now())
+                .build();
+        commentMapper.add(comment);
+        notifyAdminForComment(comment,
+                NoticeTextUtil.dailySummary(daily.getContent(), daily.getId()));
+    }
+
+    /**
+     * 非博主用户发表或回复公开评论时，记录通知并推送管理员
+     *
+     * @param comment             新评论
+     * @param fallbackTargetTitle 目标标题或摘要（回复场景可传空，由内部补充）
+     */
+    private void notifyAdminForComment(Comment comment, String fallbackTargetTitle) {
+        if (comment == null
+                || (!CommentConstant.ZERO.equals(comment.getType())
+                && !CommentConstant.ONE.equals(comment.getType()))) {
             return;
         }
         // 博主本人评论不通知
@@ -278,19 +390,40 @@ public class CommentServiceImpl implements CommentService {
             return;
         }
 
-        String articleTitle = fallbackTitle;
-        if (articleTitle == null || articleTitle.trim().isEmpty()) {
-            Article article = articleMapper.getArticleById(comment.getSourceId());
-            articleTitle = article == null ? null : article.getTitle();
+        String targetType;
+        String targetTitle = fallbackTargetTitle;
+        if (CommentConstant.ZERO.equals(comment.getType())) {
+            targetType = NoticeConstant.TARGET_ARTICLE;
+            if (targetTitle == null || targetTitle.trim().isEmpty()) {
+                Article article = articleMapper.getArticleById(comment.getSourceId());
+                targetTitle = article == null ? null : article.getTitle();
+            }
+            if (targetTitle == null || targetTitle.trim().isEmpty()) {
+                targetTitle = "文章 #" + comment.getSourceId();
+            }
+        } else {
+            targetType = NoticeConstant.TARGET_DAILY;
+            if (targetTitle == null || targetTitle.trim().isEmpty()) {
+                DailyFrontVO daily = dailyMapper.getDetailById(comment.getSourceId());
+                targetTitle = NoticeTextUtil.dailySummary(
+                        daily == null ? null : daily.getContent(), comment.getSourceId());
+            }
         }
-        String operatorName = (comment.getUserNickname() == null || comment.getUserNickname().trim().isEmpty())
+
+        boolean isReply = comment.getParentId() != null
+                && !LayoutConstant.PARENTID.equals(comment.getParentId());
+        String title = isReply ? "收到新回复" : "收到新评论";
+        String actionText = isReply ? "回复评论" : "评论";
+        String operatorName = (comment.getUserNickname() == null
+                || comment.getUserNickname().trim().isEmpty())
                 ? "匿名用户" : comment.getUserNickname();
 
         noticeService.createNotice(
-                "comment",
-                "收到新评论",
-                "评论",
-                articleTitle == null || articleTitle.trim().isEmpty() ? "文章" : articleTitle,
+                NoticeConstant.TYPE_COMMENT,
+                title,
+                actionText,
+                targetType,
+                targetTitle,
                 comment.getSourceId(),
                 operatorName,
                 comment.getContent());
@@ -366,23 +499,40 @@ public class CommentServiceImpl implements CommentService {
      */
     @Override
     public List<CommentVo> getArticleById(Long id) {
-        //构建查询数据对象
-        Comment comment = Comment.builder().type(0).sourceId(id).build();
-        List<Comment> commentList = commentMapper.getArticle(comment);
-        if(commentList == null || commentList.isEmpty()){
+        return getPublicComments(CommentConstant.ZERO, id);
+    }
+
+    /**
+     * 根据日常ID查询用户端可见评论
+     *
+     * @param id 日常ID
+     * @return 评论树
+     */
+    @Override
+    public List<CommentVo> getDailyById(Long id) {
+        if (id == null || id <= 0 || dailyMapper.getDetailById(id) == null) {
             return Collections.emptyList();
         }
+        return getPublicComments(CommentConstant.ONE, id);
+    }
 
-        List<CommentVo> commentVoList = commentList.stream()
-                .map(entity -> {
-                    CommentVo vo = new CommentVo();
-                    BeanUtils.copyProperties(entity, vo);
-                    boolean isAdmin = sysUserRoleMapper.hasRole(entity.getUserId(), SystemConstant.SUPER_ADMIN_ROLE);
-                    vo.setAdmin(isAdmin);
-                    return vo;
-                }).collect(Collectors.toList());
+    /**
+     * 查询并组装用户端评论树
+     */
+    private List<CommentVo> getPublicComments(Integer type, Long sourceId) {
+        if (sourceId == null || sourceId <= 0) {
+            return Collections.emptyList();
+        }
+        Comment query = Comment.builder().type(type).sourceId(sourceId).build();
+        List<CommentVo> commentVoList = commentMapper.getPublicComments(query);
+        if (commentVoList == null || commentVoList.isEmpty()) {
+            return Collections.emptyList();
+        }
+        for (CommentVo comment : commentVoList) {
+            comment.setAdmin(sysUserRoleMapper.hasRole(
+                    comment.getUserId(), SystemConstant.SUPER_ADMIN_ROLE));
+        }
 
-        //扁平数据转树形结构
         List<CommentVo> commentVos = CommentTreeUtil.buildFlatReplyTree(commentVoList);
         fillLikedStatus(commentVos);
         return commentVos;

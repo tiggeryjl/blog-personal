@@ -8,9 +8,9 @@ import com.blog.pojo.vo.LikeVo;
 public interface LikeService {
 
     /**
-     * 点赞文章/评论
+     * 点赞文章、日常或评论
      *
-     * @param targetType 点赞目标类型 0=文章 2=评论
+     * @param targetType 点赞目标类型 0=文章 1=日常 2=评论
      * @param targetId   目标ID
      * @return 点赞结果
      */

@@ -78,16 +78,18 @@ const closeAllReplies = () => {
 
 // 切换主评论回复框
 const toggleCommentReply = (commentId) => {
-  closeAllReplies();
   const ui = getCommentUI(commentId);
-  ui.replying = !ui.replying;
+  const shouldOpen = !ui.replying;
+  closeAllReplies();
+  ui.replying = shouldOpen;
 };
 
 // 切换回复的回复框
 const toggleReplyReply = (commentId, replyId) => {
-  closeAllReplies();
   const ui = getReplyUI(commentId, replyId);
-  ui.replying = !ui.replying;
+  const shouldOpen = !ui.replying;
+  closeAllReplies();
+  ui.replying = shouldOpen;
 };
 
 // 切换评论内容展开/收起
@@ -121,11 +123,12 @@ const sendReply = async (commentId, replyId = null) => {
   const clearCurrent = () => {
     ui.replyText = '';
     ui.replying = false;
-    closeAllReplies();
+    closeEmoji();
   };
 
   if (props.onSendReply) {
     ui.submitting = true;
+    closeEmoji();
     try {
       const ok = await props.onSendReply(commentId, replyId, text);
       // 发送成功才清空/收起；失败时保留用户输入，方便修改后重试
@@ -145,6 +148,7 @@ const sendReply = async (commentId, replyId = null) => {
 const activeEmojiReply = ref(null);
 
 const openEmoji = (target) => {
+  if (target.submitting) return;
   if (activeEmojiReply.value === target) {
     closeEmoji();
   } else {
@@ -239,6 +243,7 @@ watch(
               <input
                 v-model="getCommentUI(item.id).replyText"
                 :placeholder="`回复 @${item.userNickname}`"
+                :disabled="getCommentUI(item.id).submitting"
                 class="reply-input"
               />
 
@@ -313,6 +318,7 @@ watch(
                     <input
                       v-model="getReplyUI(item.id, r.id).replyText"
                       :placeholder="`回复 @${r.userNickname}`"
+                      :disabled="getReplyUI(item.id, r.id).submitting"
                       class="reply-input"
                     />
 

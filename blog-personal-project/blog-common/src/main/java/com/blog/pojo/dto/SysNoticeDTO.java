@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -25,11 +24,14 @@ public class SysNoticeDTO implements Serializable {
     // 动作文本
     private String actionText;
 
-    // 文章标题
-    private String articleTitle;
+    // 跳转目标类型 article/daily/link
+    private String targetType;
 
-    // 文章id
-    private Long articleId;
+    // 跳转目标标题或摘要
+    private String targetTitle;
+
+    // 跳转目标ID
+    private Long targetId;
 
     // 用户昵称
     private String operatorName;

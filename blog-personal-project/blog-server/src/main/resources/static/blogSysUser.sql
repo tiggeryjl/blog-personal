@@ -347,20 +347,22 @@ DROP TABLE IF EXISTS `sys_notice`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE sys_notice (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
-    type VARCHAR(20) NOT NULL COMMENT 'like 点赞 / comment 评论',
+    type VARCHAR(20) NOT NULL COMMENT '事件类型：like 点赞 / comment 评论 / link 友链',
     title VARCHAR(100) NOT NULL COMMENT '通知标题',
-    action_text VARCHAR(50) NOT NULL COMMENT '动作文案：点赞文章 / 评论文章',
-    article_title VARCHAR(255) NOT NULL COMMENT '文章标题',
-    article_id BIGINT NOT NULL COMMENT '文章id',
+    action_text VARCHAR(50) NOT NULL COMMENT '动作文案：点赞 / 评论 / 回复评论 / 申请',
+    target_type VARCHAR(20) NOT NULL COMMENT '跳转目标类型：article / daily / link',
+    target_title VARCHAR(255) NOT NULL COMMENT '跳转目标标题或摘要',
+    target_id BIGINT NOT NULL COMMENT '跳转目标ID',
     operator_name VARCHAR(100) NOT NULL COMMENT '访客昵称',
     content TEXT COMMENT '评论内容，点赞为空',
     is_read TINYINT DEFAULT 0 COMMENT '0未读 1已读',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_read_time (is_read, create_time DESC)
+    INDEX idx_read_time (is_read, create_time DESC),
+    INDEX idx_target_type_id (target_type, target_id)
 ) ENGINE = InnoDB
   AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_0900_ai_ci COMMENT ='点赞评论通知记录表';
+  COLLATE = utf8mb4_0900_ai_ci COMMENT ='后台事件通知记录表';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 /*!40103 SET TIME_ZONE = @OLD_TIME_ZONE */;
