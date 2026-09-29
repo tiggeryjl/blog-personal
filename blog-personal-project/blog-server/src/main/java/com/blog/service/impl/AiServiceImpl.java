@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -145,7 +144,6 @@ public class AiServiceImpl implements AiService {
      * @return
      */
     @Override
-    @Async
     public String generateSummary(String content) {
         return generateSummary(content, 150);
     }
@@ -157,7 +155,6 @@ public class AiServiceImpl implements AiService {
      * @return 润色后的文本
      */
     @Override
-    @Async
     public String polishArticle(String content, String style) {
         String prompt = String.format(
                 "请对以下文章进行润色，使表达更加 %s，保持原意不变：\n%s",
@@ -177,7 +174,6 @@ public class AiServiceImpl implements AiService {
      * @return 翻译结果
      */
     @Override
-    @Async
     public String translate(String text, String targetLang) {
         String prompt = String.format(
                 "请将以下内容翻译成 %s：\n%s",

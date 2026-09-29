@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.LinkedHashMap;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -65,6 +66,20 @@ public class RedisServiceImpl implements RedisService {
      */
     public Boolean hasKey(String key){
         return redisTemplate.hasKey(key);
+    }
+
+    /**
+     * 根据前缀批量删除缓存
+     */
+    public Long deleteByPrefix(String prefix){
+        if(prefix == null || prefix.isEmpty()){
+            return 0L;
+        }
+        Set<String> keys = redisTemplate.keys(prefix + "*");
+        if(keys == null || keys.isEmpty()){
+            return 0L;
+        }
+        return redisTemplate.delete(keys);
     }
 
     /**

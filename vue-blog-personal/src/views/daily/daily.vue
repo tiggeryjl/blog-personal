@@ -1,9 +1,8 @@
 <script setup>
 import { useRouter } from 'vue-router';
-import { ref, watch, onMounted } from 'vue';
+import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { ElMessage } from 'element-plus';
 import { ZoomIn, ZoomOut, ChatDotRound, Document, View } from '@element-plus/icons-vue';
-import MyPagination from '@/components/MyPagination.vue';
 import { getDailyListApi } from '@/api/daily.js';
 import { likeApi, LIKE_TARGET_TYPE } from '@/api/like.js';
 import { requireLogin } from '@/utils/auth.js';
@@ -16,6 +15,10 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 const loading = ref(false);
 const loadFailed = ref(false);
+const loadingMore = ref(false);
+const loadMoreFailed = ref(false);
+const finished = ref(false);
+const loadMoreSentinel = ref(null);
 let latestRequestId = 0;
 
 const normalizeImages = (images) => {
@@ -44,60 +47,124 @@ const normalizeFiles = (files) => {
     .map((url) => ({ name: getFileNameFromUrl(url), url }));
 };
 
-const getDailyList = async () => {
+// 拉取日常列表：reset=true 时重置为第一页（首屏 / 重新加载），否则追加下一页
+const fetchDailyList = async ({ reset = false } = {}) => {
+  if (reset) {
+    loading.value = true;
+    loadingMore.value = false;
+    loadMoreFailed.value = false;
+  } else {
+    if (loading.value || loadingMore.value || finished.value || loadMoreFailed.value) return;
+    loadingMore.value = true;
+  }
+
   const requestId = ++latestRequestId;
-  loading.value = true;
+  const page = reset ? 1 : currentPage.value + 1;
+
   try {
     const result = await getDailyListApi({
-      page: currentPage.value,
+      page,
       pageSize: pageSize.value,
     });
     if (requestId !== latestRequestId) return;
 
     if (result?.code !== 200) {
-      dailyList.value = [];
-      total.value = 0;
-      loadFailed.value = true;
-      ElMessage.error(result?.msg || '获取日常列表失败');
+      if (reset) {
+        dailyList.value = [];
+        total.value = 0;
+        loadFailed.value = true;
+        ElMessage.error(result?.msg || '获取日常列表失败');
+      } else {
+        loadMoreFailed.value = true;
+        ElMessage.error(result?.msg || '加载更多失败，请稍后重试');
+      }
       return;
     }
 
     const rows = Array.isArray(result.data?.rows) ? result.data.rows : [];
     const nextTotal = Number(result.data?.total) || 0;
-    const lastPage = Math.max(1, Math.ceil(nextTotal / pageSize.value));
-    if (nextTotal > 0 && currentPage.value > lastPage) {
-      total.value = nextTotal;
-      currentPage.value = lastPage;
-      return;
-    }
-
-    dailyList.value = rows.map((item) => ({
+    const mappedRows = rows.map((item) => ({
       ...item,
       images: normalizeImages(item.images),
       files: normalizeFiles(item.files),
       isLiked: item.liked === true,
     }));
+
+    if (reset) {
+      dailyList.value = mappedRows;
+    } else {
+      dailyList.value.push(...mappedRows);
+    }
+
     total.value = nextTotal;
+    currentPage.value = page;
     loadFailed.value = false;
+    loadMoreFailed.value = false;
+    // 本页不足一页或累计数量已达总数时，视为全部加载完成
+    finished.value = rows.length < pageSize.value || dailyList.value.length >= nextTotal;
   } catch (error) {
     if (requestId !== latestRequestId) return;
-    dailyList.value = [];
-    loadFailed.value = true;
+    if (reset) {
+      dailyList.value = [];
+      loadFailed.value = true;
+    } else {
+      loadMoreFailed.value = true;
+    }
     console.error('获取日常列表异常', error);
   } finally {
     if (requestId === latestRequestId) {
       loading.value = false;
+      loadingMore.value = false;
+      // 加载完成后重新检测滚动位置，避免首屏内容不足时无法继续加载
+      nextTick(() => tryLoadMore());
     }
   }
 };
 
-// 翻页 / 改变每页条数时重新拉取数据
-watch([currentPage, pageSize], () => {
-  getDailyList();
-});
+// 判断哨兵元素是否已到底部并触发加载
+const tryLoadMore = () => {
+  if (loading.value || loadingMore.value || finished.value || loadMoreFailed.value) return;
+  const sentinel = loadMoreSentinel.value;
+  if (!sentinel) return;
+  const rect = sentinel.getBoundingClientRect();
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+  if (rect.top <= viewportHeight + 200) {
+    fetchDailyList();
+  }
+};
+
+// 滚动事件用 requestAnimationFrame 节流，避免高频触发
+let scrollRafId = 0;
+const handleScroll = () => {
+  if (scrollRafId) return;
+  scrollRafId = requestAnimationFrame(() => {
+    scrollRafId = 0;
+    tryLoadMore();
+  });
+};
+
+// 重新加载首屏
+const reloadList = () => {
+  fetchDailyList({ reset: true });
+};
+
+// 加载更多失败后手动重试
+const retryLoadMore = () => {
+  loadMoreFailed.value = false;
+  fetchDailyList();
+};
 
 onMounted(() => {
-  getDailyList();
+  fetchDailyList({ reset: true });
+  window.addEventListener('scroll', handleScroll, { passive: true });
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll);
+  if (scrollRafId) {
+    cancelAnimationFrame(scrollRafId);
+    scrollRafId = 0;
+  }
 });
 
 // 日常点赞中的目标集合，防止重复提交
@@ -321,19 +388,28 @@ const closeModal = () => {
 
       <div v-if="!loading && loadFailed && dailyList.length === 0" class="empty-data">
         <span>日常数据加载失败，请稍后重试</span>
-        <el-button type="primary" link @click="getDailyList">重新加载</el-button>
+        <el-button type="primary" link @click="reloadList">重新加载</el-button>
       </div>
       <div v-else-if="!loading && dailyList.length === 0" class="empty-data">暂无日常数据</div>
-    </div>
 
-    <MyPagination
-      v-if="total > 0"
-      :total="total"
-      :current-page="currentPage"
-      :page-size="pageSize"
-      @update:current-page="currentPage = $event"
-      @update:page-size="pageSize = $event"
-    />
+      <!-- 下拉滚动加载：哨兵元素 + 状态提示 -->
+      <div v-if="dailyList.length" ref="loadMoreSentinel" class="load-more-status">
+        <template v-if="loadingMore">
+          <span class="load-more-spinner"></span>
+          <span>正在加载更多...</span>
+        </template>
+        <template v-else-if="loadMoreFailed">
+          <span>加载更多失败</span>
+          <el-button type="primary" link @click="retryLoadMore">点击重试</el-button>
+        </template>
+        <template v-else-if="finished">
+          <span>已经到底啦 ~</span>
+        </template>
+        <template v-else>
+          <span>向下滚动加载更多</span>
+        </template>
+      </div>
+    </div>
 
     <div v-if="showImageModal" class="image-modal" @click.self="closeModal">
       <!-- 关闭按钮 -->
@@ -573,6 +649,26 @@ const closeModal = () => {
   color: var(--text-secondary-color);
   font-size: 16px;
   padding: 60px 0;
+}
+
+/* 下拉滚动加载状态 */
+.load-more-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 0 4px;
+  color: var(--text-secondary-color);
+  font-size: 14px;
+}
+
+.load-more-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(127, 127, 127, 0.3);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
 .image-modal {

@@ -39,6 +39,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.servlet.http.HttpServletRequest;
@@ -122,6 +124,8 @@ public class ArticleServiceImpl implements ArticleService {
         article.setDeleteFlag(DelStatusConstant.ENABLE);
 
         articleMapper.add(article);
+
+        clearArticleListCache();
     }
 
     public static String genQueryMd5(ArticlePageQueryDTO dto) {
@@ -136,6 +140,23 @@ public class ArticleServiceImpl implements ArticleService {
         sb.append("end=").append(dto.getEnd());
         // md5加密缩短字符串
         return DigestUtil.md5Hex(sb.toString());
+    }
+
+    /**
+     * 清除文章列表缓存，若当前处于事务中，则在事务提交后再清除，防止并发查询把旧数据重新写入缓存
+     */
+    private void clearArticleListCache() {
+        String prefix = RedisConstant.ARTICLE_LIST_KEY;
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    redisService.deleteByPrefix(prefix);
+                }
+            });
+        } else {
+            redisService.deleteByPrefix(prefix);
+        }
     }
 
     /**
@@ -417,6 +438,8 @@ public class ArticleServiceImpl implements ArticleService {
                 articleTagMapper.batchInsert(articleTagDTO);
             }
         }
+
+        clearArticleListCache();
     }
 
     /**
@@ -471,6 +494,8 @@ public class ArticleServiceImpl implements ArticleService {
                 .updateTime(LocalDateTime.now()).build();
         // 4. 执行更新
         articleMapper.updateTimedPublish(article);
+
+        clearArticleListCache();
     }
 
     /**
@@ -495,6 +520,8 @@ public class ArticleServiceImpl implements ArticleService {
 
         // 3. 取消后变回草稿状态，清空定时时间
         articleMapper.cancelTimedPublish(article);
+
+        clearArticleListCache();
     }
 
     /**
@@ -505,6 +532,8 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public void logicDelete(List<Long> ids) {
         articleMapper.deleteBatchLogic(ids, DelStatusConstant.DISABLE);
+
+        clearArticleListCache();
     }
 
     /**
@@ -515,6 +544,8 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public void delete(List<Long> ids) {
         articleMapper.deleteBatch(ids);
+
+        clearArticleListCache();
     }
 
     /**
@@ -528,6 +559,8 @@ public class ArticleServiceImpl implements ArticleService {
             throw new ArticleException("请选择要恢复的文章");
         }
         articleMapper.recoverBatch(ids);
+
+        clearArticleListCache();
     }
 
     /**
@@ -594,6 +627,8 @@ public class ArticleServiceImpl implements ArticleService {
         }
 
         articleMapper.update(article);
+
+        clearArticleListCache();
     }
 
     /**
@@ -620,5 +655,7 @@ public class ArticleServiceImpl implements ArticleService {
                 .isTop(newIsTop)
                 .updateTime(LocalDateTime.now()).build();
         articleMapper.update(article);
+
+        clearArticleListCache();
     }
 }

@@ -35,6 +35,11 @@ public interface RedisService {
     Boolean hasKey(String key);
 
     /**
+     * 根据前缀批量删除缓存
+     */
+    Long deleteByPrefix(String prefix);
+
+    /**
      * 更新缓存：直接set覆盖旧值即可
      */
     void update(String key,Object newValue);
