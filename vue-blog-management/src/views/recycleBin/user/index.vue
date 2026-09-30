@@ -1,170 +1,178 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import MyPagination from '@/components/MyPagination.vue'
-import { UserFilled, Search, Refresh } from '@element-plus/icons-vue'
-import { getLogicDeleteUserApi, recoverUserApi, deleteUserApi } from '@/api/admin'
+import { ref, reactive, onMounted } from 'vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import MyPagination from '@/components/MyPagination.vue';
+import { UserFilled, Search, Refresh } from '@element-plus/icons-vue';
+import { getLogicDeleteUserApi, recoverUserApi, deleteUserApi } from '@/api/admin';
 
-const loading = ref(false)
-const userList = ref([])
-const total = ref(0)
-const currentPage = ref(1)
-const pageSize = ref(10)
+const loading = ref(false);
+const userList = ref([]);
+const total = ref(0);
+const currentPage = ref(1);
+const pageSize = ref(10);
 
 // 搜索表单
 const queryForm = reactive({
   nickname: '',
   search: '',
-  status: ''
-})
+  status: '',
+});
 
 // 获取逻辑删除的用户列表
 const getUserList = async () => {
-  loading.value = true
+  loading.value = true;
   const params = {
     ...queryForm,
     page: currentPage.value,
-    pageSize: pageSize.value
-  }
+    pageSize: pageSize.value,
+  };
   try {
-    const result = await getLogicDeleteUserApi(params)
+    const result = await getLogicDeleteUserApi(params);
     if (result.code == 200) {
-      userList.value = result.data.rows || []
-      total.value = result.data.total || 0
+      userList.value = result.data.rows || [];
+      total.value = result.data.total || 0;
     } else {
-      ElMessage.error(result.msg || '获取回收站列表失败')
-      userList.value = []
-      total.value = 0
+      ElMessage.error(result.msg || '获取回收站列表失败');
+      userList.value = [];
+      total.value = 0;
     }
   } catch (error) {
-    ElMessage.error('网络请求失败，请稍后重试')
+    ElMessage.error('网络请求失败，请稍后重试');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
+
+// 查询
+const handleSearch = () => {
+  currentPage.value = 1;
+  getUserList();
+};
 
 // 重置搜索
 const resetQuery = () => {
-  queryForm.nickname = ''
-  queryForm.search = ''
-  queryForm.status = ''
-  currentPage.value = 1
-  getUserList()
-}
+  queryForm.nickname = '';
+  queryForm.search = '';
+  queryForm.status = '';
+  currentPage.value = 1;
+  getUserList();
+};
 
 // 账号状态展示
 const getStatusText = (status) => {
-  if (status === 1) return '正常'
-  if (status === 0) return '禁用'
-  return '注销'
-}
+  if (status === 1) return '正常';
+  if (status === 0) return '禁用';
+  return '注销';
+};
 
 const getStatusType = (status) => {
-  if (status === 1) return 'success'
-  if (status === 0) return 'danger'
-  return 'info'
-}
+  if (status === 1) return 'success';
+  if (status === 0) return 'danger';
+  return 'info';
+};
 
 // 恢复用户
 const handleRecover = (row) => {
   ElMessageBox.confirm('确认恢复该用户？恢复后用户将重新可用。', '提示', {
     confirmButtonText: '确认',
     cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    const result = await recoverUserApi(row.id)
-    if (result.code == 200) {
-      ElMessage.success('恢复成功')
-      getUserList()
-    } else {
-      ElMessage.error(result.msg || '恢复失败')
-    }
-  }).catch(() => { })
-}
+    type: 'warning',
+  })
+    .then(async () => {
+      const result = await recoverUserApi(row.id);
+      if (result.code == 200) {
+        ElMessage.success('恢复成功');
+        if (userList.value.length === 1 && currentPage.value > 1) {
+          currentPage.value -= 1;
+        }
+        getUserList();
+      } else {
+        ElMessage.error(result.msg || '恢复失败');
+      }
+    })
+    .catch(() => {});
+};
 
 // 彻底删除单个用户
 const handleDelete = (row) => {
   ElMessageBox.confirm('确认彻底删除该用户？删除后数据不可恢复！', '提示', {
     confirmButtonText: '确认',
     cancelButtonText: '取消',
-    type: 'error'
-  }).then(async () => {
-    const result = await deleteUserApi([row.id])
-    if (result.code == 200) {
-      ElMessage.success('删除成功')
-      if (userList.value.length === 1 && currentPage.value > 1) {
-        currentPage.value -= 1
+    type: 'error',
+  })
+    .then(async () => {
+      const result = await deleteUserApi([row.id]);
+      if (result.code == 200) {
+        ElMessage.success('删除成功');
+        if (userList.value.length === 1 && currentPage.value > 1) {
+          currentPage.value -= 1;
+        }
+        getUserList();
+      } else {
+        ElMessage.error(result.msg || '删除失败');
       }
-      getUserList()
-    } else {
-      ElMessage.error(result.msg || '删除失败')
-    }
-  }).catch(() => { })
-}
+    })
+    .catch(() => {});
+};
 
 // 批量彻底删除
-const selectedUsers = ref([])
+const selectedUsers = ref([]);
 const handleSelectionChange = (val) => {
-  selectedUsers.value = val.map((item) => item.id)
-}
+  selectedUsers.value = val.map((item) => item.id);
+};
 
 const handleBatchDelete = () => {
   if (!selectedUsers.value || selectedUsers.value.length <= 0) {
-    ElMessage.warning('请先勾选至少一个用户数据')
-    return
+    ElMessage.warning('请先勾选至少一个用户数据');
+    return;
   }
   ElMessageBox.confirm(`确认彻底删除选中的 ${selectedUsers.value.length} 个用户？删除后数据不可恢复！`, '提示', {
     confirmButtonText: '确认',
     cancelButtonText: '取消',
-    type: 'error'
-  }).then(async () => {
-    const result = await deleteUserApi(selectedUsers.value)
-    if (result.code == 200) {
-      ElMessage.success('批量删除成功')
-      selectedUsers.value = []
-      getUserList()
-    } else {
-      ElMessage.error(result.msg || '批量删除失败')
-    }
-  }).catch(() => { })
-}
+    type: 'error',
+  })
+    .then(async () => {
+      const result = await deleteUserApi(selectedUsers.value);
+      if (result.code == 200) {
+        ElMessage.success('批量删除成功');
+        if (userList.value.length === selectedUsers.value.length && currentPage.value > 1) {
+          currentPage.value -= 1;
+        }
+        selectedUsers.value = [];
+        getUserList();
+      } else {
+        ElMessage.error(result.msg || '批量删除失败');
+      }
+    })
+    .catch(() => {});
+};
 
 onMounted(() => {
-  getUserList()
-})
+  getUserList();
+});
 </script>
 
 <template>
   <div class="user-recycle-container" style="padding: 20px; max-width: 100%; overflow-x: hidden">
-    <div class="header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px">
+    <div
+      class="header-row"
+      style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px"
+    >
       <h1 style="margin: 0">用户回收站</h1>
-      <el-button
-        type="danger"
-        icon="Delete"
-        v-perm="'sys:recycleUser:delete'"
-        @click="handleBatchDelete"
-      >批量彻底删除</el-button>
+      <el-button type="danger" icon="Delete" v-perm="'sys:recycleUser:delete'" @click="handleBatchDelete"
+        >批量彻底删除</el-button
+      >
     </div>
 
     <!-- 搜索 -->
     <el-card shadow="hover" style="margin-bottom: 20px">
-      <el-form :model="queryForm" :inline="true" @submit.prevent="getUserList">
+      <el-form :model="queryForm" :inline="true" @submit.prevent="handleSearch">
         <el-form-item label="昵称">
-          <el-input
-            v-model="queryForm.nickname"
-            placeholder="请输入昵称"
-            style="width: 200px"
-            clearable
-          />
+          <el-input v-model="queryForm.nickname" placeholder="请输入昵称" style="width: 200px" clearable />
         </el-form-item>
 
         <el-form-item label="账号搜索">
-          <el-input
-            v-model="queryForm.search"
-            placeholder="请输入用户名/手机号/邮箱"
-            style="width: 220px"
-            clearable
-          />
+          <el-input v-model="queryForm.search" placeholder="请输入用户名/手机号/邮箱" style="width: 220px" clearable />
         </el-form-item>
 
         <el-form-item label="状态">
@@ -176,7 +184,7 @@ onMounted(() => {
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="getUserList">
+          <el-button type="primary" @click="handleSearch">
             <el-icon>
               <Search />
             </el-icon>
@@ -237,18 +245,12 @@ onMounted(() => {
 
         <el-table-column label="操作" width="200" align="center">
           <template #default="{ row }">
-            <el-button
-              type="success"
-              link
-              v-perm="'sys:recycleUser:recycle'"
-              @click="handleRecover(row)"
-            >恢复</el-button>
-            <el-button
-              type="danger"
-              link
-              v-perm="'sys:recycleUser:delete'"
-              @click="handleDelete(row)"
-            >彻底删除</el-button>
+            <el-button type="success" link v-perm="'sys:recycleUser:recycle'" @click="handleRecover(row)"
+              >恢复</el-button
+            >
+            <el-button type="danger" link v-perm="'sys:recycleUser:delete'" @click="handleDelete(row)"
+              >彻底删除</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
@@ -260,14 +262,9 @@ onMounted(() => {
         :total="total"
         :current-page="currentPage"
         :page-size="pageSize"
-        @update:current-page="
-          currentPage = $event;
-          getUserList();
-        "
-        @update:page-size="
-          pageSize = $event;
-          getUserList();
-        "
+        @update:current-page="currentPage = $event"
+        @update:page-size="pageSize = $event"
+        @change="getUserList()"
       />
     </div>
   </div>

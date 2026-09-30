@@ -215,6 +215,9 @@ const deleteLink = (ids) => {
       const result = await deleteLinkApi(ids);
       if (result.code == 200) {
         ElMessage.success('删除成功');
+        if (list.value.length === count && currentPage.value > 1) {
+          currentPage.value -= 1;
+        }
         getLinkList();
         getStats();
       } else {
@@ -366,15 +369,9 @@ onMounted(() => {
       :total="total"
       :current-page="currentPage"
       :page-size="pageSize"
-      @update:current-page="
-        currentPage = $event;
-        getLinkList();
-      "
-      @update:page-size="
-        pageSize = $event;
-        currentPage = 1;
-        getLinkList();
-      "
+      @update:current-page="currentPage = $event"
+      @update:page-size="pageSize = $event"
+      @change="getLinkList()"
     />
 
     <!-- 新增/编辑弹窗 -->

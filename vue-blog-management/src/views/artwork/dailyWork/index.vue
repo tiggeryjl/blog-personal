@@ -122,6 +122,12 @@ const getDailyList = async () => {
   }
 };
 
+// 查询
+const handleSearch = () => {
+  currentPage.value = 1;
+  getDailyList();
+};
+
 const resetQuery = () => {
   queryForm.content = '';
   queryForm.type = '';
@@ -351,6 +357,9 @@ const handleBatchDelete = () => {
       const result = await logicDeleteDailyApi(selectedIds.value);
       if (result.code === 200) {
         ElMessage.success('批量删除成功');
+        if (dailyList.value.length === selectedIds.value.length && currentPage.value > 1) {
+          currentPage.value -= 1;
+        }
         selectedIds.value = [];
         getDailyList();
       } else {
@@ -672,7 +681,7 @@ onMounted(() => {
 
     <!-- 查询条件区域 -->
     <el-card class="query-card" shadow="hover">
-      <el-form :model="queryForm" :inline="true" @submit.prevent="getDailyList">
+      <el-form :model="queryForm" :inline="true" @submit.prevent="handleSearch">
         <el-form-item label="内容查询">
           <el-input v-model="queryForm.content" placeholder="请输入内容关键词" clearable style="width: 240px" />
         </el-form-item>
@@ -708,7 +717,7 @@ onMounted(() => {
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="getDailyList">
+          <el-button type="primary" @click="handleSearch">
             <el-icon><Search /></el-icon>
             查询
           </el-button>
@@ -945,15 +954,9 @@ onMounted(() => {
           :total="total"
           :current-page="currentPage"
           :page-size="pageSize"
-          @update:current-page="
-            currentPage = $event;
-            getDailyList();
-          "
-          @update:page-size="
-            pageSize = $event;
-            currentPage = 1;
-            getDailyList();
-          "
+          @update:current-page="currentPage = $event"
+          @update:page-size="pageSize = $event"
+          @change="getDailyList()"
         />
       </div>
     </div>

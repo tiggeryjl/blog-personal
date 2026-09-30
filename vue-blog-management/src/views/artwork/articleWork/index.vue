@@ -97,6 +97,12 @@ const getArticleList = async () => {
   }
 };
 
+// 查询
+const handleSearch = () => {
+  currentPage.value = 1;
+  getArticleList();
+};
+
 // 重置查询
 const resetQuery = () => {
   queryForm.title = '';
@@ -107,6 +113,7 @@ const resetQuery = () => {
   queryForm.createTime = [];
   queryForm.begin = '';
   queryForm.end = '';
+  currentPage.value = 1;
   getArticleList();
 };
 
@@ -133,6 +140,9 @@ const deleteArticle = async (id) => {
     const result = await logicDeleteArticleApi(id);
     if (result.code == 200) {
       ElMessage.success('删除成功');
+      if (articleList.value.length === 1 && currentPage.value > 1) {
+        currentPage.value -= 1;
+      }
       getArticleList();
     } else {
       ElMessage.error(result.msg);
@@ -163,6 +173,9 @@ const handleBatchDelete = async () => {
       const result = await logicDeleteArticleApi(selectedArticles.value);
       if (result.code == 200) {
         ElMessage.success('批量删除成功');
+        if (articleList.value.length === selectedArticles.value.length && currentPage.value > 1) {
+          currentPage.value -= 1;
+        }
         getArticleList();
       } else {
         ElMessage.error(result.msg);
@@ -445,7 +458,7 @@ onMounted(() => {
 
     <!-- 查询条件区域 -->
     <el-card class="query-card" shadow="hover">
-      <el-form :model="queryForm" :inline="true" @submit.prevent="getArticleList">
+      <el-form :model="queryForm" :inline="true" @submit.prevent="handleSearch">
         <el-form-item label="文章标题">
           <el-input v-model="queryForm.title" placeholder="请输入标题关键词" style="width: 360px" />
         </el-form-item>
@@ -484,7 +497,7 @@ onMounted(() => {
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="getArticleList">
+          <el-button type="primary" @click="handleSearch">
             <el-icon>
               <Search />
             </el-icon>
@@ -722,6 +735,7 @@ onMounted(() => {
           :page-size="pageSize"
           @update:current-page="currentPage = $event"
           @update:page-size="pageSize = $event"
+          @change="getArticleList()"
         />
       </div>
     </div>

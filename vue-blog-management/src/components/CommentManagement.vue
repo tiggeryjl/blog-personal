@@ -240,6 +240,12 @@ const submitReply = async () => {
   }
 };
 
+// 查询
+const handleSearch = () => {
+  currentPage.value = 1;
+  getCommentList();
+};
+
 // 重置查询
 const resetQuery = () => {
   queryForm.keyword = '';
@@ -296,6 +302,9 @@ const handleDelete = (row) => {
         const result = await logicDeleteCommentApi(row.id);
         if (result.code === 200) {
           ElMessage.success('删除成功');
+          if (commentList.value.length === 1 && currentPage.value > 1) {
+            currentPage.value -= 1;
+          }
           getCommentList();
         } else {
           ElMessage.error(result.msg || '删除失败');
@@ -328,6 +337,9 @@ const handleBatchDelete = () => {
         const result = await logicDeleteCommentApi(selectedIds.value);
         if (result.code === 200) {
           ElMessage.success('批量删除成功');
+          if (commentList.value.length === selectedIds.value.length && currentPage.value > 1) {
+            currentPage.value -= 1;
+          }
           getCommentList();
         } else {
           ElMessage.error(result.msg || '批量删除失败');
@@ -358,11 +370,11 @@ onMounted(() => {
         </el-button>
       </div>
     </div>
-    <PermissionViewTip :perms="['sys:comment:audit','sys:comment:delete']" />
+    <PermissionViewTip :perms="['sys:comment:audit', 'sys:comment:delete']" />
 
     <!-- 查询条件区域 -->
     <el-card class="query-card" shadow="hover">
-      <el-form :model="queryForm" :inline="true" @submit.prevent="getCommentList">
+      <el-form :model="queryForm" :inline="true" @submit.prevent="handleSearch">
         <el-form-item label="关键字">
           <el-input
             v-model="queryForm.keyword"
@@ -407,7 +419,7 @@ onMounted(() => {
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" :icon="Search" @click="getCommentList">查询</el-button>
+          <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
           <el-button :icon="Refresh" @click="resetQuery">重置</el-button>
         </el-form-item>
       </el-form>

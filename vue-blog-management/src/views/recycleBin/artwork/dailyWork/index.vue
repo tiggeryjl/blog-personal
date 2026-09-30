@@ -1,63 +1,65 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import MyPagination from '@/components/MyPagination.vue'
-import PermissionViewTip from '@/components/PermissionViewTip.vue'
-import { Search, Refresh } from '@element-plus/icons-vue'
-import {
-  getRecycleDailyListApi,
-  recoverDailyApi,
-  recycleDeleteDailyApi
-} from '@/api/daily'
+import { ref, reactive, onMounted } from 'vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import MyPagination from '@/components/MyPagination.vue';
+import PermissionViewTip from '@/components/PermissionViewTip.vue';
+import { Search, Refresh } from '@element-plus/icons-vue';
+import { getRecycleDailyListApi, recoverDailyApi, recycleDeleteDailyApi } from '@/api/daily';
 
-const loading = ref(false)
-const dailyList = ref([])
-const total = ref(0)
-const currentPage = ref(1)
-const pageSize = ref(10)
+const loading = ref(false);
+const dailyList = ref([]);
+const total = ref(0);
+const currentPage = ref(1);
+const pageSize = ref(10);
 
 // 搜索表单
 const queryForm = reactive({
   content: '',
   type: '',
-  status: ''
-})
+  status: '',
+});
 
 // 获取回收站日常列表
 const getDailyList = async () => {
-  loading.value = true
+  loading.value = true;
   const params = {
     ...queryForm,
     page: currentPage.value,
-    pageSize: pageSize.value
-  }
+    pageSize: pageSize.value,
+  };
   try {
-    const result = await getRecycleDailyListApi(params)
+    const result = await getRecycleDailyListApi(params);
     if (result.code == 200) {
-      dailyList.value = result.data.rows || []
-      total.value = result.data.total || 0
+      dailyList.value = result.data.rows || [];
+      total.value = result.data.total || 0;
     } else {
-      ElMessage.error(result.msg || '获取回收站列表失败')
-      dailyList.value = []
-      total.value = 0
+      ElMessage.error(result.msg || '获取回收站列表失败');
+      dailyList.value = [];
+      total.value = 0;
     }
   } catch (error) {
-    ElMessage.error('网络请求失败，请稍后重试')
-    dailyList.value = []
-    total.value = 0
+    ElMessage.error('网络请求失败，请稍后重试');
+    dailyList.value = [];
+    total.value = 0;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
+
+// 查询
+const handleSearch = () => {
+  currentPage.value = 1;
+  getDailyList();
+};
 
 // 重置搜索
 const resetQuery = () => {
-  queryForm.content = ''
-  queryForm.type = ''
-  queryForm.status = ''
-  currentPage.value = 1
-  getDailyList()
-}
+  queryForm.content = '';
+  queryForm.type = '';
+  queryForm.status = '';
+  currentPage.value = 1;
+  getDailyList();
+};
 
 // 日常状态
 const getStatusText = (status) => {
@@ -66,10 +68,10 @@ const getStatusText = (status) => {
     1: '已发布',
     2: '已下架',
     3: '定时发布',
-    4: '私密'
-  }
-  return map[status] || '未知'
-}
+    4: '私密',
+  };
+  return map[status] || '未知';
+};
 
 const getStatusType = (status) => {
   const map = {
@@ -77,10 +79,10 @@ const getStatusType = (status) => {
     1: 'success',
     2: 'danger',
     3: 'warning',
-    4: 'primary'
-  }
-  return map[status] || ''
-}
+    4: 'primary',
+  };
+  return map[status] || '';
+};
 
 // 日常类型
 const getTypeText = (type) => {
@@ -88,111 +90,131 @@ const getTypeText = (type) => {
     0: '纯文字',
     1: '图片',
     2: '文件',
-    3: '图文混合'
-  }
-  return map[type] || '未知'
-}
+    3: '图文混合',
+  };
+  return map[type] || '未知';
+};
 
 // 图片数量
 const getImageCount = (images) => {
-  if (!images) return 0
-  return images.split(',').filter((item) => item.trim()).length
-}
+  if (!images) return 0;
+  return images.split(',').filter((item) => item.trim()).length;
+};
 
 // 恢复单个日常
 const handleRecover = (row) => {
   ElMessageBox.confirm('确认恢复该日常？恢复后将重新出现在日常管理中。', '提示', {
     confirmButtonText: '确认',
     cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    const result = await recoverDailyApi([row.id])
-    if (result.code == 200) {
-      ElMessage.success('恢复成功')
-      getDailyList()
-    } else {
-      ElMessage.error(result.msg || '恢复失败')
-    }
-  }).catch(() => {})
-}
+    type: 'warning',
+  })
+    .then(async () => {
+      const result = await recoverDailyApi([row.id]);
+      if (result.code == 200) {
+        ElMessage.success('恢复成功');
+        if (dailyList.value.length === 1 && currentPage.value > 1) {
+          currentPage.value -= 1;
+        }
+        getDailyList();
+      } else {
+        ElMessage.error(result.msg || '恢复失败');
+      }
+    })
+    .catch(() => {});
+};
 
 // 批量恢复
-const selectedIds = ref([])
+const selectedIds = ref([]);
 const handleSelectionChange = (val) => {
-  selectedIds.value = val.map((item) => item.id)
-}
+  selectedIds.value = val.map((item) => item.id);
+};
 
 const handleBatchRecover = () => {
   if (!selectedIds.value.length) {
-    ElMessage.warning('请先勾选要恢复的日常')
-    return
+    ElMessage.warning('请先勾选要恢复的日常');
+    return;
   }
   ElMessageBox.confirm(`确认恢复选中的 ${selectedIds.value.length} 条日常？`, '提示', {
     confirmButtonText: '确认',
     cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    const result = await recoverDailyApi(selectedIds.value)
-    if (result.code == 200) {
-      ElMessage.success('批量恢复成功')
-      selectedIds.value = []
-      getDailyList()
-    } else {
-      ElMessage.error(result.msg || '批量恢复失败')
-    }
-  }).catch(() => {})
-}
+    type: 'warning',
+  })
+    .then(async () => {
+      const result = await recoverDailyApi(selectedIds.value);
+      if (result.code == 200) {
+        ElMessage.success('批量恢复成功');
+        if (dailyList.value.length === selectedIds.value.length && currentPage.value > 1) {
+          currentPage.value -= 1;
+        }
+        selectedIds.value = [];
+        getDailyList();
+      } else {
+        ElMessage.error(result.msg || '批量恢复失败');
+      }
+    })
+    .catch(() => {});
+};
 
 // 彻底删除单个日常
 const handleDelete = (row) => {
   ElMessageBox.confirm('确认彻底删除该日常？删除后数据不可恢复！', '提示', {
     confirmButtonText: '确认',
     cancelButtonText: '取消',
-    type: 'error'
-  }).then(async () => {
-    const result = await recycleDeleteDailyApi([row.id])
-    if (result.code == 200) {
-      ElMessage.success('删除成功')
-      if (dailyList.value.length === 1 && currentPage.value > 1) {
-        currentPage.value -= 1
+    type: 'error',
+  })
+    .then(async () => {
+      const result = await recycleDeleteDailyApi([row.id]);
+      if (result.code == 200) {
+        ElMessage.success('删除成功');
+        if (dailyList.value.length === 1 && currentPage.value > 1) {
+          currentPage.value -= 1;
+        }
+        getDailyList();
+      } else {
+        ElMessage.error(result.msg || '删除失败');
       }
-      getDailyList()
-    } else {
-      ElMessage.error(result.msg || '删除失败')
-    }
-  }).catch(() => {})
-}
+    })
+    .catch(() => {});
+};
 
 // 批量彻底删除
 const handleBatchDelete = () => {
   if (!selectedIds.value.length) {
-    ElMessage.warning('请先勾选要删除的日常')
-    return
+    ElMessage.warning('请先勾选要删除的日常');
+    return;
   }
   ElMessageBox.confirm(`确认彻底删除选中的 ${selectedIds.value.length} 条日常？删除后数据不可恢复！`, '提示', {
     confirmButtonText: '确认',
     cancelButtonText: '取消',
-    type: 'error'
-  }).then(async () => {
-    const result = await recycleDeleteDailyApi(selectedIds.value)
-    if (result.code == 200) {
-      ElMessage.success('批量删除成功')
-      selectedIds.value = []
-      getDailyList()
-    } else {
-      ElMessage.error(result.msg || '批量删除失败')
-    }
-  }).catch(() => {})
-}
+    type: 'error',
+  })
+    .then(async () => {
+      const result = await recycleDeleteDailyApi(selectedIds.value);
+      if (result.code == 200) {
+        ElMessage.success('批量删除成功');
+        if (dailyList.value.length === selectedIds.value.length && currentPage.value > 1) {
+          currentPage.value -= 1;
+        }
+        selectedIds.value = [];
+        getDailyList();
+      } else {
+        ElMessage.error(result.msg || '批量删除失败');
+      }
+    })
+    .catch(() => {});
+};
 
 onMounted(() => {
-  getDailyList()
-})
+  getDailyList();
+});
 </script>
 
 <template>
   <div style="padding: 20px; max-width: 100%; overflow-x: hidden">
-    <div class="header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px">
+    <div
+      class="header-row"
+      style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px"
+    >
       <h1 style="margin: 0">日常回收站</h1>
       <div>
         <el-button
@@ -201,27 +223,20 @@ onMounted(() => {
           v-perm="'sys:recycleDailyWork:recycle'"
           @click="handleBatchRecover"
           style="margin-right: 10px"
-        >批量恢复</el-button>
-        <el-button
-          type="danger"
-          icon="Delete"
-          v-perm="'sys:recycleDailyWork:delete'"
-          @click="handleBatchDelete"
-        >批量彻底删除</el-button>
+          >批量恢复</el-button
+        >
+        <el-button type="danger" icon="Delete" v-perm="'sys:recycleDailyWork:delete'" @click="handleBatchDelete"
+          >批量彻底删除</el-button
+        >
       </div>
     </div>
-    <PermissionViewTip :perms="['sys:recycleDailyWork:recycle','sys:recycleDailyWork:delete']" />
+    <PermissionViewTip :perms="['sys:recycleDailyWork:recycle', 'sys:recycleDailyWork:delete']" />
 
     <!-- 搜索 -->
     <el-card shadow="hover" style="margin-bottom: 20px">
-      <el-form :model="queryForm" :inline="true" @submit.prevent="getDailyList">
+      <el-form :model="queryForm" :inline="true" @submit.prevent="handleSearch">
         <el-form-item label="内容">
-          <el-input
-            v-model="queryForm.content"
-            placeholder="请输入日常内容关键词"
-            style="width: 220px"
-            clearable
-          />
+          <el-input v-model="queryForm.content" placeholder="请输入日常内容关键词" style="width: 220px" clearable />
         </el-form-item>
 
         <el-form-item label="类型">
@@ -244,7 +259,7 @@ onMounted(() => {
         </el-form-item>
 
         <el-form-item>
-          <el-button type="primary" @click="getDailyList">
+          <el-button type="primary" @click="handleSearch">
             <el-icon><Search /></el-icon>
             搜索
           </el-button>
@@ -274,7 +289,8 @@ onMounted(() => {
             <div style="line-height: 1.6">
               <div class="wrap-content">{{ row.content || '-' }}</div>
               <div style="font-size: 13px; color: #909399; margin-top: 4px">
-                {{ getTypeText(row.type) }} · 图片 {{ getImageCount(row.images) }} 张 · 文件 {{ row.files ? row.files.split(',').filter(i => i.trim()).length : 0 }} 个
+                {{ getTypeText(row.type) }} · 图片 {{ getImageCount(row.images) }} 张 · 文件
+                {{ row.files ? row.files.split(',').filter((i) => i.trim()).length : 0 }} 个
               </div>
             </div>
           </template>
@@ -308,18 +324,12 @@ onMounted(() => {
 
         <el-table-column label="操作" width="180" align="center" fixed="right">
           <template #default="{ row }">
-            <el-button
-              type="success"
-              link
-              v-perm="'sys:recycleDailyWork:recycle'"
-              @click="handleRecover(row)"
-            >恢复</el-button>
-            <el-button
-              type="danger"
-              link
-              v-perm="'sys:recycleDailyWork:delete'"
-              @click="handleDelete(row)"
-            >彻底删除</el-button>
+            <el-button type="success" link v-perm="'sys:recycleDailyWork:recycle'" @click="handleRecover(row)"
+              >恢复</el-button
+            >
+            <el-button type="danger" link v-perm="'sys:recycleDailyWork:delete'" @click="handleDelete(row)"
+              >彻底删除</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
@@ -331,8 +341,9 @@ onMounted(() => {
         :total="total"
         :current-page="currentPage"
         :page-size="pageSize"
-        @update:current-page="currentPage = $event; getDailyList()"
-        @update:page-size="pageSize = $event; getDailyList()"
+        @update:current-page="currentPage = $event"
+        @update:page-size="pageSize = $event"
+        @change="getDailyList()"
       />
     </div>
   </div>
