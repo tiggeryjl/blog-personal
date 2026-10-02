@@ -1,11 +1,50 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { Expand, Menu, Grid, ChatLineSquare, Document, View } from '@element-plus/icons-vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { Expand, Menu, Grid, ChatLineSquare, Document, View, Back } from '@element-plus/icons-vue';
 import MyPagination from '@/components/MyPagination.vue';
 import { getArticleListApi } from '@/api/article.js';
+import { getCategoryListApi } from '@/api/category.js';
 
+const route = useRoute();
 const router = useRouter();
+
+// 当前筛选的分类 id（由左侧分类标签点击后携带的 query 参数而来）
+const categoryId = computed(() => {
+  const id = route.query.categoryId;
+  if (id == null || id === '') return '';
+  return String(Array.isArray(id) ? id[0] : id);
+});
+
+// 分类 id -> 分类名，用于在标题处展示当前选中的分类
+const categoryMap = ref({});
+const categoryName = computed(() => categoryMap.value[categoryId.value] || '');
+
+// 当前筛选的标签名（由左侧标签点击后携带的 query 参数而来）
+const tag = computed(() => {
+  const value = route.query.tag;
+  if (value == null || value === '') return '';
+  return String(Array.isArray(value) ? value[0] : value);
+});
+
+const getCategoryMap = async () => {
+  try {
+    const result = await getCategoryListApi();
+    if (result.code === 200 && Array.isArray(result.data)) {
+      categoryMap.value = result.data.reduce((map, item) => {
+        map[String(item.id)] = item.name;
+        return map;
+      }, {});
+    }
+  } catch (error) {
+    console.error('获取分类列表异常', error);
+  }
+};
+
+// 返回全部文章：清除分类 / 标签筛选条件
+const goAllArticles = () => {
+  router.push('/article');
+};
 
 const articleList = ref([]);
 const total = ref(0);
@@ -16,6 +55,8 @@ const getArticleList = async () => {
     const result = await getArticleListApi({
       page: currentPage.value,
       pageSize: pageSize.value,
+      categoryId: categoryId.value || undefined,
+      tag: tag.value || undefined,
     });
     if (result.code === 200) {
       articleList.value = result.data.rows;
@@ -74,9 +115,19 @@ const hideHotTip = () => {
   hotTip.value.show = false;
 };
 
+// 筛选条件变化时（切换分类 / 切换标签 / 返回全部文章），回到第一页并重新查询
+watch(
+  () => [route.query.categoryId, route.query.tag],
+  () => {
+    currentPage.value = 1;
+    getArticleList();
+  }
+);
+
 onMounted(() => {
   window.addEventListener('layoutChange', updateLayout);
   window.addEventListener('click', closeDropdown);
+  getCategoryMap();
   getArticleList();
 });
 
@@ -90,7 +141,15 @@ onUnmounted(() => {
   <div class="common-article">
     <div class="fixed-header">
       <div class="header-row">
-        <h2>全部文章</h2>
+        <div class="header-left">
+          <h2 v-if="categoryId">分类：{{ categoryName || '加载中…' }}</h2>
+          <h2 v-else-if="tag">标签：{{ tag }}</h2>
+          <h2 v-else>全部文章</h2>
+          <button v-if="categoryId || tag" class="clear-filter-btn" @click="goAllArticles">
+            <el-icon><Back /></el-icon>
+            全部文章
+          </button>
+        </div>
         <div class="layout-dropdown">
           <button class="layout-trigger" @click="showDropdown = !showDropdown">
             <span class="icon-wrap"> <component :is="layoutIcons[layoutMode]" /> </span>页面布局
@@ -177,7 +236,9 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
-    <div v-if="articleList.length === 0" class="empty-data">暂无文章数据</div>
+    <div v-if="articleList.length === 0" class="empty-data">
+      {{ categoryId ? '该分类下暂无文章' : tag ? '该标签下暂无文章' : '暂无文章数据' }}
+    </div>
     <div v-show="hotTip.show" class="global-tooltip" :style="{ left: hotTip.x + 'px', top: hotTip.y + 'px' }">
       {{ hotTip.text }}
     </div>
@@ -227,6 +288,40 @@ onUnmounted(() => {
 .header-row h2 {
   margin: 2px 0;
   color: var(--text-color);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.header-left h2 {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.clear-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 3px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background-color: var(--card-bg);
+  color: var(--text-secondary-color);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.25s ease;
+}
+
+.clear-filter-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 .layout-dropdown {

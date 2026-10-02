@@ -1,5 +1,5 @@
 <script setup>
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import WelcomeBanner from '@/components/WelcomeBanner.vue';
 import { ElMessage } from 'element-plus';
@@ -9,6 +9,7 @@ import { getTagListApi } from '@/api/tag.js';
 import { useSiteStatisticsStore } from '@/store/siteStatistics';
 
 const route = useRoute();
+const router = useRouter();
 
 const userProfile = ref({
   id: '',
@@ -49,6 +50,31 @@ const getCategoryList = async () => {
   } catch (error) {
     console.error('获取分类列表失败:', error);
   }
+};
+
+// 当前选中的分类（来自文章页 URL 上的 categoryId），用于侧边栏高亮
+const activeCategoryId = computed(() => {
+  const id = route.query.categoryId;
+  if (id == null || id === '') return null;
+  return String(Array.isArray(id) ? id[0] : id);
+});
+
+// 点击分类标签：跳转到文章列表页并携带分类筛选条件
+const goCategory = (category) => {
+  router.push({ path: '/article', query: { categoryId: category.id } });
+};
+
+// 当前选中的标签（来自文章页 URL 上的 tag），用于侧边栏高亮
+const activeTagName = computed(() => {
+  const tag = route.query.tag;
+  if (tag == null || tag === '') return null;
+  return String(Array.isArray(tag) ? tag[0] : tag);
+});
+
+// 点击标签：跳转到文章列表页并携带标签筛选条件
+const goTag = (tag) => {
+  moreDialogVisible.value = false;
+  router.push({ path: '/article', query: { tag: tag.name } });
 };
 
 const tagList = ref([]);
@@ -340,19 +366,32 @@ onUnmounted(() => {
           </button>
         </div>
 
-        <!-- 默认：分类排列，一行展示一个分类 -->
+        <!--分类排列 -->
         <div v-if="viewMode === 'category'" class="category-mode-list">
-          <div v-for="category in categoryList" :key="category.id" class="category-row">
+          <div
+            v-for="category in categoryList"
+            :key="category.id"
+            class="category-row"
+            :class="{ active: String(category.id) === activeCategoryId }"
+            @click="goCategory(category)"
+          >
             <span class="category-row-dot"></span>
             <span class="category-row-name">{{ category.name }}</span>
             <span class="category-row-count">{{ category.articleCount }} 篇</span>
           </div>
         </div>
 
-        <!-- 标签排列：保持现有的彩色标签云布局 -->
+        <!-- 标签排列 -->
         <template v-else>
           <div ref="tagAreaRef" class="tag-area">
-            <span v-for="tag in displayTags" :key="tag.id" class="tag-chip" :style="tagColorStyle(tag.name)">
+            <span
+              v-for="tag in displayTags"
+              :key="tag.id"
+              class="tag-chip"
+              :class="{ active: tag.name === activeTagName }"
+              :style="tagColorStyle(tag.name)"
+              @click="goTag(tag)"
+            >
               {{ tag.name }}
             </span>
           </div>
@@ -460,7 +499,14 @@ onUnmounted(() => {
     align-center
   >
     <div class="dialog-tag-cloud">
-      <span v-for="tag in remainingTags" :key="tag.id" class="tag-chip" :style="tagColorStyle(tag.name)">
+      <span
+        v-for="tag in remainingTags"
+        :key="tag.id"
+        class="tag-chip"
+        :class="{ active: tag.name === activeTagName }"
+        :style="tagColorStyle(tag.name)"
+        @click="goTag(tag)"
+      >
         {{ tag.name }}
       </span>
       <span v-if="remainingTags.length === 0" class="dialog-tag-empty">暂无更多标签</span>
@@ -480,7 +526,7 @@ onUnmounted(() => {
 
 /* 两侧栏共享宽度、吸顶和独立滚动行为 */
 .sidebar {
-  width: 300px;
+  width: 330px;
   /* 固定宽度 */
   flex-shrink: 0;
   align-self: flex-start;
@@ -726,7 +772,23 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   padding: 8px 2px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
   /* border-bottom: 1px solid var(--border-color); */
+}
+
+.category-row:hover {
+  background-color: var(--card-bg-hover);
+}
+
+.category-row.active .category-row-name {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.category-row.active .category-row-dot {
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.18);
 }
 
 .category-row:last-child {
@@ -782,6 +844,11 @@ onUnmounted(() => {
   filter: brightness(1.08);
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.tag-chip.active {
+  font-weight: 600;
+  box-shadow: 0 0 0 2px currentColor;
 }
 
 /* 更多标签入口行：预留固定高度，卡片高度不跳动 */
