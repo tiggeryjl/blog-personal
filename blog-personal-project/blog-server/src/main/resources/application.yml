@@ -11,6 +11,11 @@ spring:
       max-file-size: 10MB
       #最大请求大小(包括所有文件和表单数据)
       max-request-size: 100MB
+  task:
+    scheduling:
+      #定时任务线程池调大一点，RSS 订阅发信不会拖慢每分钟的定时发布任务
+      pool:
+        size: 4
 
 mybatis:
   #mapper配置文件
@@ -43,3 +48,18 @@ blog:
     pro:
       model: deepseek-v4-pro          # DeepSeek官方Pro/推理模型名
       temperature: 0.3
+  rss:
+    #站点地址/域名
+    site-url: ${RSS_SITE_URL:http://localhost:5173}
+    title: 小叶同学的博客
+  mail:
+    #新文章邮件通知开关
+    enabled: ${MAIL_ENABLED:true}
+    host: ${MAIL_HOST:smtp.qq.com}
+    port: ${MAIL_PORT:465}
+    ssl: ${MAIL_SSL:true}
+    #发件邮箱
+    username: ${MAIL_USERNAME:}
+    #发件邮箱的SMTP授权码
+    password: ${MAIL_PASSWORD:}
+    from-name: 小叶同学的博客

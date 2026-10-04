@@ -2,6 +2,7 @@ package com.blog.service;
 
 import com.blog.pojo.dto.ArticleDTO;
 import com.blog.pojo.dto.ArticlePageQueryDTO;
+import com.blog.pojo.vo.ArticleCalendarVO;
 import com.blog.pojo.vo.ArticleDetailVO;
 import com.blog.pojo.vo.ArticleVo;
 import com.blog.result.PageResult;
@@ -29,6 +30,15 @@ public interface ArticleService {
      * @param articlePageQueryDTO
      */
     PageResult pageQueryUser(ArticlePageQueryDTO articlePageQueryDTO);
+
+    /**
+     * 查询指定年月内每天发布的文章数量
+     *
+     * @param year  年份，为空时使用当前年份
+     * @param month 月份（1-12），为空或非法时使用当前月份
+     * @return 每天一条记录，date 为 yyyy-MM-dd
+     */
+    List<ArticleCalendarVO> getCalendarArticleCounts(Integer year, Integer month);
 
     /**
      * 分页查询逻辑删除的文章（回收站）

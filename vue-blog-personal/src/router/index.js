@@ -58,11 +58,17 @@ const router = createRouter({
         { path: 'friendlink', name: 'friendlink', component: FriendLinkView },
         { path: 'feedback', name: 'feedback', component: FeedbackView },
         { path: 'about', name: 'about', component: AboutView },
-        { path: 'article/:id', name: 'articleDetail', component: ArticleDetailView },
-        { path: 'daily/:id', name: 'dailyDetail', component: DailyDetailView },
+    { path: 'article/:id', name: 'articleDetail', component: ArticleDetailView },
+    { path: 'daily/:id', name: 'dailyDetail', component: DailyDetailView },
       ],
     },
     { path: '/login', name: 'login', component: () => import('@/views/login/index.vue') },
+    // 邮件订阅退订页：从邮件里的退订链接直接进入，不需要登录
+    {
+      path: '/rss/unsubscribe',
+      name: 'rssUnsubscribe',
+      component: () => import('@/views/rss/unsubscribe.vue'),
+    },
     { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('@/components/404.vue') },
   ],
 });

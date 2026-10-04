@@ -4,6 +4,7 @@ import com.blog.pojo.dto.ArticlePageQueryDTO;
 import com.blog.pojo.entity.Article;
 import com.blog.pojo.entity.ArticleViewRecord;
 import com.blog.pojo.vo.ArticleFrontVO;
+import com.blog.pojo.vo.ArticleCalendarVO;
 import com.blog.pojo.vo.ArticleVo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -41,6 +42,25 @@ public interface ArticleMapper {
      * @return
      */
     List<ArticleFrontVO> pageQueryUser(ArticlePageQueryDTO params);
+
+    /**
+     * 按天统计用户端可见文章的发布数量
+     * @param begin 区间开始时间
+     * @param end   区间结束时间
+     * @return 每天一条记录
+     */
+    List<ArticleCalendarVO> countGroupByPublishDate(@Param("begin") LocalDateTime begin,
+                                                    @Param("end") LocalDateTime end);
+
+    /**
+     * 查询指定时间区间内发布的文章，用于给邮箱订阅者发送新文章通知
+     * 区间为左开右闭：(begin, end]
+     *
+     * @param begin 上次通知到的时间
+     * @param end   当前时间
+     */
+    List<ArticleFrontVO> selectPublishedBetween(@Param("begin") LocalDateTime begin,
+                                                @Param("end") LocalDateTime end);
 
     /**
      * 分页查询逻辑删除的文章（回收站）

@@ -12,7 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
 /**
- * 系统配置 Service 实现
+ * 系统配置
  */
 @Slf4j
 @Service
@@ -45,5 +45,13 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             log.error("系统配置日期格式错误，配置键：{}，期望格式：yyyy-MM-dd HH:mm:ss", configKey);
             return null;
         }
+    }
+
+    @Override
+    public void saveValue(String configKey, String configValue, String description) {
+        if (!StringUtils.hasText(configKey)) {
+            return;
+        }
+        systemConfigMapper.upsertValue(configKey, configValue, description);
     }
 }

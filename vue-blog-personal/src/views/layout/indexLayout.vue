@@ -1,11 +1,13 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router';
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, reactive, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import WelcomeBanner from '@/components/WelcomeBanner.vue';
 import { ElMessage } from 'element-plus';
 import { getPersonalInfoApi } from '@/api/auth.js';
 import { getCategoryListApi } from '@/api/category.js';
 import { getTagListApi } from '@/api/tag.js';
+import { getArticleCalendarApi } from '@/api/article.js';
+import { subscribeRssApi } from '@/api/rss.js';
 import { useSiteStatisticsStore } from '@/store/siteStatistics';
 
 const route = useRoute();
@@ -37,6 +39,65 @@ const searchKeyword = ref('');
 const search = () => {
   console.log('搜索关键词:', searchKeyword.value);
   ElMessage.info(`搜索功能暂未实现，关键词: ${searchKeyword.value}`);
+};
+
+// 邮箱订阅：点击订阅按钮弹出对话框填邮箱，提交后写入订阅表，新文章发布时后端定时发信
+const subscribeDialogVisible = ref(false);
+const subscribing = ref(false);
+const subscribeForm = reactive({
+  email: '',
+  nickname: '',
+});
+const EMAIL_PATTERN = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+
+const openSubscribeDialog = () => {
+  subscribeDialogVisible.value = true;
+};
+
+const closeSubscribeDialog = () => {
+  // 提交中不允许关闭，避免用户以为没提交上
+  if (subscribing.value) return;
+  subscribeDialogVisible.value = false;
+};
+
+// el-dialog 的关闭拦截（右上角叉、Esc、点遮罩都会走这里）：提交中不关闭
+const handleSubscribeDialogClose = (done) => {
+  if (subscribing.value) return;
+  done();
+};
+
+const submitSubscribe = async () => {
+  if (subscribing.value) return;
+
+  const email = subscribeForm.email.trim();
+  if (!email) {
+    ElMessage.warning('请先填写邮箱');
+    return;
+  }
+  if (!EMAIL_PATTERN.test(email)) {
+    ElMessage.warning('邮箱格式不正确');
+    return;
+  }
+
+  subscribing.value = true;
+  try {
+    const result = await subscribeRssApi({
+      email,
+      nickname: subscribeForm.nickname.trim() || undefined,
+    });
+    if (result.code === 200) {
+      ElMessage.success('订阅成功');
+      subscribeForm.email = '';
+      subscribeForm.nickname = '';
+      subscribeDialogVisible.value = false;
+    } else {
+      ElMessage.warning(result.msg || '订阅失败，请稍后再试');
+    }
+  } catch (error) {
+    ElMessage.error('订阅失败，请稍后再试');
+  } finally {
+    subscribing.value = false;
+  }
 };
 
 const categoryList = ref([]);
@@ -189,26 +250,66 @@ const remainingTags = computed(() => {
 });
 
 const today = new Date();
-const currentYear = ref(today.getFullYear());
-const currentMonth = ref(today.getMonth() + 1);
-const selectedDate = ref(null);
 
-// 点击日期
-const selectDay = (day) => {
-  if (day.isOtherMonth) return;
-  selectedDate.value = {
-    year: currentYear.value,
-    month: currentMonth.value,
-    date: day.date,
-    isToday: day.isToday,
-  };
+// 当前选中的日期（来自文章页 URL 上的 date 参数，格式 yyyy-MM-dd）
+const selectedDateKey = computed(() => {
+  const value = route.query.date;
+  if (value == null || value === '') return '';
+  return String(Array.isArray(value) ? value[0] : value);
+});
+
+// 带日期筛选条件进入时，日历直接停在对应的月份
+const initialDateKey = (() => {
+  const matched = /^(\d{4})-(\d{2})/.exec(selectedDateKey.value);
+  if (!matched) return null;
+  const month = Number(matched[2]);
+  if (month < 1 || month > 12) return null;
+  return { year: Number(matched[1]), month };
+})();
+
+const currentYear = ref(initialDateKey ? initialDateKey.year : today.getFullYear());
+const currentMonth = ref(initialDateKey ? initialDateKey.month : today.getMonth() + 1);
+
+// 当前月份里每天的文章数量，形如 { '2026-10-01': 2 }
+const calendarArticleCounts = ref({});
+
+const pad2 = (value) => String(value).padStart(2, '0');
+const formatDateKey = (year, month, day) => `${year}-${pad2(month)}-${pad2(day)}`;
+
+// 拉取当前月份每天的文章数量，用于在日期下方打标识
+const loadCalendarCounts = async () => {
+  try {
+    const result = await getArticleCalendarApi({ year: currentYear.value, month: currentMonth.value });
+    if (result.code === 200 && Array.isArray(result.data)) {
+      const countMap = {};
+      result.data.forEach((item) => {
+        if (item.date) countMap[String(item.date)] = Number(item.count) || 0;
+      });
+      calendarArticleCounts.value = countMap;
+    } else {
+      calendarArticleCounts.value = {};
+    }
+  } catch (error) {
+    console.error('获取日历文章数量失败:', error);
+    calendarArticleCounts.value = {};
+  }
 };
 
-// 回到今天
+// 点击日期：跳转到文章页，并按当天的发布时间筛选文章
+const selectDay = (day) => {
+  if (day.isOtherMonth || !day.key) return;
+  router.push({ path: '/article', query: { date: day.key } });
+};
+
+// 回到今天：日历切回当前月份，同时清空日期筛选（分类、标签等其它筛选条件保留）
 const goToday = () => {
   currentYear.value = today.getFullYear();
   currentMonth.value = today.getMonth() + 1;
-  selectedDate.value = null;
+  if (route.query.date != null) {
+    const query = { ...route.query };
+    delete query.date;
+    router.push({ path: route.path, query });
+  }
 };
 
 // 上一个月
@@ -218,7 +319,6 @@ const prevMonth = () => {
     currentMonth.value = 12;
     currentYear.value--;
   }
-  selectedDate.value = null;
 };
 
 // 下一个月
@@ -228,7 +328,6 @@ const nextMonth = () => {
     currentMonth.value = 1;
     currentYear.value++;
   }
-  selectedDate.value = null;
 };
 
 // 生成日历数据
@@ -253,9 +352,13 @@ const calendarDays = computed(() => {
   // 当月
   for (let i = 1; i <= daysInMonth; i++) {
     const isToday = i === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+    const key = formatDateKey(year, currentMonth.value, i);
 
     days.push({
       date: i,
+      key: key,
+      // 当天发布的文章数量，用于在日期下方显示标识
+      count: calendarArticleCounts.value[key] || 0,
       isOtherMonth: false,
       isToday: isToday,
     });
@@ -274,6 +377,24 @@ const calendarDays = computed(() => {
   return days;
 });
 
+// 切换月份后重新统计该月每天的文章数量
+watch([currentYear, currentMonth], () => {
+  loadCalendarCounts();
+});
+
+// 日期筛选条件变化时（例如从别处带着日期进来），日历自动跳到对应月份
+watch(selectedDateKey, (value) => {
+  const matched = /^(\d{4})-(\d{2})/.exec(value);
+  if (!matched) return;
+  const year = Number(matched[1]);
+  const month = Number(matched[2]);
+  if (month < 1 || month > 12) return;
+  if (currentYear.value !== year || currentMonth.value !== month) {
+    currentYear.value = year;
+    currentMonth.value = month;
+  }
+});
+
 const show = computed(() => {
   return route.path === '/' || route.path.startsWith('/index');
 });
@@ -282,6 +403,7 @@ onMounted(async () => {
   getPersonalInfo();
   getCategoryList();
   getTagList();
+  loadCalendarCounts();
   await rescanTagOverflow();
   window.addEventListener('resize', rescanTagOverflow);
   if (document.fonts?.ready) {
@@ -331,7 +453,7 @@ onUnmounted(() => {
           <a :href="`mailto:${userProfile.email}`" target="_blank" title="Email">
             <font-awesome-icon icon="envelope" />
           </a>
-          <a target="_blank" title="RSS订阅">
+          <a href="javascript:void(0)" title="订阅新文章" @click="openSubscribeDialog">
             <font-awesome-icon icon="rss" />
           </a>
         </div>
@@ -410,14 +532,14 @@ onUnmounted(() => {
         <div class="calendar-header">
           <h4><font-awesome-icon icon="calendar" size="lg" /> 日历</h4>
           <div class="calendar-nav">
-            <el-icon class="arrow today-btn" @click="goToday" style="margin-left: 6px">
+            <el-icon class="arrow today-btn" title="回到今天" @click="goToday" style="margin-left: 6px">
               <RefreshRight />
             </el-icon>
-            <el-icon class="arrow" @click="prevMonth">
+            <el-icon class="arrow" title="上个月" @click="prevMonth">
               <ArrowLeft />
             </el-icon>
-            <span>{{ currentYear }}年{{ currentMonth }}月</span>
-            <el-icon class="arrow" @click="nextMonth">
+            <span class="calendar-month-label">{{ currentYear }}年{{ currentMonth }}月</span>
+            <el-icon class="arrow" title="下个月" @click="nextMonth">
               <ArrowRight />
             </el-icon>
           </div>
@@ -430,20 +552,19 @@ onUnmounted(() => {
             <span
               v-for="(day, index) in calendarDays"
               :key="index"
+              class="calendar-day"
               :class="{
-                'calendar-day': true,
                 'other-month': day.isOtherMonth,
                 today: day.isToday,
-                selected:
-                  selectedDate !== null &&
-                  selectedDate?.year === currentYear &&
-                  selectedDate?.month === currentMonth &&
-                  selectedDate?.date === day.date &&
-                  !day.isOtherMonth,
+                selected: !!day.key && day.key === selectedDateKey,
+                'has-article': day.count > 0,
               }"
+              :title="day.count > 0 ? `${day.key} 发布了 ${day.count} 篇文章` : ''"
               @click="selectDay(day)"
             >
-              {{ day.date }}
+              <span class="calendar-day-num">{{ day.date }}</span>
+              <!-- 有文章的日期在下方显示标识 -->
+              <span v-if="day.count > 0" class="calendar-day-dot"></span>
             </span>
           </div>
         </div>
@@ -511,6 +632,50 @@ onUnmounted(() => {
       </span>
       <span v-if="remainingTags.length === 0" class="dialog-tag-empty">暂无更多标签</span>
     </div>
+  </el-dialog>
+
+  <!-- 邮箱订阅对话框：el-dialog + 自定义外观，观感与之前的手写弹窗保持一致 -->
+  <el-dialog
+    v-model="subscribeDialogVisible"
+    class="subscribe-dialog"
+    width="420px"
+    align-center
+    :before-close="handleSubscribeDialogClose"
+  >
+    <template #header>
+      <h3 class="subscribe-dialog-title">RSS订阅</h3>
+    </template>
+
+    <div class="subscribe-dialog-field">
+      <input
+        id="subscribe-email"
+        v-model.trim="subscribeForm.email"
+        class="subscribe-input"
+        type="email"
+        placeholder="邮箱 *"
+        @keyup.enter="submitSubscribe"
+      />
+    </div>
+    <div class="subscribe-dialog-field">
+      <input
+        id="subscribe-nickname"
+        v-model.trim="subscribeForm.nickname"
+        class="subscribe-input"
+        type="text"
+        maxlength="30"
+        placeholder="昵称"
+        @keyup.enter="submitSubscribe"
+      />
+    </div>
+
+    <template #footer>
+      <div class="subscribe-dialog-footer">
+        <button type="button" class="subscribe-cancel-btn" @click="closeSubscribeDialog">取消</button>
+        <button type="button" class="subscribe-btn" :disabled="subscribing" @click="submitSubscribe">
+          {{ subscribing ? '提交中…' : '确认订阅' }}
+        </button>
+      </div>
+    </template>
   </el-dialog>
 </template>
 
@@ -906,20 +1071,35 @@ onUnmounted(() => {
 .calendar-nav {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   font-size: 14px;
   color: var(--text-color);
 }
 
+.calendar-month-label {
+  min-width: 76px;
+  text-align: center;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
 .arrow {
-  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 15px;
   color: var(--border-color);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .arrow:hover {
   color: #409eff;
+  background-color: rgba(64, 158, 255, 0.12);
   transform: scale(1.1);
 }
 
@@ -929,40 +1109,54 @@ onUnmounted(() => {
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
   font-size: 13px;
+  font-weight: 500;
   color: var(--text-secondary-color);
   margin-bottom: 8px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border-color);
 }
 
+/* 周末用主题色区分，方便快速定位 */
+.calendar-week span:first-child,
+.calendar-week span:last-child {
+  color: #409eff;
+}
+
 /* 日期 */
 .calendar-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
+  gap: 3px;
   text-align: center;
 }
 
 .calendar-day {
-  width: 32px;
-  height: 32px;
-  line-height: 32px;
-  border-radius: 8px;
-  font-size: 14px;
-  color: var(--text-main-color);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 34px;
+  aspect-ratio: 1 / 1;
   margin: 0 auto;
-  transition: all 0.2s ease;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: var(--text-main-color);
+  user-select: none;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   cursor: pointer;
 }
 
 .calendar-day:hover:not(.other-month) {
-  background-color: rgba(64, 160, 255, 0.2);
-  color: #ffffff;
+  background-color: rgba(64, 158, 255, 0.14);
+  color: #409eff;
+  transform: translateY(-1px);
 }
 
 .calendar-day.other-month {
   color: var(--text-prompt-color);
   cursor: default;
+  opacity: 0.6;
 }
 
 .calendar-day.today {
@@ -975,13 +1169,124 @@ onUnmounted(() => {
 /* 选中的日期 */
 .calendar-day.selected {
   background-color: #f38600 !important;
+  background-image: none !important;
   color: #ffffff !important;
   font-weight: bold;
+  box-shadow: 0 2px 8px rgba(243, 134, 0, 0.45);
+}
+
+/* 有文章的日期：数字下方的小圆点标识 */
+.calendar-day.has-article:not(.today):not(.selected) {
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.calendar-day-dot {
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #ff4800;
+  transform: translateX(-50%);
+  transition: background-color 0.2s ease;
+}
+
+.calendar-day.today .calendar-day-dot,
+.calendar-day.selected .calendar-day-dot {
+  background-color: #ffffff;
 }
 
 /* 回到今天按钮 hover */
 .today-btn:hover {
   color: var(--primary-color) !important;
+}
+
+.subscribe-form {
+  display: flex;
+  gap: 8px;
+}
+
+.subscribe-input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--card-secound-bg);
+  color: var(--text-color);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.subscribe-input:focus {
+  border-color: var(--primary-color);
+}
+
+.subscribe-input::placeholder {
+  color: var(--text-prompt-color);
+}
+
+.subscribe-btn {
+  flex-shrink: 0;
+  padding: 7px 16px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #409eff, #003ae5);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.subscribe-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.35);
+}
+
+.subscribe-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 订阅对话框（el-dialog + 自定义外观） */
+.subscribe-dialog-title {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.subscribe-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.subscribe-dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.subscribe-cancel-btn {
+  padding: 7px 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: transparent;
+  color: var(--text-secondary-color);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.subscribe-cancel-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
 /* 站点信息统计 */
@@ -1096,10 +1401,18 @@ main {
   }
 
   .calendar-day {
-    width: 24px;
-    height: 24px;
+    max-width: 26px;
     font-size: 12px;
-    line-height: 24px;
+  }
+
+  .calendar-day-dot {
+    bottom: 2px;
+    width: 3px;
+    height: 3px;
+  }
+
+  .calendar-month-label {
+    min-width: 0;
   }
 
   .right-sidebar .site-stat-grid {
@@ -1122,5 +1435,60 @@ main {
     overscroll-behavior-y: auto;
     scrollbar-gutter: auto;
   }
+}
+</style>
+
+<!--
+  el-dialog 会渲染到组件作用域之外，scoped 的 :deep() 拿不到它的内部节点，
+  所以订阅弹窗的外观覆写单独放在这个非 scoped 块里，用 .subscribe-dialog 限定作用范围。
+-->
+<style>
+.el-dialog.subscribe-dialog {
+  max-width: calc(100vw - 40px);
+  padding: 20px 22px 18px;
+  border-radius: 12px;
+  background-color: var(--card-secound-bg);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+}
+
+.subscribe-dialog .el-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 16px;
+  padding: 0;
+}
+
+.subscribe-dialog .el-dialog__headerbtn {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: var(--text-secondary-color);
+  transition: all 0.2s ease;
+}
+
+.subscribe-dialog .el-dialog__headerbtn:hover {
+  background-color: var(--card-bg-hover);
+  color: var(--hover-color);
+}
+
+.subscribe-dialog .el-dialog__close {
+  color: inherit;
+  font-size: 14px;
+}
+
+.subscribe-dialog .el-dialog__body {
+  padding: 0;
+  color: var(--text-color);
+}
+
+.subscribe-dialog .el-dialog__footer {
+  padding: 0;
+  margin-top: 18px;
 }
 </style>

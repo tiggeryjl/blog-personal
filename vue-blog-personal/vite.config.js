@@ -5,7 +5,10 @@ import vue from '@vitejs/plugin-vue'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: './',
+  // 必须用绝对根路径：相对路径('./')会让 /article/xx、/rss/unsubscribe 这类深链接
+  // 把资源解析成 /article/src/main.js 从而整页白屏。
+  // 如果前端部署在子路径下（例如 https://域名/blog/），这里要改成 '/blog/'。
+  base: '/',
   plugins: [vue()],
   resolve: {
     alias: {

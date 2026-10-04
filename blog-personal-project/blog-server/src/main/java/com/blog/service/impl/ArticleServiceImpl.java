@@ -22,6 +22,7 @@ import com.blog.pojo.entity.Article;
 import com.blog.pojo.entity.ArticleViewRecord;
 import com.blog.pojo.entity.SysUser;
 import com.blog.pojo.vo.ArticleDetailVO;
+import com.blog.pojo.vo.ArticleCalendarVO;
 import com.blog.pojo.vo.ArticleCountVO;
 import com.blog.pojo.vo.ArticleFrontVO;
 import com.blog.pojo.vo.ArticleVo;
@@ -46,6 +47,7 @@ import lombok.extern.slf4j.Slf4j;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -216,6 +218,28 @@ public class ArticleServiceImpl implements ArticleService {
         redisService.set(cacheKey, pageResult, 600);
         fillRealtimeCounts(pageResult.getRows());
         return pageResult;
+    }
+
+    /**
+     * 查询指定年月内每天发布的文章数量，供用户端日历打文章标识
+     * 统计口径与用户端列表保持一致：已发布/已归档、未逻辑删除，按发布时间归组
+     *
+     * @param year  年份，为空时使用当前年份
+     * @param month 月份，为空或非法时使用当前月份
+     * @return 每天一条记录，date 为 yyyy-MM-dd
+     */
+    @Override
+    public List<ArticleCalendarVO> getCalendarArticleCounts(Integer year, Integer month) {
+        YearMonth current = YearMonth.now();
+        int queryYear = (year == null || year < 1970 || year > 9999) ? current.getYear() : year;
+        int queryMonth = (month == null || month < 1 || month > 12) ? current.getMonthValue() : month;
+
+        YearMonth yearMonth = YearMonth.of(queryYear, queryMonth);
+        //当月1号 00:00:00 —— 下月1号 00:00:00，避免月末最后一秒的漏统计
+        LocalDateTime begin = yearMonth.atDay(1).atStartOfDay();
+        LocalDateTime end = yearMonth.plusMonths(1).atDay(1).atStartOfDay();
+
+        return articleMapper.countGroupByPublishDate(begin, end);
     }
 
     /**

@@ -9,7 +9,7 @@ import { getCategoryListApi } from '@/api/category.js';
 const route = useRoute();
 const router = useRouter();
 
-// 当前筛选的分类 id（由左侧分类标签点击后携带的 query 参数而来）
+// 当前筛选的分类 id
 const categoryId = computed(() => {
   const id = route.query.categoryId;
   if (id == null || id === '') return '';
@@ -20,12 +20,24 @@ const categoryId = computed(() => {
 const categoryMap = ref({});
 const categoryName = computed(() => categoryMap.value[categoryId.value] || '');
 
-// 当前筛选的标签名（由左侧标签点击后携带的 query 参数而来）
+// 当前筛选的标签名
 const tag = computed(() => {
   const value = route.query.tag;
   if (value == null || value === '') return '';
   return String(Array.isArray(value) ? value[0] : value);
 });
+
+// 当前筛选的日期
+const date = computed(() => {
+  const value = route.query.date;
+  if (value == null || value === '') return '';
+  const raw = String(Array.isArray(value) ? value[0] : value);
+  // 只接受 yyyy-MM-dd，避免非法参数拼出错误的查询条件
+  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : '';
+});
+
+// 格式化日期 2026年10月1日
+const dateText = computed(() => date.value.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$1年$2月$3日'));
 
 const getCategoryMap = async () => {
   try {
@@ -57,6 +69,9 @@ const getArticleList = async () => {
       pageSize: pageSize.value,
       categoryId: categoryId.value || undefined,
       tag: tag.value || undefined,
+      // 只筛选中选的这一天：00:00:00 ~ 23:59:59
+      begin: date.value ? `${date.value} 00:00:00` : undefined,
+      end: date.value ? `${date.value} 23:59:59` : undefined,
     });
     if (result.code === 200) {
       articleList.value = result.data.rows;
@@ -117,7 +132,7 @@ const hideHotTip = () => {
 
 // 筛选条件变化时（切换分类 / 切换标签 / 返回全部文章），回到第一页并重新查询
 watch(
-  () => [route.query.categoryId, route.query.tag],
+  () => [route.query.categoryId, route.query.tag, route.query.date],
   () => {
     currentPage.value = 1;
     getArticleList();
@@ -144,8 +159,9 @@ onUnmounted(() => {
         <div class="header-left">
           <h2 v-if="categoryId">分类：{{ categoryName || '加载中…' }}</h2>
           <h2 v-else-if="tag">标签：{{ tag }}</h2>
+          <h2 v-else-if="date">日期：{{ dateText }}</h2>
           <h2 v-else>全部文章</h2>
-          <button v-if="categoryId || tag" class="clear-filter-btn" @click="goAllArticles">
+          <button v-if="categoryId || tag || date" class="clear-filter-btn" @click="goAllArticles">
             <el-icon><Back /></el-icon>
             全部文章
           </button>
@@ -237,7 +253,7 @@ onUnmounted(() => {
       </div>
     </div>
     <div v-if="articleList.length === 0" class="empty-data">
-      {{ categoryId ? '该分类下暂无文章' : tag ? '该标签下暂无文章' : '暂无文章数据' }}
+      {{ categoryId ? '该分类下暂无文章' : tag ? '该标签下暂无文章' : date ? '该日期下暂无文章' : '暂无文章数据' }}
     </div>
     <div v-show="hotTip.show" class="global-tooltip" :style="{ left: hotTip.x + 'px', top: hotTip.y + 'px' }">
       {{ hotTip.text }}

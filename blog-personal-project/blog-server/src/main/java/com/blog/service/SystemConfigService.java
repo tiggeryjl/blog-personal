@@ -22,4 +22,12 @@ public interface SystemConfigService {
      * @return 日期时间，配置缺失或格式错误时返回 null
      */
     LocalDateTime getDateTimeValue(String configKey);
+
+    /**
+     * 写入或覆盖一项字符串配置，用于保存运行过程中的状态值
+     * @param configKey   配置键
+     * @param configValue 配置值
+     * @param description 配置描述
+     */
+    void saveValue(String configKey, String configValue, String description);
 }

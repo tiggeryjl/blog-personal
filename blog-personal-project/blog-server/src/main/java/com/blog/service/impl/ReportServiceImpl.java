@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 数据分析报表 Service 实现
+ * 数据分析报表
  */
 @Slf4j
 @Service

@@ -196,14 +196,17 @@ CREATE TABLE `article_view_record` (
 DROP TABLE IF EXISTS `rss_subscriptions`;
 CREATE TABLE `rss_subscriptions` (
     `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键',
-    `visitor_id` bigint unsigned NOT NULL COMMENT '访客ID',
-    `nickname` varchar(15) NOT NULL COMMENT '昵称',
+    `visitor_id` bigint unsigned DEFAULT NULL COMMENT '访客ID，未登录订阅时为NULL',
+    `nickname` varchar(30) DEFAULT NULL COMMENT '昵称，未填写时用邮箱前缀',
     `email` varchar(50) NOT NULL COMMENT '邮箱',
+    `token`              varchar(64)     DEFAULT NULL COMMENT '退订令牌，邮件退订链接使用',
     `is_active` tinyint NOT NULL DEFAULT 1 COMMENT '是否激活，0-否，1-是',
     `subscribe_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '订阅时间',
     `un_subscribe_time` datetime DEFAULT NULL COMMENT '取消订阅时间',
     PRIMARY KEY (`id`),
-    KEY `idx_email` (`email`),
+    UNIQUE KEY `idx_email` (`email`),
+    UNIQUE KEY `uk_token` (`token`),
+    KEY `idx_is_active` (`is_active`),
     KEY `idx_visitor_id` (`visitor_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Rss订阅记录表';
 

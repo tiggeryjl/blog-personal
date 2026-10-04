@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.blog.mapper.RssSubscriptionMapper">
+
+    <sql id="BaseColumns">
+        id, visitor_id, nickname, email, token, is_active, subscribe_time, un_subscribe_time
+    </sql>
+
+    <insert id="insert" parameterType="com.blog.pojo.entity.RssSubscription"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO rss_subscriptions (visitor_id, nickname, email, token, is_active, subscribe_time)
+        VALUES (#{visitorId}, #{nickname}, #{email}, #{token}, #{isActive}, #{subscribeTime})
+    </insert>
+
+    <select id="getByEmail" resultType="com.blog.pojo.entity.RssSubscription">
+        SELECT
+        <include refid="BaseColumns"/>
+        FROM rss_subscriptions
+        WHERE email = #{email}
+        LIMIT 1
+    </select>
+
+    <select id="getByToken" resultType="com.blog.pojo.entity.RssSubscription">
+        SELECT
+        <include refid="BaseColumns"/>
+        FROM rss_subscriptions
+        WHERE token = #{token}
+        LIMIT 1
+    </select>
+
+    <update id="reactivate" parameterType="com.blog.pojo.entity.RssSubscription">
+        UPDATE rss_subscriptions
+        SET nickname          = #{nickname},
+            visitor_id        = #{visitorId},
+            token             = #{token},
+            is_active         = 1,
+            subscribe_time    = #{subscribeTime},
+            un_subscribe_time = NULL
+        WHERE id = #{id}
+    </update>
+
+    <update id="unsubscribeByToken">
+        UPDATE rss_subscriptions
+        SET is_active         = 0,
+            un_subscribe_time = NOW()
+        WHERE token = #{token}
+          AND is_active = 1
+    </update>
+
+    <select id="listActive" resultType="com.blog.pojo.entity.RssSubscription">
+        SELECT
+        <include refid="BaseColumns"/>
+        FROM rss_subscriptions
+        WHERE is_active = 1
+          AND email IS NOT NULL
+          AND email &lt;&gt; ''
+        ORDER BY id
+    </select>
+
+    <select id="countActive" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM rss_subscriptions
+        WHERE is_active = 1
+    </select>
+
+</mapper>

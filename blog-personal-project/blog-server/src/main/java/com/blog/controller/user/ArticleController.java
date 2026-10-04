@@ -5,6 +5,7 @@ import com.blog.constant.DelStatusConstant;
 import com.blog.context.BaseContext;
 import com.blog.pojo.dto.ArticleDTO;
 import com.blog.pojo.dto.ArticlePageQueryDTO;
+import com.blog.pojo.vo.ArticleCalendarVO;
 import com.blog.pojo.vo.ArticleDetailVO;
 import com.blog.pojo.vo.ArticleVo;
 import com.blog.result.PageResult;
@@ -37,9 +38,21 @@ public class ArticleController {
     @GetMapping("/getArticleList")
     public Result<PageResult> getArticleList(ArticlePageQueryDTO param){
         log.info("分页查询文章列表:{}",param);
-        // 用户端走独立查询：只返回已发布、已归档且未删除的文章，不会漏出草稿/私密内容
         PageResult pageResult=articleService.pageQueryUser(param);
         return Result.success(pageResult);
+    }
+
+    /**
+     * 查询指定年月内每天发布的文章数量
+     * @param year  年份
+     * @param month 月份
+     */
+    @GetMapping("/getCalendarCount")
+    public Result<List<ArticleCalendarVO>> getCalendarCount(
+            @RequestParam(value = "year", required = false) Integer year,
+            @RequestParam(value = "month", required = false) Integer month){
+        log.info("查询日历文章数量 year:{}, month:{}", year, month);
+        return Result.success(articleService.getCalendarArticleCounts(year, month));
     }
 
     /**
@@ -56,9 +69,6 @@ public class ArticleController {
         }
 
         boolean publicArticle = isPublicArticle(articleDetailVO.getArticleVo());
-//        if (BaseContext.getCurrentId() == null && !publicArticle) {
-//            return Result.error("文章不存在或暂未公开");
-//        }
         if (publicArticle && articleService.recordArticleView(id, request)) {
             Long viewNum = articleDetailVO.getArticleVo().getViewNum();
             articleDetailVO.getArticleVo().setViewNum((viewNum == null ? 0 : viewNum) + 1);
