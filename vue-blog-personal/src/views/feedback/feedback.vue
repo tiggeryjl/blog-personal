@@ -9,57 +9,13 @@ import { useUserStore } from '@/store/userloginstatus';
 import { addCommentReplyApi, addMessageCommentApi, getMessageCommentListApi } from '@/api/comment.js';
 import { likeApi, LIKE_TARGET_TYPE } from '@/api/like.js';
 import { emailExistsApi, loginApi, registerByEmailApi } from '@/api/auth.js';
+import { isGuestLiked, rememberGuestLiked } from '@/utils/guestLike.js';
 
 const userStore = useUserStore();
 const isLogin = computed(() => !!userStore.user_token);
 const userInfo = computed(() => userStore.userInfo || {});
 
 const EMAIL_REGEX = /^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/;
-
-// 游客点赞本地记录
-const GUEST_LIKED_KEY = 'guest_liked_comment_ids';
-
-const todayKey = () => {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${now.getFullYear()}-${month}-${day}`;
-};
-
-const readGuestLikedIds = () => {
-  try {
-    const raw = localStorage.getItem(GUEST_LIKED_KEY);
-    const map = raw ? JSON.parse(raw) : {};
-    const today = todayKey();
-    const result = new Set();
-    if (map && typeof map === 'object' && !Array.isArray(map)) {
-      Object.entries(map).forEach(([id, date]) => {
-        if (date === today) result.add(String(id));
-      });
-    }
-    return result;
-  } catch (error) {
-    return new Set();
-  }
-};
-
-const rememberGuestLikedId = (id) => {
-  try {
-    const raw = localStorage.getItem(GUEST_LIKED_KEY);
-    const map = raw ? JSON.parse(raw) : {};
-    const today = todayKey();
-    const next = {};
-    if (map && typeof map === 'object' && !Array.isArray(map)) {
-      Object.entries(map).forEach(([key, date]) => {
-        if (date === today) next[key] = date;
-      });
-    }
-    next[String(id)] = today;
-    localStorage.setItem(GUEST_LIKED_KEY, JSON.stringify(next));
-  } catch (error) {
-    // 本地记录失败不影响点赞结果
-  }
-};
 
 // 留言表单：身份取登录账号，仅类型与内容可填
 const commentForm = ref({
@@ -89,7 +45,7 @@ const normalizeComment = (item) => ({
   userNickname: item.userNickname || '匿名用户',
   userAvatar: item.userAvatar,
   likeNum: Number(item.likeNum) || 0,
-  liked: item.liked === true || (!isLogin.value && readGuestLikedIds().has(String(item.id))),
+  liked: item.liked === true || (!isLogin.value && isGuestLiked(LIKE_TARGET_TYPE.COMMENT, item.id)),
   admin: item.admin === true,
   replies: normalizeComments(item.replies),
 });
@@ -206,7 +162,7 @@ const handleLike = async (targetId, onSuccess) => {
     if (result?.code === 200) {
       const data = result.data || {};
       onSuccess(data);
-      ElMessage.success(data.liked ? '点赞成功！' : '已取消点赞');
+      // ElMessage.success(data.liked ? '点赞成功！' : '已取消点赞');
     } else {
       ElMessage.error(result?.msg || '操作失败，请稍后重试');
     }
@@ -227,7 +183,7 @@ const likeComment = (commentId) => {
   handleLike(commentId, (data) => {
     comment.liked = data.liked !== false;
     if (typeof data.likeCount === 'number') comment.likeNum = data.likeCount;
-    if (!isLogin.value) rememberGuestLikedId(commentId);
+    if (!isLogin.value) rememberGuestLiked(LIKE_TARGET_TYPE.COMMENT, commentId);
   });
 };
 
@@ -243,7 +199,7 @@ const likeReply = (commentId, replyId) => {
   handleLike(replyId, (data) => {
     reply.liked = data.liked !== false;
     if (typeof data.likeCount === 'number') reply.likeNum = data.likeCount;
-    if (!isLogin.value) rememberGuestLikedId(replyId);
+    if (!isLogin.value) rememberGuestLiked(LIKE_TARGET_TYPE.COMMENT, replyId);
   });
 };
 

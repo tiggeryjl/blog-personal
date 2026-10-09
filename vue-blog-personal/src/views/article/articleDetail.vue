@@ -9,6 +9,7 @@ import { getArticleDetailApi } from '@/api/article.js';
 import { getArticleCommentListApi, addArticleCommentApi, addCommentReplyApi } from '@/api/comment.js';
 import { likeApi, LIKE_TARGET_TYPE } from '@/api/like.js';
 import { requireLogin } from '@/utils/auth';
+import { isGuestLiked, rememberGuestLiked } from '@/utils/guestLike.js';
 import { useUserStore } from '@/store/userloginstatus';
 
 const router = useRouter();
@@ -48,7 +49,9 @@ const getArticle = async () => {
       article.value = result.data.articleVo || {};
       prevArticle.value = result.data.prevArticle || {};
       nextArticle.value = result.data.nextArticle || {};
-      articleLiked.value = result.data.liked === true;
+      articleLiked.value =
+        result.data.liked === true ||
+        (!isLogin.value && isGuestLiked(LIKE_TARGET_TYPE.ARTICLE, article.value.id));
       getCommentList(article.value.id);
     } else {
       ElMessage.error(result.msg || '文章不存在或暂未公开');
@@ -76,7 +79,7 @@ const handleLike = async (targetType, targetId, onSuccess) => {
     if (result.code === 200) {
       const data = result.data || {};
       onSuccess(data);
-      ElMessage.success(data.liked ? '点赞成功！' : '已取消点赞');
+      // ElMessage.success(data.liked ? '点赞成功！' : '已取消点赞');
     } else {
       ElMessage.error(result.msg || '操作失败，请稍后重试');
     }
@@ -90,20 +93,19 @@ const handleLike = async (targetType, targetId, onSuccess) => {
 //点赞文章
 const likeArticle = () => {
   if (!article.value.id) return;
-  if (!requireLogin('登录后才能点赞哦~')) return;
   if (articleLiked.value) {
     ElMessage.warning('你已经点过赞了');
     return;
   }
   handleLike(LIKE_TARGET_TYPE.ARTICLE, article.value.id, (data) => {
-    articleLiked.value = data.liked === true;
+    articleLiked.value = data.liked !== false;
     if (typeof data.likeCount === 'number') article.value.likeNum = data.likeCount;
+    if (!isLogin.value) rememberGuestLiked(LIKE_TARGET_TYPE.ARTICLE, article.value.id);
   });
 };
 
 // 点赞主评论
 const likeComment = (commentId) => {
-  if (!requireLogin('登录后才能点赞哦~')) return;
   const comment = currentCommentList.value.find((c) => c.id === commentId);
   if (!comment) return;
   if (comment.liked) {
@@ -111,14 +113,14 @@ const likeComment = (commentId) => {
     return;
   }
   handleLike(LIKE_TARGET_TYPE.COMMENT, commentId, (data) => {
-    comment.liked = data.liked === true;
+    comment.liked = data.liked !== false;
     if (typeof data.likeCount === 'number') comment.likeNum = data.likeCount;
+    if (!isLogin.value) rememberGuestLiked(LIKE_TARGET_TYPE.COMMENT, commentId);
   });
 };
 
 // 点赞回复
 const likeReply = (commentId, replyId) => {
-  if (!requireLogin('登录后才能点赞哦~')) return;
   const comment = currentCommentList.value.find((c) => c.id === commentId);
   if (!comment) return;
   const reply = comment.replies.find((r) => r.id === replyId);
@@ -128,13 +130,25 @@ const likeReply = (commentId, replyId) => {
     return;
   }
   handleLike(LIKE_TARGET_TYPE.COMMENT, replyId, (data) => {
-    reply.liked = data.liked === true;
+    reply.liked = data.liked !== false;
     if (typeof data.likeCount === 'number') reply.likeNum = data.likeCount;
+    if (!isLogin.value) rememberGuestLiked(LIKE_TARGET_TYPE.COMMENT, replyId);
   });
 };
 
 // 当前文章的评论列表
 const currentCommentList = ref([]);
+
+// 游客未登录时后端不回传 liked，用本地记录补齐已点赞状态
+const applyGuestLikedState = (list) => {
+  if (!Array.isArray(list) || isLogin.value) return;
+  list.forEach((item) => {
+    if (isGuestLiked(LIKE_TARGET_TYPE.COMMENT, item.id)) {
+      item.liked = true;
+    }
+    applyGuestLikedState(item.replies);
+  });
+};
 
 const getCommentList = async (id) => {
   currentCommentList.value = [];
@@ -142,6 +156,7 @@ const getCommentList = async (id) => {
     const result = await getArticleCommentListApi(id);
     if (result.code === 200) {
       currentCommentList.value = result.data;
+      applyGuestLikedState(currentCommentList.value);
     } else {
       ElMessage.error('获取评论失败，请稍后重新尝试或者联系博主反馈，感谢！');
     }

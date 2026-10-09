@@ -9,6 +9,7 @@ import { addDailyViewApi, getDailyDetailApi } from '@/api/daily';
 import { addCommentReplyApi, addDailyCommentApi, getDailyCommentListApi } from '@/api/comment.js';
 import { likeApi, LIKE_TARGET_TYPE } from '@/api/like.js';
 import { requireLogin } from '@/utils/auth';
+import { isGuestLiked, rememberGuestLiked } from '@/utils/guestLike.js';
 import { useUserStore } from '@/store/userloginstatus';
 
 const route = useRoute();
@@ -70,7 +71,9 @@ const fetchDailyDetail = async (id) => {
       ...result.data,
       images: normalizeImages(result.data.images),
       files: normalizeFiles(result.data.files),
-      isLiked: result.data.liked === true,
+      isLiked:
+        result.data.liked === true ||
+        (!isLogin.value && isGuestLiked(LIKE_TARGET_TYPE.DAILY, result.data.id)),
     };
     return true;
   } catch (error) {
@@ -97,7 +100,6 @@ const loadDailyDetail = async (id) => {
 // 点赞日常
 const likingDailyIds = new Set();
 const toggleLike = async (item) => {
-  if (!requireLogin('登录后才能点赞哦~')) return;
   if (item.isLiked) {
     ElMessage.warning('你已经点过赞了');
     return;
@@ -111,9 +113,10 @@ const toggleLike = async (item) => {
     if (!isCurrentDaily(dailyId)) return;
     if (result?.code === 200) {
       const data = result.data || {};
-      item.isLiked = data.liked === true;
+      item.isLiked = data.liked !== false;
       if (typeof data.likeCount === 'number') item.likeNum = data.likeCount;
-      ElMessage.success('点赞成功！');
+      if (!isLogin.value) rememberGuestLiked(LIKE_TARGET_TYPE.DAILY, dailyId);
+      // ElMessage.success('点赞成功！');
     } else {
       ElMessage.error(result?.msg || '点赞失败，请稍后重试');
     }
@@ -248,7 +251,7 @@ const handleCommentLike = async (targetId, onSuccess) => {
     if (result.code === 200) {
       const data = result.data || {};
       onSuccess(data);
-      ElMessage.success(data.liked ? '点赞成功！' : '已取消点赞');
+      // ElMessage.success(data.liked ? '点赞成功！' : '已取消点赞');
     } else {
       ElMessage.error(result.msg || '操作失败，请稍后重试');
     }
@@ -263,7 +266,6 @@ const handleCommentLike = async (targetId, onSuccess) => {
 
 // 点赞主评论
 const likeComment = (commentId) => {
-  if (!requireLogin('登录后才能点赞哦~')) return;
   const comment = currentCommentList.value.find((item) => item.id === commentId);
   if (!comment) return;
   if (comment.liked) {
@@ -271,14 +273,14 @@ const likeComment = (commentId) => {
     return;
   }
   handleCommentLike(commentId, (data) => {
-    comment.liked = data.liked === true;
+    comment.liked = data.liked !== false;
     if (typeof data.likeCount === 'number') comment.likeNum = data.likeCount;
+    if (!isLogin.value) rememberGuestLiked(LIKE_TARGET_TYPE.COMMENT, commentId);
   });
 };
 
 // 点赞回复
 const likeReply = (commentId, replyId) => {
-  if (!requireLogin('登录后才能点赞哦~')) return;
   const comment = currentCommentList.value.find((item) => item.id === commentId);
   if (!comment) return;
   const reply = comment.replies.find((item) => item.id === replyId);
@@ -288,8 +290,9 @@ const likeReply = (commentId, replyId) => {
     return;
   }
   handleCommentLike(replyId, (data) => {
-    reply.liked = data.liked === true;
+    reply.liked = data.liked !== false;
     if (typeof data.likeCount === 'number') reply.likeNum = data.likeCount;
+    if (!isLogin.value) rememberGuestLiked(LIKE_TARGET_TYPE.COMMENT, replyId);
   });
 };
 
@@ -297,6 +300,17 @@ const currentCommentList = ref([]);
 const commentLoading = ref(false);
 const commentLoadFailed = ref(false);
 let latestCommentRequestId = 0;
+
+// 游客未登录时后端不回传 liked，用本地记录补齐已点赞状态
+const applyGuestLikedState = (list) => {
+  if (!Array.isArray(list) || isLogin.value) return;
+  list.forEach((item) => {
+    if (isGuestLiked(LIKE_TARGET_TYPE.COMMENT, item.id)) {
+      item.liked = true;
+    }
+    applyGuestLikedState(item.replies);
+  });
+};
 
 const getCommentList = async (id, reset = false) => {
   const requestId = ++latestCommentRequestId;
@@ -308,6 +322,7 @@ const getCommentList = async (id, reset = false) => {
     if (requestId !== latestCommentRequestId) return false;
     if (result?.code === 200) {
       currentCommentList.value = Array.isArray(result.data) ? result.data : [];
+      applyGuestLikedState(currentCommentList.value);
       if (dailyItem.value && String(dailyItem.value.id) === String(id)) {
         dailyItem.value.commentNum = countComments(currentCommentList.value);
       }

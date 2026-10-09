@@ -138,12 +138,10 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public PageResult pageUserMessageQuery(CommentPageQueryDTO commentPageQueryDTO) {
         commentPageQueryDTO.setType(CommentConstant.TWO);
-        // 用户端只展示已审核可见的留言
         commentPageQueryDTO.setStatus(StatusConstant.ENABLE);
-        Integer page = commentPageQueryDTO.getPage() == null ? 1 : commentPageQueryDTO.getPage();
-        Integer pageSize = commentPageQueryDTO.getPageSize() == null ? 10 : commentPageQueryDTO.getPageSize();
 
-        PageHelper.startPage(page, pageSize);
+        PageHelper.startPage(commentPageQueryDTO.getPage(), commentPageQueryDTO.getPageSize());
+
         List<Long> mainIds = commentMapper.pageMainIds(commentPageQueryDTO);
         PageInfo<Long> pageInfo = new PageInfo<>(mainIds);
         if (mainIds == null || mainIds.isEmpty()) {
@@ -649,8 +647,9 @@ public class CommentServiceImpl implements CommentService {
             return Collections.emptyList();
         }
         for (CommentVo comment : commentVoList) {
-            comment.setAdmin(sysUserRoleMapper.hasRole(
-                    comment.getUserId(), SystemConstant.SUPER_ADMIN_ROLE));
+//            comment.setAdmin(sysUserRoleMapper.hasRole(
+//                    comment.getUserId(), SystemConstant.SUPER_ADMIN_ROLE));
+            markAdminRecursively(comment);
         }
 
         List<CommentVo> commentVos = CommentTreeUtil.buildFlatReplyTree(commentVoList);

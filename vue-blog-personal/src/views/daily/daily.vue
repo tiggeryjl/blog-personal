@@ -5,7 +5,8 @@ import { ElMessage } from 'element-plus';
 import { ZoomIn, ZoomOut, ChatDotRound, Document, View } from '@element-plus/icons-vue';
 import { getDailyListApi } from '@/api/daily.js';
 import { likeApi, LIKE_TARGET_TYPE } from '@/api/like.js';
-import { requireLogin } from '@/utils/auth.js';
+import { isLoggedIn } from '@/utils/auth.js';
+import { isGuestLiked, rememberGuestLiked } from '@/utils/guestLike.js';
 
 const router = useRouter();
 
@@ -87,7 +88,9 @@ const fetchDailyList = async ({ reset = false } = {}) => {
       ...item,
       images: normalizeImages(item.images),
       files: normalizeFiles(item.files),
-      isLiked: item.liked === true,
+      isLiked:
+        item.liked === true ||
+        (!isLoggedIn() && isGuestLiked(LIKE_TARGET_TYPE.DAILY, item.id)),
     }));
 
     if (reset) {
@@ -170,7 +173,6 @@ onBeforeUnmount(() => {
 // 日常点赞中的目标集合，防止重复提交
 const likingDailyIds = new Set();
 const toggleLike = async (item) => {
-  if (!requireLogin('登录后才能点赞哦~')) return;
   if (item.isLiked) {
     ElMessage.warning('你已经点过赞了');
     return;
@@ -182,8 +184,9 @@ const toggleLike = async (item) => {
     const result = await likeApi({ targetType: LIKE_TARGET_TYPE.DAILY, targetId: item.id });
     if (result?.code === 200) {
       const data = result.data || {};
-      item.isLiked = data.liked === true;
+      item.isLiked = data.liked !== false;
       if (typeof data.likeCount === 'number') item.likeNum = data.likeCount;
+      if (!isLoggedIn()) rememberGuestLiked(LIKE_TARGET_TYPE.DAILY, item.id);
       ElMessage.success('点赞成功！');
     } else {
       ElMessage.error(result?.msg || '点赞失败，请稍后重试');
