@@ -16,5 +16,8 @@ export const addDailyCommentApi = (dailyId, content) => request.post(`/user/comm
 // 分页查询留言评论
 export const getMessageCommentListApi = (data) => request.get(`/user/comment/message/list`, { params: data });
 
+// 发表留言
+export const addMessageCommentApi = (data) => request.post('/user/comment/message', data);
+
 // 回复评论
 export const addCommentReplyApi = (data) => request.post('/user/comment/reply', data);

@@ -159,12 +159,12 @@ CREATE TABLE `user_like`
     `user_id`       bigint NOT NULL COMMENT '点赞用户ID',
     `target_type`   tinyint NOT NULL DEFAULT 1 COMMENT '点赞对象类型 0=文章 1=日常 2=评论',
     `target_id`     bigint NOT NULL COMMENT '点赞目标ID(文章ID/日常ID/评论ID)',
+    `like_date`     date NOT NULL COMMENT '点赞日期',
     `delete_flag`   tinyint DEFAULT 0 COMMENT '逻辑删除 0=正常 1=取消点赞',
     `create_time`   datetime DEFAULT NULL COMMENT '点赞时间',
     `update_time`   datetime DEFAULT NULL COMMENT '更新时间(取消点赞更新)',
     PRIMARY KEY (`id`),
-    -- 联合唯一索引：同一用户不能重复点赞同一个目标
-    UNIQUE KEY `uk_user_target` (`user_id`, `target_type`, `target_id`, `delete_flag`),
+    UNIQUE KEY `uk_user_target_date` (`user_id`, `target_type`, `target_id`, `like_date`, `delete_flag`),
     -- 快速查询某篇文章所有点赞记录
     KEY `idx_target_type_id_del` (`target_type`, `target_id`, `delete_flag`),
     -- 查询当前用户所有点赞内容

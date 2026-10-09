@@ -59,6 +59,24 @@ public interface CommentMapper {
     List<CommentVo> selectRepliesByParentIds(List<Long> ids, Integer status);
 
     /**
+     * 根据ID集合查询用户端可见评论(不包含IP、设备等敏感字段)
+     *
+     * @param ids 评论ID集合
+     * @return 评论列表
+     */
+    List<CommentVo> selectPublicByIds(@Param("ids") List<Long> ids);
+
+    /**
+     * 查询指定主楼留言下的全部可见回复(不包含敏感字段)
+     *
+     * @param ids    主楼留言ID集合
+     * @param status 状态过滤(可为空)
+     * @return 回复列表
+     */
+    List<CommentVo> selectPublicRepliesByParentIds(@Param("ids") List<Long> ids,
+                                                   @Param("status") Integer status);
+
+    /**
      * 根据ID查询评论
      *
      * @param id 评论ID

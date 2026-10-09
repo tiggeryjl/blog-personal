@@ -130,6 +130,51 @@ public class CommentServiceImpl implements CommentService {
     }
 
     /**
+     * 分页查询用户端留言板
+     *
+     * @param commentPageQueryDTO 查询参数
+     * @return 分页结果
+     */
+    @Override
+    public PageResult pageUserMessageQuery(CommentPageQueryDTO commentPageQueryDTO) {
+        commentPageQueryDTO.setType(CommentConstant.TWO);
+        // 用户端只展示已审核可见的留言
+        commentPageQueryDTO.setStatus(StatusConstant.ENABLE);
+        Integer page = commentPageQueryDTO.getPage() == null ? 1 : commentPageQueryDTO.getPage();
+        Integer pageSize = commentPageQueryDTO.getPageSize() == null ? 10 : commentPageQueryDTO.getPageSize();
+
+        PageHelper.startPage(page, pageSize);
+        List<Long> mainIds = commentMapper.pageMainIds(commentPageQueryDTO);
+        PageInfo<Long> pageInfo = new PageInfo<>(mainIds);
+        if (mainIds == null || mainIds.isEmpty()) {
+            return new PageResult(pageInfo.getTotal(), new ArrayList<>());
+        }
+
+        List<CommentVo> rows = new ArrayList<>(commentMapper.selectPublicByIds(mainIds));
+        rows.addAll(commentMapper.selectPublicRepliesByParentIds(mainIds, StatusConstant.ENABLE));
+
+        List<CommentVo> messageTree = CommentTreeUtil.buildFlatReplyTree(rows);
+        for (CommentVo comment : messageTree) {
+            markAdminRecursively(comment);
+        }
+        fillLikedStatus(messageTree);
+        return new PageResult(pageInfo.getTotal(), messageTree);
+    }
+
+    /**
+     * 递归标记留言及其回复是否为博主
+     */
+    private void markAdminRecursively(CommentVo comment) {
+        comment.setAdmin(sysUserRoleMapper.hasRole(
+                comment.getUserId(), SystemConstant.SUPER_ADMIN_ROLE));
+        if (comment.getReplies() != null) {
+            for (CommentVo reply : comment.getReplies()) {
+                markAdminRecursively(reply);
+            }
+        }
+    }
+
+    /**
      * 按主楼分页：主楼分页 + 带出主楼下全部回复
      */
     private PageResult pageQueryTree(CommentPageQueryDTO dto, Integer page, Integer pageSize) {
@@ -374,6 +419,54 @@ public class CommentServiceImpl implements CommentService {
     }
 
     /**
+     * 发表留言板留言
+     *
+     * @param msgType 留言类型 0评论留言 1反馈建议 2申请友链
+     * @param content 留言内容
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addMessageComment(Integer msgType, String content) {
+        String trimmed = content == null ? "" : content.trim();
+        if (trimmed.isEmpty()) {
+            throw new CommentException("留言内容不能为空");
+        }
+        if (trimmed.length() > 500) {
+            throw new CommentException("留言内容最多500字");
+        }
+
+        Integer normalizedMsgType = msgType == null ? CommentConstant.ZERO : msgType;
+        if (normalizedMsgType < CommentConstant.ZERO || normalizedMsgType > CommentConstant.TWO) {
+            throw new CommentException("留言类型不合法");
+        }
+
+        SysUser user = sysUserMapper.getByUserId(BaseContext.getCurrentId());
+        if (user == null) {
+            throw new CommentException("当前用户不存在或登录已失效");
+        }
+
+        Comment comment = Comment.builder()
+                .type(CommentConstant.TWO)
+                .sourceId(LayoutConstant.PARENTID)
+                .msgType(normalizedMsgType)
+                .parentId(LayoutConstant.PARENTID)
+                .replyUserId(LayoutConstant.REPLYID)
+                .userId(user.getId())
+                .userNickname(user.getNickname())
+                .userAvatar(user.getAvatar())
+                .content(trimmed)
+                .likeNum(0)
+                .status(StatusConstant.ENABLE)
+                .isTop(StatusConstant.DISABLE)
+                .deleteFlag(DelStatusConstant.ENABLE)
+                .createTime(LocalDateTime.now())
+                .updateTime(LocalDateTime.now())
+                .build();
+        commentMapper.add(comment);
+        notifyAdminForComment(comment, null);
+    }
+
+    /**
      * 非博主用户发表或回复公开评论时，记录通知并推送管理员
      *
      * @param comment             新评论
@@ -382,7 +475,8 @@ public class CommentServiceImpl implements CommentService {
     private void notifyAdminForComment(Comment comment, String fallbackTargetTitle) {
         if (comment == null
                 || (!CommentConstant.ZERO.equals(comment.getType())
-                && !CommentConstant.ONE.equals(comment.getType()))) {
+                && !CommentConstant.ONE.equals(comment.getType())
+                && !CommentConstant.TWO.equals(comment.getType()))) {
             return;
         }
         // 博主本人评论不通知
@@ -392,6 +486,7 @@ public class CommentServiceImpl implements CommentService {
 
         String targetType;
         String targetTitle = fallbackTargetTitle;
+        Long targetId = comment.getSourceId();
         if (CommentConstant.ZERO.equals(comment.getType())) {
             targetType = NoticeConstant.TARGET_ARTICLE;
             if (targetTitle == null || targetTitle.trim().isEmpty()) {
@@ -401,19 +496,30 @@ public class CommentServiceImpl implements CommentService {
             if (targetTitle == null || targetTitle.trim().isEmpty()) {
                 targetTitle = "文章 #" + comment.getSourceId();
             }
-        } else {
+        } else if (CommentConstant.ONE.equals(comment.getType())) {
             targetType = NoticeConstant.TARGET_DAILY;
             if (targetTitle == null || targetTitle.trim().isEmpty()) {
                 DailyFrontVO daily = dailyMapper.getDetailById(comment.getSourceId());
                 targetTitle = NoticeTextUtil.dailySummary(
                         daily == null ? null : daily.getContent(), comment.getSourceId());
             }
+        } else {
+            targetType = NoticeConstant.TARGET_MESSAGE;
+            // 留言板没有具体来源ID，使用留言自身ID便于后台跳转定位
+            targetId = comment.getId();
+            if (targetTitle == null || targetTitle.trim().isEmpty()) {
+                targetTitle = messageSummary(comment.getContent());
+            }
         }
 
         boolean isReply = comment.getParentId() != null
                 && !LayoutConstant.PARENTID.equals(comment.getParentId());
-        String title = isReply ? "收到新回复" : "收到新评论";
+        boolean isMessage = CommentConstant.TWO.equals(comment.getType());
+        String title = isReply ? "收到新回复" : (isMessage ? "收到新留言" : "收到新评论");
         String actionText = isReply ? "回复评论" : "评论";
+        if (isMessage) {
+            actionText = isReply ? "回复留言" : "留言";
+        }
         String operatorName = (comment.getUserNickname() == null
                 || comment.getUserNickname().trim().isEmpty())
                 ? "匿名用户" : comment.getUserNickname();
@@ -424,9 +530,23 @@ public class CommentServiceImpl implements CommentService {
                 actionText,
                 targetType,
                 targetTitle,
-                comment.getSourceId(),
+                targetId,
                 operatorName,
                 comment.getContent());
+    }
+
+    /**
+     * 留言内容摘要（用于后台通知展示）
+     */
+    private String messageSummary(String content) {
+        if (content == null || content.trim().isEmpty()) {
+            return "留言板";
+        }
+        String normalized = content.trim().replaceAll("\\s+", " ");
+        if (normalized.codePointCount(0, normalized.length()) <= 50) {
+            return normalized;
+        }
+        return normalized.substring(0, normalized.offsetByCodePoints(0, 50)) + "...";
     }
 
     /**

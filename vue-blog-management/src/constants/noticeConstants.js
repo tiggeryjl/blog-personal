@@ -12,12 +12,14 @@ export const NOTICE_TARGET_TYPE = Object.freeze({
   ARTICLE: 'article',
   DAILY: 'daily',
   LINK: 'link',
+  MESSAGE: 'message',
 });
 
 const NOTICE_TARGET_LABEL = Object.freeze({
   [NOTICE_TARGET_TYPE.ARTICLE]: '文章',
   [NOTICE_TARGET_TYPE.DAILY]: '日常',
   [NOTICE_TARGET_TYPE.LINK]: '友链',
+  [NOTICE_TARGET_TYPE.MESSAGE]: '留言板',
 });
 
 const normalizeTargetType = (value) => {
@@ -53,7 +55,9 @@ export const getNoticeTargetLabel = (notice) => {
 
 export const getNoticeActionDescription = (notice) => {
   const actionText = String(notice?.actionText || '').trim() || '操作';
+  const targetType = getNoticeTargetType(notice);
   const targetLabel = getNoticeTargetLabel(notice);
+  if (targetType === NOTICE_TARGET_TYPE.MESSAGE) return ` ${actionText}：`;
   if (actionText === '回复评论') return ` 回复了${targetLabel}评论：`;
   if (actionText === '点赞评论') return ` 点赞了${targetLabel}评论：`;
   return actionText.includes(targetLabel) ? ` ${actionText}：` : ` ${actionText}了${targetLabel}：`;
@@ -64,6 +68,7 @@ export const getNoticeActionButtonText = (notice) => {
   if (targetType === NOTICE_TARGET_TYPE.LINK) {
     return String(notice?.actionText || '').includes('催促') ? '去审核' : '查看友链';
   }
+  if (targetType === NOTICE_TARGET_TYPE.MESSAGE) return '查看留言';
   if (targetType === NOTICE_TARGET_TYPE.DAILY) return '查看日常';
   if (targetType === NOTICE_TARGET_TYPE.ARTICLE) return '查看文章';
   return '查看详情';
@@ -75,6 +80,9 @@ export const getNoticeTargetRoute = (notice) => {
 
   if (targetType === NOTICE_TARGET_TYPE.LINK) {
     return { path: '/linkInfo' };
+  }
+  if (targetType === NOTICE_TARGET_TYPE.MESSAGE) {
+    return { path: '/message-comment' };
   }
   if (targetId == null) return null;
   if (targetType === NOTICE_TARGET_TYPE.DAILY) {

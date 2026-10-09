@@ -4,6 +4,7 @@ import com.blog.pojo.dto.ArticleCommentDTO;
 import com.blog.pojo.dto.CommentPageQueryDTO;
 import com.blog.pojo.dto.CommentReplyDTO;
 import com.blog.pojo.dto.DailyCommentDTO;
+import com.blog.pojo.dto.MessageCommentDTO;
 import com.blog.pojo.vo.CommentVo;
 import com.blog.result.PageResult;
 import com.blog.result.Result;
@@ -90,7 +91,20 @@ public class CommentController {
     public Result<PageResult> getMessageCommentList(CommentPageQueryDTO param) {
         param.setType(2);
         log.info("分页查询留言评论:{}", param);
-        return Result.success(commentService.pageQuery(param));
+        return Result.success(commentService.pageUserMessageQuery(param));
+    }
+
+    /**
+     * 发表留言
+     *
+     * @param messageCommentDTO 留言类型与内容
+     * @return 统一结果
+     */
+    @PostMapping("/message")
+    public Result addMessageComment(@Valid @RequestBody MessageCommentDTO messageCommentDTO) {
+        log.info("发表留言:{}", messageCommentDTO);
+        commentService.addMessageComment(messageCommentDTO.getMsgType(), messageCommentDTO.getContent());
+        return Result.success();
     }
 
     /**

@@ -648,22 +648,22 @@ onUnmounted(() => {
 
     <div class="subscribe-dialog-field">
       <input
-        id="subscribe-email"
-        v-model.trim="subscribeForm.email"
-        class="subscribe-input"
-        type="email"
-        placeholder="邮箱 *"
-        @keyup.enter="submitSubscribe"
-      />
-    </div>
-    <div class="subscribe-dialog-field">
-      <input
         id="subscribe-nickname"
         v-model.trim="subscribeForm.nickname"
         class="subscribe-input"
         type="text"
         maxlength="30"
         placeholder="昵称"
+        @keyup.enter="submitSubscribe"
+      />
+    </div>
+    <div class="subscribe-dialog-field">
+      <input
+        id="subscribe-email"
+        v-model.trim="subscribeForm.email"
+        class="subscribe-input"
+        type="email"
+        placeholder="邮箱 *"
         @keyup.enter="submitSubscribe"
       />
     </div>

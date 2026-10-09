@@ -1,5 +1,6 @@
 package com.blog.service;
 
+import com.blog.pojo.dto.EmailRegisterDTO;
 import com.blog.pojo.dto.PasswordEditDTO;
 import com.blog.pojo.dto.UserDTO;
 import com.blog.pojo.dto.UserLoginDTO;
@@ -16,6 +17,21 @@ public interface UserService {
      * @param userRegisterDTO
      */
     void register(UserRegisterDTO userRegisterDTO);
+
+    /**
+     * 判断邮箱是否已注册
+     *
+     * @param email 邮箱
+     * @return true=已注册
+     */
+    boolean existsByEmail(String email);
+
+    /**
+     * 邮箱快捷注册（留言板简约注册，仅需邮箱与密码）
+     *
+     * @param emailRegisterDTO 邮箱、密码与确认密码
+     */
+    void registerByEmail(EmailRegisterDTO emailRegisterDTO);
 
     /**
      * 用户登录

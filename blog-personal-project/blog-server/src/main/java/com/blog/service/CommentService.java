@@ -30,6 +30,14 @@ public interface CommentService {
     PageResult recyclePageQuery(CommentPageQueryDTO commentPageQueryDTO);
 
     /**
+     * 分页查询用户端留言板（仅返回已审核可见的留言，并按主楼组装回复树）
+     *
+     * @param commentPageQueryDTO 查询参数
+     * @return 分页结果
+     */
+    PageResult pageUserMessageQuery(CommentPageQueryDTO commentPageQueryDTO);
+
+    /**
      * 审核/隐藏评论
      *
      * @param commentStatusDTO 评论ID与目标状态
@@ -109,4 +117,12 @@ public interface CommentService {
      * @param content 评论内容
      */
     void addDailyComment(Long dailyId, String content);
+
+    /**
+     * 发表留言板留言
+     *
+     * @param msgType 留言类型 0评论留言 1反馈建议 2申请友链
+     * @param content 留言内容
+     */
+    void addMessageComment(Integer msgType, String content);
 }

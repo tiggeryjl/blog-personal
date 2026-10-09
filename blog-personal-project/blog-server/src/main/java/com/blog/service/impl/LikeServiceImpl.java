@@ -9,7 +9,6 @@ import com.blog.constant.StatusConstant;
 import com.blog.constant.SystemConstant;
 import com.blog.context.BaseContext;
 import com.blog.exception.LikeException;
-import com.blog.exception.UserNotLoginException;
 import com.blog.mapper.ArticleMapper;
 import com.blog.mapper.CommentMapper;
 import com.blog.mapper.DailyMapper;
@@ -26,12 +25,18 @@ import com.blog.pojo.vo.LikeVo;
 import com.blog.service.LikeService;
 import com.blog.service.NoticeService;
 import com.blog.utils.NoticeTextUtil;
+import com.blog.utils.IpUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -74,7 +79,8 @@ public class LikeServiceImpl implements LikeService {
     public LikeVo like(Integer targetType, Long targetId) {
         Long userId = BaseContext.getCurrentId();
         if (userId == null) {
-            throw new UserNotLoginException("请先登录后再点赞");
+            // 未登录也允许点赞
+            userId = resolveGuestUserId();
         }
         if (targetId == null) {
             throw new LikeException("点赞目标ID不能为空");
@@ -89,6 +95,46 @@ public class LikeServiceImpl implements LikeService {
             return likeComment(userId, targetId);
         }
         throw new LikeException("暂不支持该类型点赞");
+    }
+
+    /**
+     * 为未登录用户生成游客身份ID（使用负数，避免与真实用户自增ID冲突）
+     *
+     * @return 游客身份ID
+     */
+    private Long resolveGuestUserId() {
+        String ip = currentClientIp();
+        if (ip == null || ip.trim().isEmpty()) {
+            ip = "unknown";
+        }
+        String key = ip.trim();
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] bytes = digest.digest(key.getBytes(StandardCharsets.UTF_8));
+            long value = 0L;
+            for (int i = 0; i < 8; i++) {
+                value = (value << 8) | (bytes[i] & 0xff);
+            }
+            return -(Math.abs(value % 1_000_000_000L)) - 1L;
+        } catch (NoSuchAlgorithmException e) {
+            return -(Math.abs((long) key.hashCode()) % 1_000_000_000L) - 1L;
+        }
+    }
+
+    /**
+     * 获取当前请求的客户端IP
+     */
+    private String currentClientIp() {
+        try {
+            ServletRequestAttributes attributes =
+                    (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attributes == null) {
+                return null;
+            }
+            return IpUtil.getClientIp(attributes.getRequest());
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     /**

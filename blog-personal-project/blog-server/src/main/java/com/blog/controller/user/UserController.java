@@ -1,6 +1,7 @@
 package com.blog.controller.user;
 
 import com.blog.context.BaseContext;
+import com.blog.pojo.dto.EmailRegisterDTO;
 import com.blog.pojo.dto.PasswordEditDTO;
 import com.blog.pojo.dto.UserDTO;
 import com.blog.pojo.dto.UserLoginDTO;
@@ -13,6 +14,7 @@ import com.blog.result.Result;
 import com.blog.service.JwtService;
 import com.blog.service.UserService;
 import com.blog.utils.AliyunAcsClient;
+import jakarta.validation.Valid;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -45,6 +47,30 @@ public class UserController {
     public Result register(@RequestBody UserRegisterDTO userRegisterDTO) {
         log.info("用户注册信息:{}", userRegisterDTO);
         userService.register(userRegisterDTO);
+        return Result.success();
+    }
+
+    /**
+     * 判断邮箱是否已注册
+     *
+     * @param email 邮箱
+     * @return true=已注册
+     */
+    @GetMapping("/emailExists")
+    public Result<Boolean> emailExists(@RequestParam("email") String email) {
+        return Result.success(userService.existsByEmail(email));
+    }
+
+    /**
+     * 邮箱快捷注册
+     *
+     * @param emailRegisterDTO 邮箱、密码与确认密码
+     * @return 统一结果
+     */
+    @PostMapping("/registerByEmail")
+    public Result registerByEmail(@Valid @RequestBody EmailRegisterDTO emailRegisterDTO) {
+        log.info("邮箱快捷注册:{}", emailRegisterDTO.getEmail());
+        userService.registerByEmail(emailRegisterDTO);
         return Result.success();
     }
 

@@ -65,6 +65,8 @@ public class SecurityConfig {
                         // 登录注册、刷新token、退出等无需认证
                         .requestMatchers("/user/user/login",
                                 "/user/user/register",
+                                "/user/user/registerByEmail",
+                                "/user/user/emailExists",
                                 "/user/user/refreshToken",
                                 "/user/user/logout",
                                 "/user/user/personalInfo",
@@ -76,6 +78,7 @@ public class SecurityConfig {
                                 "/user/link/applications",
                                 "/user/rss/**",
                                 "/user/daily/**",
+                                "/user/like",
                                 "/AiChat/ai/stream-chat",
                                 "/ws/admin/notice",
                                 "/ws/user/notice",

@@ -11,6 +11,7 @@ public final class NoticeConstant {
 
     public static final String TARGET_ARTICLE = "article";
     public static final String TARGET_DAILY = "daily";
+    public static final String TARGET_MESSAGE = "message";
     public static final String TARGET_LINK = "link";
 
     private NoticeConstant() {

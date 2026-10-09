@@ -5,6 +5,7 @@ import com.blog.exception.LoginFailedException;
 import com.blog.exception.PasswordEditFailedException;
 import com.blog.exception.RegisterFailedException;
 import com.blog.mapper.SysUserMapper;
+import com.blog.pojo.dto.EmailRegisterDTO;
 import com.blog.pojo.dto.PasswordEditDTO;
 import com.blog.pojo.dto.UserDTO;
 import com.blog.pojo.dto.UserLoginDTO;
@@ -18,6 +19,7 @@ import com.blog.utils.UserUtil;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
@@ -75,6 +77,101 @@ public class UserServiceImpl implements UserService {
         user.setUpdateTime(LocalDateTime.now());
 
         userMapper.register(user);
+    }
+
+    /**
+     * 判断邮箱是否已注册
+     *
+     * @param email 邮箱
+     * @return true=已注册
+     */
+    @Override
+    public boolean existsByEmail(String email) {
+        if (!StringUtils.hasText(email)) {
+            return false;
+        }
+        return userMapper.selectByEmail(email.trim()) != null;
+    }
+
+    /**
+     * 邮箱快捷注册（留言板简约注册，仅需邮箱与密码）
+     *
+     * @param emailRegisterDTO 邮箱、密码与确认密码
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void registerByEmail(EmailRegisterDTO emailRegisterDTO) {
+        String email = emailRegisterDTO.getEmail() == null ? "" : emailRegisterDTO.getEmail().trim();
+        String nickname = emailRegisterDTO.getNickname() == null ? "" : emailRegisterDTO.getNickname().trim();
+        String pwd = emailRegisterDTO.getPassword() == null ? "" : emailRegisterDTO.getPassword().trim();
+        String confirmPwd = emailRegisterDTO.getConfirmPwd() == null
+                ? "" : emailRegisterDTO.getConfirmPwd().trim();
+
+        if (!StringUtils.hasText(email)) {
+            throw new RegisterFailedException("邮箱不能为空");
+        }
+        if (!email.matches(UserUtil.EMAIL_REGEX)) {
+            throw new RegisterFailedException(MessageConstant.EMAIL_FORMAT_ERROR);
+        }
+        if (userMapper.selectByEmail(email) != null) {
+            throw new RegisterFailedException(MessageConstant.EMAIL_EXISTS);
+        }
+        if (pwd.length() < 6 || pwd.length() > 20) {
+            throw new RegisterFailedException(MessageConstant.PASSWORD_LEN_SHORT);
+        }
+        if (!pwd.equals(confirmPwd)) {
+            throw new RegisterFailedException(MessageConstant.PASSWORD_TWO_NOT_EQUAL);
+        }
+
+        String salt = PasswordSaltUtil.generateSalt();
+        String nickPrefix = email.substring(0, email.indexOf('@'));
+        String finalNickname = StringUtils.hasText(nickname) ? nickname : nickPrefix;
+        if (finalNickname.length() > 50) {
+            finalNickname = finalNickname.substring(0, 50);
+        }
+
+        SysUser user = new SysUser();
+        user.setUsername(buildUniqueUsername(email));
+        user.setNickname(StringUtils.hasText(finalNickname)
+                ? finalNickname : MessageConstant.NICKNAME + UserUtil.generateRandomNum());
+        user.setEmail(email);
+        user.setPhone(null);
+        user.setPassword(PasswordSaltUtil.encryptPwd(pwd, salt));
+        user.setSalt(salt);
+        user.setAvatar(UserUtil.getQQAvatarUrl(email));
+        user.setSex(MultiStatusConstant.TWO);
+        user.setStatus(MultiStatusConstant.ONE);
+        user.setDeleteFlag(DelStatusConstant.ENABLE);
+        user.setLockFlag(DelStatusConstant.ENABLE);
+        user.setCreateTime(LocalDateTime.now());
+        user.setUpdateTime(LocalDateTime.now());
+        userMapper.register(user);
+    }
+
+    /**
+     * 由邮箱前缀生成唯一用户名（3-16位字母/数字/下划线）
+     *
+     * @param email 邮箱
+     * @return 唯一用户名
+     */
+    private String buildUniqueUsername(String email) {
+        String prefix = email.substring(0, email.indexOf('@')).replaceAll("[^a-zA-Z0-9_]", "_");
+        if (prefix.length() < 3) {
+            prefix = prefix + "_user";
+        }
+        if (prefix.length() > 12) {
+            prefix = prefix.substring(0, 12);
+        }
+
+        String candidate = prefix;
+        int suffix = 1;
+        while (userMapper.selectByUsername(candidate) != null) {
+            String suffixText = String.valueOf(suffix++);
+            int baseLength = Math.max(3, 16 - suffixText.length());
+            String base = prefix.length() > baseLength ? prefix.substring(0, baseLength) : prefix;
+            candidate = base + suffixText;
+        }
+        return candidate;
     }
 
     /**
