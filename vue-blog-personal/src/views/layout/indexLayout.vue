@@ -36,10 +36,41 @@ const getPersonalInfo = async () => {
 // 搜索框关键词
 const searchKeyword = ref('');
 
+// 跳转到文章列表页执行搜索，关键词通过路由 query 传递
 const search = () => {
-  console.log('搜索关键词:', searchKeyword.value);
-  ElMessage.info(`搜索功能暂未实现，关键词: ${searchKeyword.value}`);
+  const keyword = searchKeyword.value.trim();
+  if (!keyword) {
+    ElMessage.warning('请输入搜索关键词');
+    return;
+  }
+  router.push({ path: '/article', query: { keyword } });
 };
+
+// 回车触发搜索：输入法组合中的回车（选词）不触发
+const searchOnEnter = (event) => {
+  if (event.isComposing) return;
+  search();
+};
+
+// 清空搜索框：若当前正停留在搜索结果页，则一并移除 URL 上的关键词
+const clearSearch = () => {
+  searchKeyword.value = '';
+  if (route.query.keyword == null) return;
+  const query = { ...route.query };
+  delete query.keyword;
+  router.push({ path: route.path, query });
+};
+
+// 列表页关键词变化（浏览器前进/后退等）时，同步侧栏搜索框内容
+watch(
+  () => route.query.keyword,
+  (value) => {
+    const keyword = value == null ? '' : String(Array.isArray(value) ? value[0] : value);
+    if (keyword !== searchKeyword.value) {
+      searchKeyword.value = keyword;
+    }
+  }
+);
 
 // 邮箱订阅：点击订阅按钮弹出对话框填邮箱，提交后写入订阅表，新文章发布时后端定时发信
 const subscribeDialogVisible = ref(false);
@@ -462,8 +493,14 @@ onUnmounted(() => {
       <div class="category-card search-card">
         <div class="search-wrapper">
           <el-icon class="search-icon" @click="search()"><Search /></el-icon>
-          <input v-model="searchKeyword" type="text" placeholder="搜索文章..." class="search-input" />
-          <el-icon v-if="searchKeyword" class="search-clear" @click="searchKeyword = ''">
+          <input
+            v-model="searchKeyword"
+            type="text"
+            placeholder="搜索文章..."
+            class="search-input"
+            @keyup.enter="searchOnEnter"
+          />
+          <el-icon v-if="searchKeyword" class="search-clear" @click="clearSearch">
             <Close />
           </el-icon>
         </div>

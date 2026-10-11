@@ -39,6 +39,38 @@ const date = computed(() => {
 // 格式化日期 2026年10月1日
 const dateText = computed(() => date.value.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$1年$2月$3日'));
 
+// 当前搜索关键词
+const keyword = computed(() => {
+  const value = route.query.keyword;
+  if (value == null || value === '') return '';
+  return String(Array.isArray(value) ? value[0] : value);
+});
+
+// 将文本按关键词拆成片段，命中片段用于高亮展示（不使用 v-html，避免 XSS）
+const highlightSegments = (text) => {
+  const content = text == null ? '' : String(text);
+  const kw = keyword.value.trim();
+  if (!kw) return [{ text: content, hit: false }];
+
+  const segments = [];
+  const lowerContent = content.toLowerCase();
+  const lowerKw = kw.toLowerCase();
+  let start = 0;
+  let index = lowerContent.indexOf(lowerKw);
+  while (index !== -1) {
+    if (index > start) {
+      segments.push({ text: content.slice(start, index), hit: false });
+    }
+    segments.push({ text: content.slice(index, index + kw.length), hit: true });
+    start = index + kw.length;
+    index = lowerContent.indexOf(lowerKw, start);
+  }
+  if (start < content.length) {
+    segments.push({ text: content.slice(start), hit: false });
+  }
+  return segments.length ? segments : [{ text: content, hit: false }];
+};
+
 const getCategoryMap = async () => {
   try {
     const result = await getCategoryListApi();
@@ -67,6 +99,7 @@ const getArticleList = async () => {
     const result = await getArticleListApi({
       page: currentPage.value,
       pageSize: pageSize.value,
+      keyword: keyword.value || undefined,
       categoryId: categoryId.value || undefined,
       tag: tag.value || undefined,
       // 只筛选中选的这一天：00:00:00 ~ 23:59:59
@@ -132,7 +165,7 @@ const hideHotTip = () => {
 
 // 筛选条件变化时（切换分类 / 切换标签 / 返回全部文章），回到第一页并重新查询
 watch(
-  () => [route.query.categoryId, route.query.tag, route.query.date],
+  () => [route.query.categoryId, route.query.tag, route.query.date, route.query.keyword],
   () => {
     currentPage.value = 1;
     getArticleList();
@@ -157,11 +190,13 @@ onUnmounted(() => {
     <div class="fixed-header">
       <div class="header-row">
         <div class="header-left">
-          <h2 v-if="categoryId">分类：{{ categoryName || '加载中…' }}</h2>
+          <h2 v-if="keyword">搜索：{{ keyword }}</h2>
+          <h2 v-else-if="categoryId">分类：{{ categoryName || '加载中…' }}</h2>
           <h2 v-else-if="tag">标签：{{ tag }}</h2>
           <h2 v-else-if="date">日期：{{ dateText }}</h2>
           <h2 v-else>全部文章</h2>
-          <button v-if="categoryId || tag || date" class="clear-filter-btn" @click="goAllArticles">
+          <span v-if="keyword && total > 0" class="search-result-count">共 {{ total }} 篇</span>
+          <button v-if="keyword || categoryId || tag || date" class="clear-filter-btn" @click="goAllArticles">
             <el-icon><Back /></el-icon>
             全部文章
           </button>
@@ -217,7 +252,9 @@ onUnmounted(() => {
             <span class="category">{{ item.category }}</span>
           </div>
           <h3 class="article-title">
-            {{ item.title }}
+            <template v-for="(seg, index) in highlightSegments(item.title)" :key="index">
+              <span :class="{ 'search-hit': seg.hit }">{{ seg.text }}</span>
+            </template>
             <span
               v-if="item.isHot"
               class="hot-icon"
@@ -227,7 +264,11 @@ onUnmounted(() => {
               <font-awesome-icon icon="fa-solid fa-fire" size="xs" :style="{ color: '#ff5500' }" />
             </span>
           </h3>
-          <p class="article-desc">{{ item.summary }}</p>
+          <p class="article-desc">
+            <template v-for="(seg, index) in highlightSegments(item.summary)" :key="index">
+              <span :class="{ 'search-hit': seg.hit }">{{ seg.text }}</span>
+            </template>
+          </p>
           <div class="article-stats">
             <span
               ><el-icon>
@@ -253,7 +294,7 @@ onUnmounted(() => {
       </div>
     </div>
     <div v-if="articleList.length === 0" class="empty-data">
-      {{ categoryId ? '该分类下暂无文章' : tag ? '该标签下暂无文章' : date ? '该日期下暂无文章' : '暂无文章数据' }}
+      {{ keyword ? '未找到与“' + keyword + '”相关的文章' : categoryId ? '该分类下暂无文章' : tag ? '该标签下暂无文章' : date ? '该日期下暂无文章' : '暂无文章数据' }}
     </div>
     <div v-show="hotTip.show" class="global-tooltip" :style="{ left: hotTip.x + 'px', top: hotTip.y + 'px' }">
       {{ hotTip.text }}
@@ -338,6 +379,21 @@ onUnmounted(() => {
 .clear-filter-btn:hover {
   border-color: var(--primary-color);
   color: var(--primary-color);
+}
+
+.search-result-count {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--text-secondary-color);
+  white-space: nowrap;
+}
+
+.search-hit {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: rgba(64, 158, 255, 0.18);
+  color: var(--primary-color);
+  font-weight: 600;
 }
 
 .layout-dropdown {

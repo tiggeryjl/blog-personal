@@ -18,6 +18,9 @@ public class ArticlePageQueryDTO implements Serializable {
     //文章标题
     private String title;
 
+    //搜索关键词（用户端按 标题/摘要/正文 模糊匹配）
+    private String keyword;
+
     //分类
     private String categoryId;
 

@@ -277,6 +277,14 @@
             <if test="title != null and title != ''">
                 AND a.title LIKE CONCAT('%', #{title}, '%')
             </if>
+            <!-- 搜索关键词：标题 / 摘要 / 正文 模糊匹配（LIKE 通配符已在服务层转义） -->
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    a.title LIKE CONCAT('%', #{keyword}, '%')
+                    OR a.summary LIKE CONCAT('%', #{keyword}, '%')
+                    OR a.content LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
             <!-- 分类精确匹配 -->
             <if test="categoryId != null and categoryId != ''">
                 AND c.id = #{categoryId}
@@ -299,8 +307,21 @@
                 AND a.publish_time BETWEEN #{begin} AND #{end}
             </if>
         </where>
-        <!-- 置顶优先，其余按排序权重倒序（sort越大越靠前） -->
-        ORDER BY a.is_top DESC, a.sort DESC, a.publish_time DESC, a.id DESC
+        <!-- 关键词搜索时按相关度优先（标题 > 摘要 > 正文），其余情况置顶优先，再按排序权重倒序（sort越大越靠前） -->
+        <choose>
+            <when test="keyword != null and keyword != ''">
+                ORDER BY
+                    CASE
+                        WHEN a.title LIKE CONCAT('%', #{keyword}, '%') THEN 0
+                        WHEN a.summary LIKE CONCAT('%', #{keyword}, '%') THEN 1
+                        ELSE 2
+                    END,
+                    a.is_top DESC, a.sort DESC, a.publish_time DESC, a.id DESC
+            </when>
+            <otherwise>
+                ORDER BY a.is_top DESC, a.sort DESC, a.publish_time DESC, a.id DESC
+            </otherwise>
+        </choose>
     </select>
 
     <!-- 按天统计用户端可见文章的发布数量 -->

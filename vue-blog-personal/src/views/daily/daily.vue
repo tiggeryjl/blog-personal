@@ -88,9 +88,7 @@ const fetchDailyList = async ({ reset = false } = {}) => {
       ...item,
       images: normalizeImages(item.images),
       files: normalizeFiles(item.files),
-      isLiked:
-        item.liked === true ||
-        (!isLoggedIn() && isGuestLiked(LIKE_TARGET_TYPE.DAILY, item.id)),
+      isLiked: item.liked === true || (!isLoggedIn() && isGuestLiked(LIKE_TARGET_TYPE.DAILY, item.id)),
     }));
 
     if (reset) {
@@ -187,7 +185,7 @@ const toggleLike = async (item) => {
       item.isLiked = data.liked !== false;
       if (typeof data.likeCount === 'number') item.likeNum = data.likeCount;
       if (!isLoggedIn()) rememberGuestLiked(LIKE_TARGET_TYPE.DAILY, item.id);
-      ElMessage.success('点赞成功！');
+      // ElMessage.success('点赞成功！');
     } else {
       ElMessage.error(result?.msg || '点赞失败，请稍后重试');
     }

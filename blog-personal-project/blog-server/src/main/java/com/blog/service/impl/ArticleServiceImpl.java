@@ -134,6 +134,7 @@ public class ArticleServiceImpl implements ArticleService {
         // 拼接所有条件，按固定顺序！
         StringBuilder sb = new StringBuilder();
         sb.append("title=").append(StrUtil.nullToEmpty(dto.getTitle())).append("&");
+        sb.append("keyword=").append(StrUtil.nullToEmpty(dto.getKeyword())).append("&");
         sb.append("categoryId=").append(StrUtil.nullToEmpty(dto.getCategoryId())).append("&");
         sb.append("tag=").append(StrUtil.nullToEmpty(dto.getTag())).append("&");
         sb.append("isTop=").append(dto.getIsTop()).append("&");
@@ -142,6 +143,20 @@ public class ArticleServiceImpl implements ArticleService {
         sb.append("end=").append(dto.getEnd());
         // md5加密缩短字符串
         return DigestUtil.md5Hex(sb.toString());
+    }
+
+    /**
+     * 规范搜索关键词
+     */
+    private String normalizeKeyword(String keyword) {
+        if (StrUtil.isBlank(keyword)) {
+            return null;
+        }
+        String trimmed = keyword.trim();
+        if (trimmed.length() > 50) {
+            trimmed = trimmed.substring(0, 50);
+        }
+        return trimmed.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 
     /**
@@ -199,6 +214,10 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public PageResult pageQueryUser(ArticlePageQueryDTO articlePageQueryDTO) {
 
+        // 规范化并转义搜索关键词（空白视为未搜索，避免 % _ 等通配符命中全部文章）
+        articlePageQueryDTO.setKeyword(normalizeKeyword(articlePageQueryDTO.getKeyword()));
+        boolean keywordSearch = StrUtil.isNotBlank(articlePageQueryDTO.getKeyword());
+
         // 用户端单独使用一份缓存，避免与后台列表的缓存互相污染
         String md5 = genQueryMd5(articlePageQueryDTO);
         String cacheKey = RedisConstant.ARTICLE_LIST_KEY + ":user:" + articlePageQueryDTO.getPage() + ":" + articlePageQueryDTO.getPageSize() + ":" + md5;
@@ -214,8 +233,7 @@ public class ArticleServiceImpl implements ArticleService {
         PageInfo<ArticleFrontVO> pageInfo = new PageInfo<>(articleList);
         PageResult pageResult = new PageResult(pageInfo.getTotal(), pageInfo.getList());
 
-        //存入缓存 10分钟过期
-        redisService.set(cacheKey, pageResult, 600);
+        redisService.set(cacheKey, pageResult, keywordSearch ? 60 : 600);
         fillRealtimeCounts(pageResult.getRows());
         return pageResult;
     }
