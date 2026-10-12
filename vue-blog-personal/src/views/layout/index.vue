@@ -547,6 +547,8 @@ onUnmounted(() => {
 :deep(.el-main) {
   background-color: transparent !important;
   --el-main-padding: 5px 0px;
+  /* 主内容区的横向内边距，供需要整屏铺满的子组件（如首页欢迎屏）抵消 */
+  --main-side-padding: 0px;
   overflow: visible !important;
   padding-top: 80px !important;
 }
@@ -1033,9 +1035,10 @@ onUnmounted(() => {
 
   /* 主内容区 - 保持不影响登录页，加 .common-layout 前缀 */
   .common-layout :deep(.el-main) {
+    --main-side-padding: 16px;
     padding-top: 80px !important;
-    padding-left: 16px !important;
-    padding-right: 16px !important;
+    padding-left: var(--main-side-padding) !important;
+    padding-right: var(--main-side-padding) !important;
   }
 
   /* 弹窗优化 */

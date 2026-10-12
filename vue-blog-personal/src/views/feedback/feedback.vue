@@ -483,9 +483,10 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+/* 页面已放进带左右侧边栏的布局，横向留白交给外层 .blog-layout */
 .common-feedback {
   min-height: calc(100vh - 65px);
-  padding: 20px 9%;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 20px;

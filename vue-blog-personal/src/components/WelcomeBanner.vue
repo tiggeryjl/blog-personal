@@ -120,6 +120,8 @@ onUnmounted(() => {
   position: relative;
   width: 100%;
   height: 100vh;
+  /* 负外边距吃掉 .el-main 的 80px 顶部内边距，让欢迎屏从屏幕最顶端开始铺满；
+     移动端也保持 -80px，改成 -60px 会在页面顶部露出 20px 没被盖住的背景 */
   margin-top: -80px;
   padding-top: 65px;
   overflow: hidden;
@@ -318,11 +320,6 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
-  .welcome-banner {
-    margin-top: -60px;
-    padding-top: 50px;
-  }
-
   .banner-title {
     font-size: 24px;
   }

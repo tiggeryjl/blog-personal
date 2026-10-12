@@ -323,9 +323,10 @@ onMounted(() => {
 }
 
 /* ========== 整体容器 ========== */
+/* 页面已放进带左右侧边栏的布局，横向留白交给外层 .blog-layout */
 .links-container {
   min-height: calc(100vh - 65px);
-  padding: 20px 9%;
+  padding: 0;
 }
 
 .links {
@@ -748,20 +749,12 @@ onMounted(() => {
 
 /* ========== 响应式样式 ========== */
 @media (max-width: 1200px) {
-  .links-container {
-    padding: 20px 5%;
-  }
-
   .links {
     padding: 20px 16px;
   }
 }
 
 @media (max-width: 992px) {
-  .links-container {
-    padding: 15px 4%;
-  }
-
   .links-header h2 {
     font-size: 26px;
   }
@@ -786,10 +779,6 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .links-container {
-    padding: 12px 3%;
-  }
-
   .links {
     padding: 16px 12px;
     border-radius: 12px;
@@ -854,10 +843,6 @@ onMounted(() => {
 }
 
 @media (max-width: 576px) {
-  .links-container {
-    padding: 10px 2%;
-  }
-
   .links {
     padding: 14px 10px;
   }

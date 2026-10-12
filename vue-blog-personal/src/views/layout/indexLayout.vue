@@ -450,7 +450,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div v-if="show">
+  <div v-if="show" class="welcome-wrap">
     <WelcomeBanner />
   </div>
 
@@ -717,6 +717,13 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+/* 首页欢迎屏要铺满整屏：抵消 LayoutView 给 .el-main 加的横向内边距
+   （移动端 .el-main 左右各有 16px，否则欢迎屏只有内容区那么宽） */
+.welcome-wrap {
+  margin-left: calc(-1 * var(--main-side-padding, 0px));
+  margin-right: calc(-1 * var(--main-side-padding, 0px));
+}
+
 .blog-layout {
   display: flex;
   gap: 30px;
