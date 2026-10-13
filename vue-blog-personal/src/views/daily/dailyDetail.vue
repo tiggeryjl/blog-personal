@@ -71,9 +71,7 @@ const fetchDailyDetail = async (id) => {
       ...result.data,
       images: normalizeImages(result.data.images),
       files: normalizeFiles(result.data.files),
-      isLiked:
-        result.data.liked === true ||
-        (!isLogin.value && isGuestLiked(LIKE_TARGET_TYPE.DAILY, result.data.id)),
+      isLiked: result.data.liked === true || (!isLogin.value && isGuestLiked(LIKE_TARGET_TYPE.DAILY, result.data.id)),
     };
     return true;
   } catch (error) {
@@ -1107,5 +1105,83 @@ onUnmounted(() => {
 
 .publish-btn:hover {
   background-color: #277ec1;
+}
+
+/* ====================== 手机端 ====================== */
+@media (max-width: 768px) {
+  .common-article-detail {
+    width: 100%;
+    padding: 0 10px;
+    gap: 0;
+  }
+
+  .article-detail {
+    padding: 16px 10px;
+  }
+
+  .daily-item {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .username {
+    font-size: 16px;
+  }
+
+  .card-content {
+    font-size: 16px;
+  }
+
+  .comment-textarea {
+    padding-right: 12px;
+    padding-bottom: 52px;
+  }
+
+  .preview-image {
+    max-width: 96%;
+    max-height: 78vh;
+  }
+
+  .img-close {
+    top: 16px;
+    right: 18px;
+    font-size: 24px;
+  }
+
+  .img-prev,
+  .img-next {
+    font-size: 32px;
+    padding: 0 12px;
+  }
+
+  .img-prev {
+    left: 4px;
+  }
+
+  .img-next {
+    right: 4px;
+  }
+
+  .img-zoom {
+    bottom: 24px;
+    gap: 8px;
+  }
+
+  .img-zoom div:not(.image-counter) {
+    width: 38px;
+    height: 38px;
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-images {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+
+  .card-images img {
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
 }
 </style>

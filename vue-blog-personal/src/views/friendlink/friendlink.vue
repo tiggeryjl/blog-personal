@@ -449,6 +449,9 @@ onMounted(() => {
   line-height: 1.5;
   padding-left: 6px;
   min-width: 0;
+  /* 撑满头像右侧的剩余宽度：不设的话信息块按内容宽度（约 290px）收缩，
+     中宽下卡片右边会空出一大片 */
+  flex: 1;
 }
 
 .info-row {
@@ -806,6 +809,11 @@ onMounted(() => {
     align-items: center;
   }
 
+  /* 卡片内边距收一档：平板上 1.5rem 让友链卡片高度到 234~258px，偏虚 */
+  .link-card {
+    padding: 1.1rem 0.8rem;
+  }
+
   .copy-button {
     font-size: 13px;
     padding: 0 8px;
@@ -864,6 +872,11 @@ onMounted(() => {
     align-items: flex-start;
   }
 
+  /* 竖排后信息块要占满整行，否则会按内容宽度收缩 */
+  .my-detail {
+    width: 100%;
+  }
+
   .my-card img {
     width: 56px;
     height: 56px;
@@ -895,11 +908,57 @@ onMounted(() => {
     width: 54px;
     height: 54px;
   }
+
+  /* 待审核友链卡片：头像与内容上下排列。
+     横排时内容区只剩 150px 上下，"申请时间 + 催促按钮"放不下，按钮会被顶出卡片 */
+  .apply-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 10px;
+  }
+
+  .apply-card .avatar {
+    width: 46px;
+    height: 46px;
+  }
+
+  .apply-card-body {
+    width: 100%;
+  }
+
+  .apply-card-head {
+    flex-wrap: wrap;
+  }
+
+  /* 时间和按钮放不下时各占一行，按钮整行宽、更好点 */
+  .apply-card-foot {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .apply-time {
+    width: 100%;
+  }
+
+  .urge-btn {
+    width: 100%;
+    min-height: 32px;
+    margin: 0;
+  }
 }
 
 @media (max-width: 400px) {
   .links-grid {
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  }
+
+  /* 坑：这里重申 .links-grid 会盖掉上面 ≤576 里的 .apply-grid 单列规则
+     （两个类在同一个元素上、权重相同，靠后的生效），所以必须再声明一次，
+     否则 360~400px 下待审核卡片会被排成两列，内容被压到 40px 宽、按钮顶出卡片 */
+  .apply-grid {
+    grid-template-columns: 1fr;
   }
 
   .avatar {

@@ -483,7 +483,6 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* 页面已放进带左右侧边栏的布局，横向留白交给外层 .blog-layout */
 .common-feedback {
   min-height: calc(100vh - 65px);
   padding: 0;
@@ -546,6 +545,8 @@ onUnmounted(() => {
   display: flex;
   gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
+  row-gap: 10px;
 }
 
 .form-item {
@@ -553,6 +554,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 6px;
   flex: 1;
+  min-width: 0;
 }
 
 .form-item label {
@@ -564,6 +566,7 @@ onUnmounted(() => {
 .form-item input,
 .form-item select {
   flex: 1;
+  min-width: 0;
   height: 36px;
   padding: 0 10px;
   border-radius: 8px;
@@ -626,7 +629,6 @@ textarea {
   width: 100%;
   min-height: 100px;
   padding: 12px 40px 12px 12px;
-  /* 右侧留出按钮空间 */
   border-radius: 8px;
   border: 1px solid var(--border-color);
   background: var(--card-secound-bg);
@@ -750,7 +752,7 @@ textarea {
   margin-top: 20px;
 }
 
-/* 简约登录/注册对话框（外观对齐 RSS 订阅弹窗） */
+/* 简约登录/注册对话框 */
 .auth-dialog {
   display: flex;
   flex-direction: column;
@@ -779,7 +781,6 @@ textarea {
   color: var(--text-secondary-color);
 }
 
-/* 让 el-input 的视觉与 RSS 弹窗里的 subscribe-input 保持一致 */
 .auth-dialog :deep(.el-input__wrapper) {
   padding: 7px 14px;
   border-radius: 8px;
@@ -855,13 +856,35 @@ textarea {
   .form-item {
     width: 100%;
   }
+
+  .publish-layout {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .left-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
+  }
+
+  .right-form {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .textarea-wrapper,
+  .textarea-wrapper textarea {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .textarea-wrapper textarea {
+    min-height: 92px;
+  }
 }
 </style>
 
-<!--
-  el-dialog 会渲染到组件作用域之外，scoped 的 :deep() 拿不到它的内部节点，
-  所以登录/注册弹窗的外观覆写单独放在这个非 scoped 块里，用 .auth-dialog-el 限定作用范围。
--->
 <style>
 .el-dialog.auth-dialog-el {
   max-width: calc(100vw - 40px);

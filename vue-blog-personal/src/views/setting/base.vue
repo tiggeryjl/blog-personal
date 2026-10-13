@@ -430,4 +430,63 @@ const formatSex = (sexVal) => {
   background-color: #c3c3c3;
   color: #000;
 }
+
+/* ====================== 手机端 ====================== */
+@media (max-width: 768px) {
+  .common-article-detail {
+    padding: 16px 12px;
+  }
+
+  .profile-card {
+    padding: 18px 14px;
+  }
+
+  .avatar-section {
+    margin-bottom: 24px;
+  }
+
+  /* 标签和值保持在同一行：标签固定成窄列，值占满剩余宽度，
+     值太长时在它自己那一格里换行，不会把卡片顶宽 */
+  .info-item {
+    align-items: flex-start;
+    gap: 8px;
+    min-height: 0;
+  }
+
+  .info-item label {
+    width: auto;
+    min-width: 56px;
+    padding-right: 0;
+    font-size: 14px;
+  }
+
+  .info-item span {
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    line-height: 1.5;
+    word-break: break-all;
+  }
+
+  .info-item .custom-input {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+
+  .info-list {
+    gap: 18px;
+  }
+
+  .action-btns {
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  .confirm-btn,
+  .cancel-btn {
+    width: 108px;
+    font-size: 16px;
+  }
+}
 </style>

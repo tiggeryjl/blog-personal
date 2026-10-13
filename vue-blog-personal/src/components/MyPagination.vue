@@ -184,4 +184,39 @@ const pageNumbers = computed(() => {
   padding: 0 4px;
   color: var(--text-secondary-color);
 }
+
+/* ========== 手机端：整行放不下时自动换行，按钮缩小 ========== */
+@media (max-width: 768px) {
+  .pagination {
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 16px 0;
+  }
+
+  .total {
+    margin-right: 0;
+    font-size: 13px;
+  }
+
+  .size-select {
+    margin-right: 0;
+    gap: 4px;
+    font-size: 13px;
+  }
+
+  .size-select select {
+    padding: 4px 6px;
+    font-size: 13px;
+  }
+
+  .page-btn {
+    min-height: 32px;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .ellipsis {
+    padding: 0 2px;
+  }
+}
 </style>

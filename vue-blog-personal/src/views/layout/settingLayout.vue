@@ -126,4 +126,30 @@ const goPage = (path) => {
   border-radius: 8px;
   min-height: 100%;
 }
+
+/* ====================== 手机端 ====================== */
+@media (max-width: 768px) {
+  .common-article-detail {
+    width: 100%;
+    padding: 14px 10px;
+  }
+
+  .settings-layout {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .settings-menu {
+    width: 100%;
+  }
+
+  .menu-item {
+    font-size: 16px;
+    padding: 10px 14px;
+  }
+
+  .settings-content {
+    min-width: 0;
+  }
+}
 </style>

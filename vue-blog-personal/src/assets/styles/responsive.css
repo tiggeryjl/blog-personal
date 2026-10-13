@@ -92,11 +92,83 @@
   .article-item {
     height: auto !important;
     flex-direction: column !important;
+    /* 竖排后要在横向撑满卡片，否则会按内容宽度居中 */
+    align-items: stretch !important;
   }
 
   .article-img {
     width: 100% !important;
     height: 180px !important;
+  }
+
+  /* 内容区必须允许收缩：标题是 nowrap 的，min-width:auto 会让卡片比屏幕还宽，
+     多出来的部分会被 main 的 overflow-x:hidden 直接裁掉，两侧文字看不全 */
+  .article-content {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* 小屏上 26px 的单行标题只剩几个字，改成两行截断 */
+  .article-title {
+    font-size: 18px !important;
+    white-space: normal !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* 作者信息 / 统计数据在窄屏允许换行，避免横向溢出 */
+  .article-meta,
+  .article-stats {
+    flex-wrap: wrap !important;
+    row-gap: 4px !important;
+  }
+
+  .article-meta .date {
+    margin: 0 !important;
+  }
+
+  /* 触控目标：这些按钮原本只有 19~24px 高，手机上很难点中 */
+  .action-btn {
+    min-height: 28px !important;
+    padding: 0 4px !important;
+  }
+
+  .like-btn,
+  .comment-btn {
+    min-height: 30px !important;
+  }
+
+  /* 侧边栏社交图标（GitHub / 邮箱 / RSS）点击区域只有 26x21，手机上偏小 */
+  .profile-card .links a {
+    min-width: 40px !important;
+    min-height: 40px !important;
+    margin: 0 !important;
+    justify-content: center !important;
+  }
+
+  .profile-card .links {
+    gap: 8px !important;
+  }
+
+  /* 详情页评论框的"发表评论"按钮偏矮 */
+  .comment-textarea-container .el-button {
+    min-height: 36px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* 友链页"复制头像url"按钮偏矮 */
+  .copy-button {
+    min-height: 32px !important;
+  }
+
+  /* 文章页的"页面布局"下拉（列表 / 网格 / 三列）：
+     小屏下文章列表已被强制单列，切换没有任何效果，直接隐藏 */
+  .layout-dropdown {
+    display: none !important;
   }
 }
 

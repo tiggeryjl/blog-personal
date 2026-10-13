@@ -298,6 +298,8 @@ const clickOutside = (e) => {
 }
 
 .music-cover img {
+  /* 去掉行内图片底部基线空隙，避免圆形封面里多出 6px 无用高度 */
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;

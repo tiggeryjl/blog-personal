@@ -644,6 +644,8 @@ onUnmounted(() => {
 }
 
 .article-img img {
+  /* 去掉行内图片底部的基线空隙，否则容器内会多出 6px 无用高度 */
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -659,6 +661,8 @@ onUnmounted(() => {
 /* 右侧内容区 */
 .article-content {
   flex: 1;
+  /* 允许收缩到比内容更窄：标题不换行，否则会把卡片撑破 */
+  min-width: 0;
   padding: 10px;
   display: flex;
   flex-direction: column;

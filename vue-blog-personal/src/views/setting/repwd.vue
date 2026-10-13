@@ -185,7 +185,9 @@ const showConfirmPwd = ref(false)
 /* 眼睛按钮 */
 .eye-btn {
   position: absolute;
-  right: 14px;
+  /* 加内边距扩大点击区域，同时把 right 相应减小，图标视觉位置不变 */
+  right: 6px;
+  padding: 8px;
   top: 50%;
   transform: translateY(-50%);
   cursor: pointer;
@@ -253,5 +255,49 @@ const showConfirmPwd = ref(false)
 .custom-btn.reset:hover {
   background-color: #c3c3c3;
   color: #000000;
+}
+
+/* ====================== 手机端 ====================== */
+@media (max-width: 768px) {
+  .common-article-detail {
+    padding: 16px 12px;
+  }
+
+  /* 标签和输入框保持同一行：标签收成窄列，输入框占满剩余宽度，
+     避免 100px 标签 + 450px 固定输入框把页面顶宽 */
+  .form-item {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .form-item label {
+    width: auto;
+    min-width: 56px;
+    text-align: left;
+    padding-right: 0;
+    font-size: 14px;
+  }
+
+  .pwd-box {
+    flex: 1;
+    width: auto;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .custom-input {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .btn-box {
+    margin-top: 20px;
+  }
+
+  .custom-btn {
+    width: 108px;
+    font-size: 16px;
+  }
 }
 </style>

@@ -50,8 +50,7 @@ const getArticle = async () => {
       prevArticle.value = result.data.prevArticle || {};
       nextArticle.value = result.data.nextArticle || {};
       articleLiked.value =
-        result.data.liked === true ||
-        (!isLogin.value && isGuestLiked(LIKE_TARGET_TYPE.ARTICLE, article.value.id));
+        result.data.liked === true || (!isLogin.value && isGuestLiked(LIKE_TARGET_TYPE.ARTICLE, article.value.id));
       getCommentList(article.value.id);
     } else {
       ElMessage.error(result.msg || '文章不存在或暂未公开');
@@ -726,6 +725,74 @@ onUnmounted(() => {
   text-align: center;
 }
 
+.article-body :deep(pre) {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 0 1.2em;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-secound-bg);
+  line-height: 1.6;
+}
+
+.article-body :deep(pre code) {
+  display: block;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  white-space: pre;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+.article-body :deep(code) {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--card-secound-bg);
+  font-size: 0.92em;
+  word-break: break-word;
+}
+
+/* 宽表格在自身容器内滚动，不再撑破页面 */
+.article-body :deep(table) {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 0 0 1.2em;
+}
+
+.article-body :deep(th),
+.article-body :deep(td) {
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.article-body :deep(blockquote) {
+  margin: 0 0 1.2em;
+  padding: 8px 14px;
+  border-left: 3px solid var(--primary-color);
+  border-radius: 0 8px 8px 0;
+  background: var(--card-secound-bg);
+  color: var(--text-secondary-color);
+}
+
+.article-body :deep(ul),
+.article-body :deep(ol) {
+  margin: 0 0 1.2em;
+  padding-left: 1.6em;
+}
+
+.article-body :deep(a) {
+  color: var(--primary-color);
+  word-break: break-all;
+}
+
 .article-actions {
   margin-top: 30px;
   text-align: center;
@@ -1114,5 +1181,107 @@ img {
 
 .publish-btn:hover {
   background-color: #277ec1;
+}
+
+/* ====================== 手机端 ====================== */
+@media (max-width: 768px) {
+  .common-article-detail {
+    width: 100%;
+    padding: 0 10px;
+    gap: 0;
+  }
+
+  .article-detail {
+    padding: 16px 10px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .meta {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+
+  .summary {
+    padding: 12px 14px;
+  }
+
+  .summary-content {
+    margin-right: 0;
+  }
+
+  .article-body {
+    font-size: 15px;
+    line-height: 1.85;
+  }
+
+  .article-body :deep(p) {
+    text-align: left;
+  }
+
+  .card {
+    padding: 0 6px;
+  }
+
+  .comment-textarea {
+    padding-right: 12px;
+    padding-bottom: 52px;
+  }
+
+  .article-pagination {
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 0;
+  }
+
+  .prev-btn,
+  .next-btn {
+    display: block;
+    width: 100%;
+    margin-left: 0;
+    padding: 10px 12px;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .preview-image {
+    max-width: 96%;
+    max-height: 78vh;
+  }
+
+  .img-close {
+    top: 16px;
+    right: 18px;
+    font-size: 24px;
+  }
+
+  .img-prev,
+  .img-next {
+    font-size: 32px;
+    padding: 0 8px;
+  }
+
+  .img-prev {
+    left: 4px;
+  }
+
+  .img-next {
+    right: 4px;
+  }
+
+  .img-zoom {
+    bottom: 24px;
+    gap: 8px;
+  }
+
+  .img-zoom div:not(.image-counter) {
+    width: 38px;
+    height: 38px;
+    font-size: 18px;
+  }
 }
 </style>

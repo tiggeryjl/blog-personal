@@ -847,7 +847,9 @@ const validate = (formType) => {
 
 .eye-btn {
   position: absolute;
-  right: 12px;
+  /* 加内边距扩大点击区域，同时把 right 相应减小，图标视觉位置不变 */
+  right: 4px;
+  padding: 8px;
   top: 50%;
   transform: translateY(-50%);
   background: none;

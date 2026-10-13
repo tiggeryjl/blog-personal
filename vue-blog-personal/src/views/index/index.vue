@@ -25,12 +25,7 @@ const updateLayout = () => {
   layoutMode.value = localStorage.getItem('blogLayout') || 'list';
 };
 
-const hotTip = ref({
-  show: false,
-  x: 0,
-  y: 0,
-  text: '',
-});
+const hotTip = ref({ show: false, x: 0, y: 0, text: '' });
 
 const showHotTip = (event, text) => {
   const rect = event.currentTarget.getBoundingClientRect();
@@ -77,13 +72,12 @@ onUnmounted(() => {
 
 <template>
   <div class="common-index">
-    <!-- 公告卡片（占满父级宽度） -->
+    <!-- 公告卡片 -->
     <div class="notice-card">
       <h3 class="notice-title">📢 网站公告</h3>
       <div class="notice-content">{{ notice }}</div>
     </div>
 
-    <!-- 两个快捷按钮（同一行平分宽度） -->
     <div class="quick-link-box">
       <div
         class="quick-btn"
@@ -206,6 +200,7 @@ onUnmounted(() => {
 
 /* 公告卡片 */
 .notice-card {
+  display: none;
   width: 100%;
   padding: 20px;
   background-color: var(--card-bg);
@@ -601,6 +596,8 @@ onUnmounted(() => {
 /* 右侧内容区 */
 .article-content {
   flex: 1;
+  /* 允许收缩到比内容更窄：标题不换行，否则会把卡片撑破 */
+  min-width: 0;
   padding: 10px;
   display: flex;
   flex-direction: column;
@@ -673,5 +670,40 @@ onUnmounted(() => {
   color: var(--text-secondary-color);
   font-size: 16px;
   padding: 60px 0;
+}
+
+/* ========== 快捷按钮（文章列表 / 日常分享）响应式 ==========
+   两个按钮在同一行平分宽度，屏幕越窄每个按钮越窄；
+   字号不跟着降，文字就会折成多行，超出按钮高度的部分会被 overflow:hidden 裁掉 */
+/* 侧边栏布局下中栏被两侧栏挤到 500 多像素，两个按钮各只剩 200~280px，
+   36px 的字会折行（931px 附近按钮只有 199px），这里统一降一档 */
+@media (max-width: 1100px) {
+  .quick-btn span {
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 600px) {
+  /* 高度改为自适应：即使文字折行也不会被裁掉，两个按钮仍然等高 */
+  .quick-btn {
+    height: auto;
+    min-height: 88px;
+    padding: 14px 6px;
+  }
+
+  .quick-btn span {
+    font-size: 20px;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 400px) {
+  .quick-btn span {
+    font-size: 16px;
+    gap: 4px;
+  }
 }
 </style>
