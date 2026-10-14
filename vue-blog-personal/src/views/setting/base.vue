@@ -1,156 +1,156 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { ElMessage } from 'element-plus'
-import { useUserStore } from '@/store/userloginstatus'
-import { Edit } from '@element-plus/icons-vue'
-import { queryUserInfoApi, updateApi } from '@/api/auth'
-import { uploadApi } from '@/api/upload'
+import { ref, onMounted, computed } from 'vue';
+import { ElMessage } from 'element-plus';
+import { useUserStore } from '@/store/userloginstatus';
+import { Edit } from '@element-plus/icons-vue';
+import { queryUserInfoApi, updateApi } from '@/api/auth';
+import { uploadApi } from '@/api/upload';
 
-const originalUserInfo = ref({ avatar: '', username: '', nickname: '', email: '', sex: '', phone: '', createTime: '' })
+const originalUserInfo = ref({ avatar: '', username: '', nickname: '', email: '', sex: '', phone: '', createTime: '' });
 
 // 编辑中的key数组
-const editKeys = ref([])
-const form = ref({ ...originalUserInfo.value })
-const userStore = useUserStore()
-const userId = computed(() => userStore.userInfo.id)
+const editKeys = ref([]);
+const form = ref({ ...originalUserInfo.value });
+const userStore = useUserStore();
+const userId = computed(() => userStore.userInfo.id);
 
 //获取用户信息
 const getUserInfo = async () => {
   try {
     if (!userId.value) {
-      ElMessage.error("未登录，请先登录！")
-      return
+      ElMessage.error('未登录，请先登录！');
+      return;
     }
-    const result = await queryUserInfoApi()
+    const result = await queryUserInfoApi();
 
     if (result && result.code === 200 && result.data) {
-      originalUserInfo.value = result.data
-      form.value = { ...originalUserInfo.value }
+      originalUserInfo.value = result.data;
+      form.value = { ...originalUserInfo.value };
 
-      userStore.updateUserInfo(result.data)
+      userStore.updateUserInfo(result.data);
     } else {
-      ElMessage.success("查询用户信息失败!");
+      ElMessage.success('查询用户信息失败!');
     }
   } catch (error) {
-    ElMessage.error("查询用户信息异常!")
+    ElMessage.error('查询用户信息异常!');
   }
-}
+};
 
 onMounted(async () => {
-  const userStore = useUserStore()
+  const userStore = useUserStore();
 
-  userStore.loadStorage()
+  userStore.loadStorage();
 
-  await getUserInfo()
-})
-
+  await getUserInfo();
+});
 
 // 点击修改
 const handleEdit = (key) => {
-  editKeys.value = editKeys.value.filter(item => form.value[item] !== originalUserInfo.value[item])
+  editKeys.value = editKeys.value.filter((item) => form.value[item] !== originalUserInfo.value[item]);
   if (!editKeys.value.includes(key)) {
-    form.value[key] = originalUserInfo.value[key]
-    editKeys.value.push(key)
+    form.value[key] = originalUserInfo.value[key];
+    editKeys.value.push(key);
   }
-}
+};
 
 // 全部恢复，清空编辑
 const handleCancel = () => {
-  editKeys.value = []
-  form.value = { ...originalUserInfo.value }
-}
+  editKeys.value = [];
+  form.value = { ...originalUserInfo.value };
+};
 
 // 批量保存，清空编辑
 const handleConfirm = async () => {
-  if (editKeys.value.length === 0) return
+  if (editKeys.value.length === 0) return;
 
-  let updateData = {}
+  let updateData = {};
 
   for (let key of editKeys.value) {
     if (form.value[key] !== originalUserInfo.value[key]) {
       if (key !== 'avatar') {
-        updateData[key] = form.value[key]
+        updateData[key] = form.value[key];
       }
     }
   }
 
   if (Object.keys(updateData).length === 0) {
-    editKeys.value = []
-    return
+    editKeys.value = [];
+    return;
   }
 
   try {
-    const result = await updateApi(updateData)
+    const result = await updateApi(updateData);
 
     if (result && result.code == 200) {
-      ElMessage.success('修改成功！')
-      editKeys.value = []
+      ElMessage.success('修改成功！');
+      editKeys.value = [];
       getUserInfo();
     } else {
-      const msg = result?.msg || '修改失败'
-      ElMessage.error(msg)
+      const msg = result?.msg || '修改失败';
+      ElMessage.error(msg);
     }
   } catch (err) {
-    ElMessage.error(err?.message || '操作异常，请稍后重试')
+    ElMessage.error(err?.message || '操作异常，请稍后重试');
   }
-}
+};
 
 // 点击头像触发文件选择
 const handleAvatarClick = () => {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'image/*'
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
 
   input.onchange = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
+    const file = e.target.files[0];
+    if (!file) return;
 
     try {
-      const formData = new FormData()
-      formData.append('file', file)
+      const formData = new FormData();
+      formData.append('file', file);
 
       // 第一步：把图片传给后端 → 后端上传到阿里云OSS
-      const result = await uploadApi(formData)
+      const result = await uploadApi(formData);
       if (result && result.code == 200) {
-        const avatarUrl = result.data
+        const avatarUrl = result.data;
 
-        const uid = userId.value
+        const uid = userId.value;
         const updateRes = await updateApi({
           id: uid,
-          avatar: avatarUrl
-        })
+          avatar: avatarUrl,
+        });
 
         if (updateRes && updateRes.code === 200) {
           // 前端实时刷新
-          originalUserInfo.value.avatar = avatarUrl
-          form.value.avatar = avatarUrl
-          userStore.updateUserInfo({ avatar: avatarUrl })
-          ElMessage.success('头像更换成功！')
+          originalUserInfo.value.avatar = avatarUrl;
+          form.value.avatar = avatarUrl;
+          userStore.updateUserInfo({ avatar: avatarUrl });
+          ElMessage.success('头像更换成功！');
         } else {
-          ElMessage.error('头像更换失败')
+          ElMessage.error('头像更换失败');
         }
       } else {
-        ElMessage.error('上传失败')
+        ElMessage.error('上传失败');
       }
     } catch (err) {
-      ElMessage.error('上传异常')
+      ElMessage.error('上传异常');
     }
-  }
-  input.click()
-}
+  };
+  input.click();
+};
 
 const genderOptions = [
   { label: '女', value: 0 },
   { label: '男', value: 1 },
-  { label: '保密', value: 2 }]
+  { label: '保密', value: 2 },
+];
 const formatSex = (sexVal) => {
   const sexMap = {
     0: '女',
     1: '男',
     2: '保密',
-  }
-  return sexMap[sexVal] || '保密'
-}
+  };
+  return sexMap[sexVal] || '保密';
+};
 </script>
 
 <template>
@@ -445,8 +445,6 @@ const formatSex = (sexVal) => {
     margin-bottom: 24px;
   }
 
-  /* 标签和值保持在同一行：标签固定成窄列，值占满剩余宽度，
-     值太长时在它自己那一格里换行，不会把卡片顶宽 */
   .info-item {
     align-items: flex-start;
     gap: 8px;

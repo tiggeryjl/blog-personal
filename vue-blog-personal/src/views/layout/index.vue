@@ -13,9 +13,6 @@ import {
   MoonNight,
   Menu,
   UserFilled,
-  Picture,
-  Upload,
-  Refresh,
 } from '@element-plus/icons-vue';
 import { useRouter, useRoute } from 'vue-router'; // 引入路由
 import { setTheme } from '@/utils/theme'; //主题色
@@ -37,33 +34,6 @@ const userStore = useUserStore();
 const isLogin = computed(() => !!userStore.user_token);
 // 手机菜单控制
 const showMobileMenu = ref(false);
-
-// 🔥 新增：点击外部关闭菜单
-const menuWrapperRef = ref(null);
-const menuBtnRef = ref(null);
-
-// 点击外部关闭菜单的函数
-const handleClickOutside = (event) => {
-  const menuWrapper = menuWrapperRef.value;
-  const menuBtn = menuBtnRef.value;
-
-  if (
-    showMobileMenu.value &&
-    menuWrapper &&
-    !menuWrapper.contains(event.target) &&
-    menuBtn &&
-    !menuBtn.contains(event.target)
-  ) {
-    showMobileMenu.value = false;
-  }
-};
-
-// 按 ESC 键关闭菜单
-const handleEscKey = (event) => {
-  if (event.key === 'Escape' && showMobileMenu.value) {
-    showMobileMenu.value = false;
-  }
-};
 
 // 登录
 const goLogin = () => {
@@ -87,13 +57,13 @@ const logout = async () => {
   // 本次会话内不再尝试用 cookie 静默恢复登录态（接口异常时兜底）
   stopSessionRestore();
   try {
-    // 关键：通知后端清除 HttpOnly 的 refreshToken cookie，否则刷新页面会被自动登录回来
+    // 通知后端清除 HttpOnly 的 refreshToken cookie
     await logoutApi();
-  } catch (e) {
-    console.warn('退出登录接口异常：', e);
+  } catch (err) {
+    console.warn('退出登录接口异常：', err);
   }
   ElMessage.success('已退出登录');
-  // 退出后回到首页继续浏览（游客也能看文章）
+  // 退出后回到首页继续浏览
   router.push('/index');
 };
 
@@ -102,194 +72,29 @@ const changeTheme = (theme) => {
   setTheme(theme);
 };
 
-// 背景图全套功能
-const bgEnabled = ref(JSON.parse(localStorage.getItem('bgEnabled') ?? 'true'));
-// 存储结构：{ id: 唯一标识, name: 文件名, base64: 压缩后base64, url: css url }
-const customBgList = ref(JSON.parse(localStorage.getItem('customBgList')) || []);
-const currentBg = ref(localStorage.getItem('currentBg') || '');
-const bgRotateEnabled = ref(JSON.parse(localStorage.getItem('bgRotateEnabled') ?? 'false'));
-const bgInput = ref(null);
-const bgDialog = ref(false);
-
-let rotateTimer = null;
-
-// 批量读取bg文件夹所有图片，打包全部打进dist
-const bgModules = import.meta.glob('@/assets/image/bg/*.{png,jpg,jpeg,webp}', { eager: true });
-// 转为可使用的图片地址数组
-const localBgArr = Object.values(bgModules).map((item) => item.default);
-
-// 应用背景（平滑切换）
-const applyBg = (url = null) => {
+// 背景图
+const BG_IMAGES = [
+  'https://t.alcy.cc/ycy',
+  'https://t.alcy.cc/ysz',
+  'https://t.alcy.cc/fj',
+  'https://t.alcy.cc/pc',
+  'https://t.mwm.moe/fj',
+];
+const applyRandomBg = () => {
   const container = document.querySelector('.common-layout');
   if (!container) return;
-
-  if (!bgEnabled.value) {
-    container.style.setProperty('--bg-opacity', '0');
-    stopRotate();
-    return;
-  }
-
-  const defaultImg = localBgArr[0];
-  const finalUrl = url || currentBg.value || `url(${defaultImg})`;
-  container.style.setProperty('--bg-url', finalUrl);
+  const bgUrl = BG_IMAGES[Math.floor(Math.random() * BG_IMAGES.length)];
+  container.style.setProperty('--bg-url', `url("${bgUrl}")`);
   container.style.setProperty('--bg-opacity', '1');
-};
-
-// 开关背景
-const toggleBg = () => {
-  bgEnabled.value = !bgEnabled.value;
-  localStorage.setItem('bgEnabled', bgEnabled.value);
-  if (!bgEnabled.value) {
-    stopRotate();
-    bgRotateEnabled.value = false;
-    localStorage.setItem('bgRotateEnabled', false);
-  }
-  applyBg();
-};
-
-// 🔥 核心：无损压缩上传（体积小+不失真+不超限）
-const uploadBg = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = function (event) {
-    const img = new Image();
-    img.onload = function () {
-      const canvas = document.createElement('canvas');
-      // 限制最大宽度1920px，按比例缩放（视觉无损，体积骤降70%+）
-      const maxWidth = 1920;
-      let width = img.width;
-      let height = img.height;
-      if (width > maxWidth) {
-        height = height * (maxWidth / width);
-        width = maxWidth;
-      }
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-      // 质量0.92，肉眼完全无差别，体积大幅减小
-      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.92);
-      const cssUrl = `url("${compressedBase64}")`;
-
-      // 生成唯一ID，避免重名
-      const item = {
-        id: Date.now().toString(),
-        name: file.name,
-        base64: compressedBase64,
-        url: cssUrl,
-      };
-
-      customBgList.value.push(item);
-      localStorage.setItem('customBgList', JSON.stringify(customBgList.value));
-
-      currentBg.value = cssUrl;
-      localStorage.setItem('currentBg', cssUrl);
-      applyBg(cssUrl);
-
-      ElMessage.success('上传成功！');
-      bgInput.value.value = '';
-    };
-    img.src = event.target.result;
-  };
-  reader.readAsDataURL(file);
-};
-
-// 使用背景
-const useBg = (item) => {
-  if (!bgEnabled.value) return;
-  currentBg.value = item.url;
-  localStorage.setItem('currentBg', item.url);
-  applyBg(item.url);
-};
-
-// 删除背景
-const deleteBg = (item) => {
-  const idx = customBgList.value.findIndex((i) => i.id === item.id);
-  if (idx > -1) {
-    customBgList.value.splice(idx, 1);
-    localStorage.setItem('customBgList', JSON.stringify(customBgList.value));
-    // 如果删除的是当前背景，重置为默认
-    if (currentBg.value === item.url) {
-      currentBg.value = '';
-      localStorage.removeItem('currentBg');
-      applyBg();
-    }
-    ElMessage.success('删除成功');
-  }
-};
-
-// 轮换开关
-const toggleBgRotate = () => {
-  if (!bgEnabled.value) {
-    ElMessage.warning('请先开启背景图');
-    return;
-  }
-
-  bgRotateEnabled.value = !bgRotateEnabled.value;
-  localStorage.setItem('bgRotateEnabled', bgRotateEnabled.value);
-
-  if (bgRotateEnabled.value) {
-    startRotate();
-    ElMessage.success('已开启轮换');
-  } else {
-    stopRotate();
-    ElMessage.success('已关闭轮换');
-  }
-};
-
-// 自动轮换
-const startRotate = () => {
-  if (!bgEnabled.value) return;
-  stopRotate();
-  let i = 0;
-  const userBgUrls = customBgList.value.map((item) => item.url);
-  const localUrls = localBgArr.map((src) => `url(${src})`);
-  const allBg = userBgUrls.length ? userBgUrls : localUrls;
-
-  if (allBg.length === 0) return;
-  // const len = customBgList.value.length
-  // if (len === 0) return
-
-  rotateTimer = setInterval(() => {
-    if (!bgEnabled.value) {
-      stopRotate();
-      return;
-    }
-    applyBg(allBg[i % allBg.length]);
-    // useBg(customBgList.value[i % allBg.length])
-    i++;
-  }, 6000);
-};
-
-const stopRotate = () => {
-  if (rotateTimer) clearInterval(rotateTimer);
 };
 
 onMounted(() => {
   userStore.loadStorage();
-
-  const savedList = JSON.parse(localStorage.getItem('customBgList')) || [];
-  const restoredList = savedList.map((item) => {
-    if (item.blobUrl) return item;
-    return { ...item, blobUrl: `url("${item.blobUrl}")` };
-  });
-  customBgList.value = restoredList;
-
-  applyBg();
-  if (bgEnabled.value && bgRotateEnabled.value) startRotate();
-
-  document.addEventListener('click', handleClickOutside);
-  document.addEventListener('keydown', handleEscKey);
+  applyRandomBg();
 });
 
-onUnmounted(() => {
-  stopRotate();
-  document.removeEventListener('click', handleClickOutside);
-  document.removeEventListener('keydown', handleEscKey);
-});
+// onUnmounted(() => {
+// });
 </script>
 
 <template>
@@ -367,19 +172,6 @@ onUnmounted(() => {
                       </el-icon>
                       浅色主题
                     </el-dropdown-item>
-
-                    <el-dropdown-item divided @click.stop="toggleBg">
-                      <el-icon>
-                        <component :is="!bgEnabled ? 'Check' : 'Close'" />
-                      </el-icon>
-                      {{ bgEnabled ? '关闭背景图' : '开启背景图' }}
-                    </el-dropdown-item>
-                    <el-dropdown-item @click.stop="bgDialog = true">
-                      <el-icon>
-                        <Picture />
-                      </el-icon>
-                      自定义背景图
-                    </el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -399,7 +191,7 @@ onUnmounted(() => {
                     <span class="nickname">{{ userStore.userInfo?.nickname || '' }}</span>
                   </div>
 
-                  <!-- 🔥 下拉菜单 -->
+                  <!-- 下拉菜单 -->
                   <template #dropdown>
                     <el-dropdown-menu>
                       <el-dropdown-item @click="goProfile">
@@ -439,41 +231,12 @@ onUnmounted(() => {
       <div>
         <el-footer class="footer">
           <div class="footer-container">
-            <!-- 左侧版权 -->
             <div class="copyright">© {{ new Date().getFullYear() }} 我的博客 &nbsp;|&nbsp; 用心记录生活</div>
             <div class="version">Version 1.0.0</div>
           </div>
         </el-footer>
       </div>
     </el-container>
-
-    <!-- 自定义背景图弹窗 -->
-    <el-dialog v-model="bgDialog" title="自定义背景图" width="550px">
-      <div class="bg-grid">
-        <div class="bg-item" v-for="item in customBgList" :key="item.id">
-          <div class="bg-preview" :style="{ backgroundImage: item.url }" @click="useBg(item)"></div>
-          <div class="bg-tool">
-            <el-button size="mini" type="danger" @click="deleteBg(item)">删除</el-button>
-          </div>
-        </div>
-      </div>
-
-      <div style="margin-top: 15px; display: flex; gap: 10px">
-        <el-button type="primary" @click="bgInput.click()">
-          <el-icon>
-            <Upload />
-          </el-icon>
-          上传背景
-        </el-button>
-        <el-button @click="toggleBgRotate">
-          <el-icon>
-            <Refresh />
-          </el-icon>
-          {{ bgRotateEnabled ? '关闭轮换' : '开启轮换' }}
-        </el-button>
-      </div>
-      <input ref="bgInput" type="file" accept="image/*" style="display: none" @change="uploadBg" />
-    </el-dialog>
   </div>
 </template>
 
@@ -501,10 +264,8 @@ onUnmounted(() => {
   background-attachment: fixed;
 
   --bg-opacity: 1;
-  --bg-url-next: none;
 }
 
-/* 下层：当前背景图 */
 .common-layout::before {
   content: '';
   position: fixed;
@@ -522,24 +283,6 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-/* 上层：新图片淡入 */
-.common-layout::after {
-  content: '';
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 100vw;
-  height: 100vh;
-  background-image: var(--bg-url-next);
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  z-index: -2;
-  opacity: 0;
-  transition: opacity 0.8s ease-in-out;
-}
-
-/* 1. 给最外层容器撑满全屏 */
 :deep(.el-container) {
   min-height: 100vh;
 }
@@ -547,36 +290,9 @@ onUnmounted(() => {
 :deep(.el-main) {
   background-color: transparent !important;
   --el-main-padding: 5px 0px;
-  /* 主内容区的横向内边距，供需要整屏铺满的子组件（如首页欢迎屏）抵消 */
   --main-side-padding: 0px;
   overflow: visible !important;
   padding-top: 80px !important;
-}
-
-/* 背景图网格 */
-.bg-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-.bg-item {
-  border: 1px solid #eee;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.bg-preview {
-  width: 100%;
-  height: 100px;
-  background-size: cover;
-  background-position: center;
-  cursor: pointer;
-}
-
-.bg-tool {
-  padding: 4px;
-  text-align: center;
 }
 
 .header {
@@ -662,11 +378,8 @@ onUnmounted(() => {
 /* 右侧工具栏 */
 .right_tool {
   display: flex;
-  /* 关键：一行排列 */
   align-items: center;
-  /* 垂直居中 */
   gap: 12px;
-  /* 按钮之间间距 */
   white-space: nowrap;
   /* 禁止换行 */
 }
@@ -879,7 +592,7 @@ onUnmounted(() => {
     display: none !important;
   }
 
-  /* 6. 导航菜单面板 - 关键：覆盖 display: contents */
+  /* 6. 导航菜单面板 */
   .nav-menu-wrapper {
     display: none !important;
     position: fixed !important;
@@ -899,7 +612,7 @@ onUnmounted(() => {
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
   }
 
-  /* 7. 展开状态 - 覆盖显示 */
+  /* 7. 展开状态 */
   .nav-menu-wrapper.show {
     display: block !important;
   }
@@ -1033,7 +746,6 @@ onUnmounted(() => {
     padding-bottom: 8px !important;
   }
 
-  /* 主内容区 - 保持不影响登录页，加 .common-layout 前缀 */
   .common-layout :deep(.el-main) {
     --main-side-padding: 16px;
     padding-top: 80px !important;
@@ -1041,16 +753,7 @@ onUnmounted(() => {
     padding-right: var(--main-side-padding) !important;
   }
 
-  /* 弹窗优化 */
-  .bg-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 10px !important;
-  }
-
-  .bg-preview {
-    height: 100px !important;
-  }
-
+  /* 移动端弹窗统一宽度 */
   :deep(.el-dialog) {
     width: 90% !important;
     max-width: 400px !important;

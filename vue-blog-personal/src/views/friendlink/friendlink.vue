@@ -323,7 +323,6 @@ onMounted(() => {
 }
 
 /* ========== 整体容器 ========== */
-/* 页面已放进带左右侧边栏的布局，横向留白交给外层 .blog-layout */
 .links-container {
   min-height: calc(100vh - 65px);
   padding: 0;
@@ -449,8 +448,6 @@ onMounted(() => {
   line-height: 1.5;
   padding-left: 6px;
   min-width: 0;
-  /* 撑满头像右侧的剩余宽度：不设的话信息块按内容宽度（约 290px）收缩，
-     中宽下卡片右边会空出一大片 */
   flex: 1;
 }
 
@@ -683,7 +680,7 @@ onMounted(() => {
   overflow: hidden;
 }
 
-/* ========== 友链申请卡片（左右布局） ========== */
+/* ========== 友链申请卡片 ========== */
 .apply-grid {
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
 }
@@ -809,7 +806,6 @@ onMounted(() => {
     align-items: center;
   }
 
-  /* 卡片内边距收一档：平板上 1.5rem 让友链卡片高度到 234~258px，偏虚 */
   .link-card {
     padding: 1.1rem 0.8rem;
   }
@@ -872,7 +868,6 @@ onMounted(() => {
     align-items: flex-start;
   }
 
-  /* 竖排后信息块要占满整行，否则会按内容宽度收缩 */
   .my-detail {
     width: 100%;
   }
@@ -909,8 +904,6 @@ onMounted(() => {
     height: 54px;
   }
 
-  /* 待审核友链卡片：头像与内容上下排列。
-     横排时内容区只剩 150px 上下，"申请时间 + 催促按钮"放不下，按钮会被顶出卡片 */
   .apply-card {
     flex-direction: column;
     align-items: flex-start;
@@ -931,7 +924,6 @@ onMounted(() => {
     flex-wrap: wrap;
   }
 
-  /* 时间和按钮放不下时各占一行，按钮整行宽、更好点 */
   .apply-card-foot {
     flex-wrap: wrap;
     justify-content: flex-start;
@@ -954,9 +946,6 @@ onMounted(() => {
     grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   }
 
-  /* 坑：这里重申 .links-grid 会盖掉上面 ≤576 里的 .apply-grid 单列规则
-     （两个类在同一个元素上、权重相同，靠后的生效），所以必须再声明一次，
-     否则 360~400px 下待审核卡片会被排成两列，内容被压到 40px 宽、按钮顶出卡片 */
   .apply-grid {
     grid-template-columns: 1fr;
   }

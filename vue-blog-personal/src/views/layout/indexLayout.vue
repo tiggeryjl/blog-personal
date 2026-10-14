@@ -549,9 +549,11 @@ onUnmounted(() => {
               class="tag-chip"
               :class="{ active: tag.name === activeTagName }"
               :style="tagColorStyle(tag.name)"
+              :title="`${tag.name} · ${tag.articleCount} 篇`"
               @click="goTag(tag)"
             >
               {{ tag.name }}
+              <span class="tag-chip-count">{{ tag.articleCount }}</span>
             </span>
           </div>
 
@@ -663,9 +665,11 @@ onUnmounted(() => {
         class="tag-chip"
         :class="{ active: tag.name === activeTagName }"
         :style="tagColorStyle(tag.name)"
+        :title="`${tag.name} · ${tag.articleCount} 篇`"
         @click="goTag(tag)"
       >
         {{ tag.name }}
+        <span class="tag-chip-count">{{ tag.articleCount }}</span>
       </span>
       <span v-if="remainingTags.length === 0" class="dialog-tag-empty">暂无更多标签</span>
     </div>
@@ -1058,6 +1062,34 @@ onUnmounted(() => {
 .tag-chip.active {
   font-weight: 600;
   box-shadow: 0 0 0 2px currentColor;
+}
+
+/* 标签后的小计数：跟着标签自身的颜色走。
+   加一层半透明同色底把数字和标签名隔开，否则 "vue" + 2 会被读成 "vue 2" 版本号 */
+.tag-chip-count {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 5px;
+  padding: 0 5px;
+  min-width: 17px;
+  height: 16px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.tag-chip-count::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0.14;
 }
 
 /* 更多标签入口行：预留固定高度，卡片高度不跳动 */

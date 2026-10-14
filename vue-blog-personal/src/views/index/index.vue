@@ -81,7 +81,7 @@ onUnmounted(() => {
     <div class="quick-link-box">
       <div
         class="quick-btn"
-        style="background-image: url('https://picsum.photos/800/400?random=1')"
+        style="background-image: url('https://tu.ltyuanfang.cn/api/fengjing.php')"
         @click="router.push('/article')"
       >
         <div class="line-top"></div>
@@ -96,7 +96,7 @@ onUnmounted(() => {
 
       <div
         class="quick-btn"
-        style="background-image: url('https://picsum.photos/800/400?random=2')"
+        style="background-image: url('https://picsum.photos/1920/1080')"
         @click="router.push('/daily')"
       >
         <div class="line-top"></div>

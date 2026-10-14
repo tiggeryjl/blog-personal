@@ -1,100 +1,135 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { ArrowDownBold } from '@element-plus/icons-vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ArrowDownBold } from '@element-plus/icons-vue';
 
-const BANNERS = [{
-  title: 'Hello! 欢迎来到 我的世界!',
-  quote: [
-    '不管你说再多的慌，只有自己的内心，是无法欺骗的啊。',
-    '生活原本沉闷，但跑起来就有风。',
-    '保持热爱，奔赴下一场山海。',
-    '你逆光而来，配得上这世间所有的好。',
-    '努力的意义，就是以后的日子里，放眼望去，全部都是自己喜欢的人和事。'
-  ]
-}]
+const BANNERS = [
+  {
+    title: 'Hello! 欢迎来到 我的世界!',
+    quote: [
+      '不管你说再多的慌，只有自己的内心，是无法欺骗的啊。',
+      '生活原本沉闷，但跑起来就有风。',
+      '保持热爱，奔赴下一场山海。',
+      '你逆光而来，配得上这世间所有的好。',
+      '努力的意义，就是以后的日子里，放眼望去，全部都是自己喜欢的人和事。',
+    ],
+  },
+];
 
 // 滚动配置
-const SCROLL_OPACITY_DISTANCE = 200
-const SCROLL_TRANSLATE_FACTOR = 0.3
-const TYPING_DELAY = 50
-const TYPING_INTERVAL = 80
+const SCROLL_OPACITY_DISTANCE = 200;
+const SCROLL_TRANSLATE_FACTOR = 0.3;
+const TYPING_DELAY = 50;
+const TYPING_INTERVAL = 80;
+
+// 流星雨数量
+const METEOR_COUNT = 36;
+
+// 起点横向范围（%)
+const METEOR_LEFT_RANGE = [0, 100];
+// 起点纵向范围（%）
+const METEOR_TOP_RANGE = [-10, 64];
+// 每条流星的行程倍率，越大划得越远
+const METEOR_SCALE_RANGE = [0.75, 1.35];
+
+// 随机数工具
+const randomBetween = (min, max) => Math.random() * (max - min) + min;
+
+// 按数量生成流星，每条随机位置 / 时长 / 出场时间
+const meteors = Array.from({ length: METEOR_COUNT }, (_, i) => {
+  const duration = randomBetween(2.4, 4.5);
+
+  return {
+    id: i,
+    style: {
+      top: `${randomBetween(...METEOR_TOP_RANGE)}%`,
+      left: `${randomBetween(...METEOR_LEFT_RANGE)}%`,
+      '--meteor-scale': randomBetween(...METEOR_SCALE_RANGE).toFixed(2),
+      animationDuration: `${duration.toFixed(2)}s`,
+      // 用负延迟让流星一进来就已经在飞行途中，避免页面刚打开时一片空白
+      animationDelay: `${(-randomBetween(0, duration * 2)).toFixed(2)}s`,
+    },
+  };
+});
 
 // 响应式变量
-const current = ref(0)
-const scrollY = ref(0)
-const displayQuote = ref('')
+const current = ref(0);
+const scrollY = ref(0);
+const displayQuote = ref('');
 
 // 定时器统一管理
-let typingInterval = null
-let typingTimeout = null
+let typingInterval = null;
+let typingTimeout = null;
 
 const bannerOpacity = computed(() => {
-  const opacity = 1 - scrollY.value / SCROLL_OPACITY_DISTANCE
-  return Math.max(0, Math.min(1, opacity))
-})
+  const opacity = 1 - scrollY.value / SCROLL_OPACITY_DISTANCE;
+  return Math.max(0, Math.min(1, opacity));
+});
 
 const bannerTranslate = computed(() => {
-  return scrollY.value * SCROLL_TRANSLATE_FACTOR
-})
+  return scrollY.value * SCROLL_TRANSLATE_FACTOR;
+});
 
 const getRandomQuote = (list) => {
-  return list[Math.floor(Math.random() * list.length)]
-}
+  return list[Math.floor(Math.random() * list.length)];
+};
 
 // 打字机效果
 const typeText = (text) => {
-  clearInterval(typingInterval)
-  clearTimeout(typingTimeout)
+  clearInterval(typingInterval);
+  clearTimeout(typingTimeout);
 
-  displayQuote.value = ''
-  let index = 0
+  displayQuote.value = '';
+  let index = 0;
 
   typingTimeout = setTimeout(() => {
     typingInterval = setInterval(() => {
       if (index >= text.length) {
-        clearInterval(typingInterval)
-        return
+        clearInterval(typingInterval);
+        return;
       }
-      displayQuote.value = text.slice(0, index + 1)
-      index++
-    }, TYPING_INTERVAL)
-  }, TYPING_DELAY)
-}
+      displayQuote.value = text.slice(0, index + 1);
+      index++;
+    }, TYPING_INTERVAL);
+  }, TYPING_DELAY);
+};
 
 const handleScroll = () => {
-  scrollY.value = window.scrollY
-}
+  scrollY.value = window.scrollY;
+};
 
 const scrollToContent = () => {
-  const navHeight = window.innerWidth <= 768 ? 60 : 80
+  const navHeight = window.innerWidth <= 768 ? 60 : 80;
   window.scrollTo({
     top: window.innerHeight - navHeight,
-    behavior: 'smooth'
-  })
-}
+    behavior: 'smooth',
+  });
+};
 
 onMounted(() => {
-  const randomText = getRandomQuote(BANNERS[current.value].quote)
-  typeText(randomText)
+  const randomText = getRandomQuote(BANNERS[current.value].quote);
+  typeText(randomText);
 
-  window.addEventListener('scroll', handleScroll)
-})
+  window.addEventListener('scroll', handleScroll);
+});
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll)
-  clearInterval(typingInterval)
-  clearTimeout(typingTimeout)
-})
+  window.removeEventListener('scroll', handleScroll);
+  clearInterval(typingInterval);
+  clearTimeout(typingTimeout);
+});
 </script>
 
 <template>
-  <div class="welcome-banner" :style="{
-    opacity: bannerOpacity,
-    transform: `translateY(${-bannerTranslate}px)`
-  }">
+  <div
+    class="welcome-banner"
+    :style="{
+      opacity: bannerOpacity,
+      transform: `translateY(${-bannerTranslate}px)`,
+    }"
+  >
     <div class="banner-mask" />
     <div class="meteor-shower">
-      <div class="meteor" v-for="i in 8" :key="i" />
+      <div class="meteor" v-for="meteor in meteors" :key="meteor.id" :style="meteor.style" />
     </div>
 
     <div class="banner-overlay">
@@ -120,14 +155,11 @@ onUnmounted(() => {
   position: relative;
   width: 100%;
   height: 100vh;
-  /* 负外边距吃掉 .el-main 的 80px 顶部内边距，让欢迎屏从屏幕最顶端开始铺满；
-     移动端也保持 -80px，改成 -60px 会在页面顶部露出 20px 没被盖住的背景 */
   margin-top: -80px;
   padding-top: 65px;
   overflow: hidden;
   transition: opacity 0.15s ease-out, transform 0.15s ease-out;
   will-change: opacity, transform;
-  /* 浏览器性能优化 */
 }
 
 .banner-mask {
@@ -147,6 +179,7 @@ onUnmounted(() => {
 }
 
 .meteor {
+  --meteor-travel: calc(max(170px, 15vw) * var(--meteor-scale, 1));
   position: absolute;
   width: 150px;
   height: 2px;
@@ -154,54 +187,6 @@ onUnmounted(() => {
   transform: rotate(-40deg);
   opacity: 0;
   animation: meteor 3s infinite linear;
-}
-
-.meteor:nth-child(1) {
-  top: 5%;
-  left: 80%;
-  animation-delay: 0s;
-}
-
-.meteor:nth-child(2) {
-  top: 15%;
-  left: 90%;
-  animation-delay: 0.5s;
-}
-
-.meteor:nth-child(3) {
-  top: 25%;
-  left: 70%;
-  animation-delay: 1s;
-}
-
-.meteor:nth-child(4) {
-  top: 5%;
-  left: 60%;
-  animation-delay: 1.5s;
-}
-
-.meteor:nth-child(5) {
-  top: 20%;
-  left: 50%;
-  animation-delay: 2s;
-}
-
-.meteor:nth-child(6) {
-  top: 35%;
-  left: 85%;
-  animation-delay: 2.5s;
-}
-
-.meteor:nth-child(7) {
-  top: 40%;
-  left: 75%;
-  animation-delay: 1.2s;
-}
-
-.meteor:nth-child(8) {
-  top: 50%;
-  left: 65%;
-  animation-delay: 0.8s;
 }
 
 @keyframes meteor {
@@ -219,7 +204,7 @@ onUnmounted(() => {
   }
 
   100% {
-    transform: translate(-200px, 180px) rotate(-40deg);
+    transform: translate(calc(var(--meteor-travel) * -1), calc(var(--meteor-travel) * 0.9)) rotate(-40deg);
     opacity: 0;
   }
 }
@@ -256,7 +241,6 @@ onUnmounted(() => {
 }
 
 @keyframes blink {
-
   0%,
   100% {
     opacity: 1;
@@ -280,7 +264,6 @@ onUnmounted(() => {
 }
 
 @keyframes bounce {
-
   0%,
   100% {
     transform: translateX(-50%) translateY(0);
