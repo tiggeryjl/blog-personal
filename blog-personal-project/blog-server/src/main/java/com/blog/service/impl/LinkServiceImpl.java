@@ -258,6 +258,22 @@ public class LinkServiceImpl implements LinkService {
     }
 
     /**
+     * 分页查询友链申请记录：待审核/已通过/已拒绝
+     */
+    @Override
+    public PageResult applicationPage(LinkPageQueryDTO dto) {
+        int page = dto.getPage() == null || dto.getPage() < 1 ? 1 : dto.getPage();
+        int pageSize = dto.getPageSize() == null || dto.getPageSize() < 1 ? 10 : dto.getPageSize();
+        if (pageSize > 50) {
+            pageSize = 50;
+        }
+        PageHelper.startPage(page, pageSize);
+        List<LinkVo> linkList = linkMapper.applicationPageQuery(dto);
+        PageInfo<LinkVo> pageInfo = new PageInfo<>(linkList);
+        return new PageResult(pageInfo.getTotal(), pageInfo.getList());
+    }
+
+    /**
      * 催促审核本人的友链申请
      */
     @Override

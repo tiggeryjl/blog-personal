@@ -17,12 +17,12 @@ import java.io.Serializable;
 public class LinkPageQueryDTO implements Serializable {
 
     /**
-     * 关键字（网站名称/链接模糊匹配）
+     * 关键字
      */
     private String keyword;
 
     /**
-     * 审核状态 0待审核 1审核通过 2审核拒绝，为空查询全部
+     * 审核状态 0待审核 1审核通过 2审核拒绝
      */
     private Integer auditStatus;
 

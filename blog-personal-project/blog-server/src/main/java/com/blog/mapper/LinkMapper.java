@@ -48,6 +48,14 @@ public interface LinkMapper {
     List<LinkVo> pageQuery(LinkPageQueryDTO dto);
 
     /**
+     * 分页查询友链申请记录：待审核/已通过/已拒绝（博客端展示）
+     *
+     * @param dto 查询参数
+     * @return 申请列表
+     */
+    List<LinkVo> applicationPageQuery(LinkPageQueryDTO dto);
+
+    /**
      * 统计各审核状态数量
      *
      * @return total/pending/approved/rejected 数量

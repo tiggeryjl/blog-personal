@@ -76,6 +76,7 @@ public class SecurityConfig {
                                 "/user/link/apply",
                                 "/user/link/list",
                                 "/user/link/applications",
+                                "/user/link/applications/page",
                                 "/user/rss/**",
                                 "/user/daily/**",
                                 "/user/like",

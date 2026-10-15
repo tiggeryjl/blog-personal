@@ -1,7 +1,9 @@
 package com.blog.controller.user;
 
 import com.blog.pojo.dto.LinkApplyDTO;
+import com.blog.pojo.dto.LinkPageQueryDTO;
 import com.blog.pojo.vo.LinkVo;
+import com.blog.result.PageResult;
 import com.blog.result.Result;
 import com.blog.service.LinkService;
 import jakarta.validation.Valid;
@@ -23,7 +25,7 @@ public class LinkController {
     private LinkService linkService;
 
     /**
-     * 提交友链申请（进入待审核）
+     * 友链申请
      *
      * @param linkApplyDTO 申请参数
      * @return 统一结果
@@ -55,6 +57,18 @@ public class LinkController {
     public Result<List<LinkVo>> applications() {
         log.info("查询全部待审核/已拒绝的友链申请");
         return Result.success(linkService.listApplications());
+    }
+
+    /**
+     * 分页查询友链申请记录：待审核/已通过/已拒绝
+     *
+     * @param param 查询参数
+     * @return 分页结果
+     */
+    @GetMapping("/applications/page")
+    public Result<PageResult> applicationsPage(LinkPageQueryDTO param) {
+        log.info("分页查询友链申请:{}", param);
+        return Result.success(linkService.applicationPage(param));
     }
 
     /**

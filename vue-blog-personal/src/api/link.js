@@ -9,5 +9,8 @@ export const applyLinkApi = (data) => request.post('/user/link/apply', data);
 // 查询全部待审核/已拒绝的友链申请（按申请时间倒序）
 export const getApplicationsApi = () => request.get('/user/link/applications');
 
+// 分页查询待审核/已拒绝的友链申请（支持关键字与审核状态筛选）
+export const getApplicationPageApi = (params) => request.get('/user/link/applications/page', { params });
+
 // 催促审核本人的友链申请（需登录）
 export const urgeLinkApi = (id) => request.post(`/user/link/urge/${id}`);

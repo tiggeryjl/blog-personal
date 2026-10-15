@@ -52,6 +52,24 @@
         ORDER BY audit_status ASC, sort ASC, create_time DESC
     </select>
 
+    <!-- 分页查询友链申请记录：待审核/已通过/已拒绝（博客端展示） -->
+    <select id="applicationPageQuery" resultType="com.blog.pojo.vo.LinkVo">
+        SELECT id, link_name, link_url, link_avatar, link_desc, link_email, sort,
+               audit_status, status, create_time
+        FROM link
+        <where>
+            delete_flag = 0
+            <if test="auditStatus != null">AND audit_status = #{auditStatus}</if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    link_name LIKE CONCAT('%', #{keyword}, '%')
+                    OR link_desc LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
     <!-- 统计各审核状态数量 -->
     <select id="countByAuditStatus" resultType="java.util.Map">
         SELECT

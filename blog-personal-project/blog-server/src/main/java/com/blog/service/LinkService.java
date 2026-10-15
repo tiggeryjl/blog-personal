@@ -96,6 +96,14 @@ public interface LinkService {
     List<LinkVo> listApplications();
 
     /**
+     * 分页查询友链申请记录：待审核/已通过/已拒绝（博客端展示，支持关键字与审核状态筛选）
+     *
+     * @param dto 查询参数
+     * @return 分页结果
+     */
+    PageResult applicationPage(LinkPageQueryDTO dto);
+
+    /**
      * 催促审核本人的友链申请
      *
      * @param id 友链申请ID

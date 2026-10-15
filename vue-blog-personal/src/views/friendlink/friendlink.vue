@@ -1,17 +1,40 @@
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { ElMessage } from 'element-plus';
-import { CopyDocument } from '@element-plus/icons-vue';
+import { CopyDocument, Search } from '@element-plus/icons-vue';
 import { useUserStore } from '@/store/userloginstatus';
 import MarqueeText from '@/components/MarqueeText.vue';
-import { getPublicLinkListApi, applyLinkApi, getApplicationsApi, urgeLinkApi } from '@/api/link.js';
+import { getPublicLinkListApi, applyLinkApi, getApplicationPageApi, urgeLinkApi } from '@/api/link.js';
 
 const userStore = useUserStore();
 
 const linkList = ref([]);
-const applications = ref([]);
 const urgingId = ref(null);
 const urgedIds = ref(new Set());
+
+// 友链申请列表：分页 + 筛选查询
+const applyList = ref([]);
+const applyTotal = ref(0);
+const applyLoading = ref(false);
+const applyQuery = reactive({
+  keyword: '',
+  auditStatus: null,
+  page: 1,
+  pageSize: 16,
+});
+const applyBlockRef = ref(null);
+
+// 审核状态：0待审核 1已通过 2已拒绝
+const AUDIT_STATUS_MAP = {
+  0: { label: '待审核', tagType: 'warning' },
+  1: { label: '已通过', tagType: 'success' },
+  2: { label: '已拒绝', tagType: 'danger' },
+};
+const getAuditStatus = (status) => AUDIT_STATUS_MAP[status] || { label: '未知', tagType: 'info' };
+const isAuditStatusValue = (status) => status === 0 || status === 1 || status === 2;
+
+// 是否处于筛选状态
+const hasApplyFilter = computed(() => !!applyQuery.keyword.trim() || isAuditStatusValue(applyQuery.auditStatus));
 
 const isLogin = computed(() => !!userStore.user_token);
 
@@ -56,16 +79,77 @@ const loadLinks = async () => {
   }
 };
 
-// 加载全部待审核/已拒绝的友链申请
+let latestApplyRequestId = 0;
+
+// 分页加载待审核/已拒绝的友链申请
 const loadApplications = async () => {
+  const requestId = ++latestApplyRequestId;
+  applyLoading.value = true;
   try {
-    const result = await getApplicationsApi();
+    const params = { page: applyQuery.page, pageSize: applyQuery.pageSize };
+    const keyword = applyQuery.keyword.trim();
+    if (keyword) {
+      params.keyword = keyword;
+    }
+    if (isAuditStatusValue(applyQuery.auditStatus)) {
+      params.auditStatus = applyQuery.auditStatus;
+    }
+    const result = await getApplicationPageApi(params);
+    if (requestId !== latestApplyRequestId) return;
     if (result.code === 200) {
-      applications.value = result.data || [];
+      applyList.value = result.data?.rows || [];
+      applyTotal.value = Number(result.data?.total) || 0;
     }
   } catch (err) {
-    ElMessage.error('友链申请加载失败，请稍后重试');
+    if (requestId === latestApplyRequestId) {
+      ElMessage.error('友链申请加载失败，请稍后重试');
+    }
+  } finally {
+    if (requestId === latestApplyRequestId) {
+      applyLoading.value = false;
+    }
   }
+};
+
+// 条件变化后从第一页重新查询
+const handleApplySearch = () => {
+  applyQuery.page = 1;
+  loadApplications();
+};
+
+// 关键字输入防抖，停止输入 1s 后自动查询
+let applySearchTimer = null;
+const handleKeywordInput = () => {
+  if (applySearchTimer) clearTimeout(applySearchTimer);
+  applySearchTimer = setTimeout(() => {
+    handleApplySearch();
+  }, 1000);
+};
+
+// 回车立即查询，并取消还在等待的防抖
+const handleKeywordEnter = () => {
+  if (applySearchTimer) clearTimeout(applySearchTimer);
+  handleApplySearch();
+};
+
+// 点击叉号清空关键字后立即查询
+const handleKeywordClear = () => {
+  if (applySearchTimer) clearTimeout(applySearchTimer);
+  handleApplySearch();
+};
+
+// 重置筛选条件
+const resetApplyQuery = () => {
+  applyQuery.keyword = '';
+  applyQuery.auditStatus = null;
+  handleApplySearch();
+};
+
+// 翻页后把列表滚回顶部，避免停留在底部的分页条上
+const handleApplyPageChange = (newPage) => {
+  applyQuery.page = newPage;
+  loadApplications();
+  applyBlockRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
 // 催促审核（仅登录且本人申请可操作）
@@ -138,7 +222,7 @@ const submitApply = async () => {
       ElMessage.success('申请成功！请等待博主审核');
       showApplyForm.value = false;
       applyForm.value = { linkName: '', linkUrl: '', linkAvatar: '', linkDesc: '', email: '' };
-      loadApplications();
+      resetApplyQuery();
     } else {
       ElMessage.error(result.msg || '申请失败，请稍后重试');
     }
@@ -159,6 +243,10 @@ const formatTime = (t) => {
 onMounted(() => {
   loadLinks();
   loadApplications();
+});
+
+onBeforeUnmount(() => {
+  if (applySearchTimer) clearTimeout(applySearchTimer);
 });
 </script>
 
@@ -234,21 +322,49 @@ onMounted(() => {
       </div>
 
       <!-- 全部友链申请 -->
-      <div class="block my-apply-block">
+      <div ref="applyBlockRef" class="block my-apply-block">
         <div class="block-title">
           友链申请列表
-          <span class="count">{{ applications.length }}</span>
+          <span class="count">{{ applyTotal }}</span>
         </div>
-        <p class="block-desc">展示所有待审核与已拒绝的友链申请，按申请时间从新到旧排列</p>
+        <p class="block-desc">展示所有待审核、已通过与已拒绝的友链申请，按申请时间从新到旧排列</p>
 
-        <div class="links-grid apply-grid">
-          <div class="link-card apply-card" v-for="item in applications" :key="item.id">
+        <!-- 筛选查询 -->
+        <div class="apply-toolbar">
+          <el-select
+            v-model="applyQuery.auditStatus"
+            class="apply-status"
+            placeholder="全部状态"
+            clearable
+            @change="handleApplySearch"
+          >
+            <el-option label="待审核" :value="0" />
+            <el-option label="已通过" :value="1" />
+            <el-option label="已拒绝" :value="2" />
+          </el-select>
+          <el-input
+            v-model="applyQuery.keyword"
+            class="apply-search"
+            placeholder="搜索网站名称 / 简介"
+            clearable
+            @input="handleKeywordInput"
+            @keyup.enter="handleKeywordEnter"
+            @clear="handleKeywordClear"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
+
+        <div v-loading="applyLoading" class="links-grid apply-grid">
+          <div class="link-card apply-card" v-for="item in applyList" :key="item.id">
             <!-- @click="goLink(item.linkUrl)"> -->
             <img :src="item.linkAvatar" :alt="item.linkName" class="avatar" />
             <div class="apply-card-body">
               <div class="apply-card-head">
-                <el-tag :type="item.auditStatus === 0 ? 'warning' : 'danger'" size="small">
-                  {{ item.auditStatus === 0 ? '待审核' : '已拒绝' }}
+                <el-tag :type="getAuditStatus(item.auditStatus).tagType" size="small">
+                  {{ getAuditStatus(item.auditStatus).label }}
                 </el-tag>
                 <h4 class="name"><MarqueeText :text="item.linkName" /></h4>
               </div>
@@ -256,7 +372,7 @@ onMounted(() => {
               <div class="apply-card-foot">
                 <span class="apply-time">申请时间:&nbsp;&nbsp;{{ formatTime(item.createTime) }}</span>
                 <el-button
-                  v-if="isOwn(item)"
+                  v-if="isOwn(item) && item.auditStatus === 0"
                   class="urge-btn"
                   type="primary"
                   size="small"
@@ -269,7 +385,20 @@ onMounted(() => {
               </div>
             </div>
           </div>
-          <div v-if="applications.length === 0" class="empty-data">暂无友链申请~~~</div>
+          <div v-if="!applyLoading && applyList.length === 0" class="empty-data">
+            {{ hasApplyFilter ? '没有匹配的友链申请~~~' : '暂无友链申请~~~' }}
+          </div>
+        </div>
+
+        <div v-if="applyTotal > applyQuery.pageSize" class="pagination-row">
+          <el-pagination
+            layout="prev, pager, next"
+            :total="applyTotal"
+            :page-size="applyQuery.pageSize"
+            :current-page="applyQuery.page"
+            background
+            @current-change="handleApplyPageChange"
+          />
         </div>
       </div>
     </div>
@@ -747,6 +876,31 @@ onMounted(() => {
   font-size: 15px;
 }
 
+/* ========== 申请列表筛选栏 ========== */
+.apply-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.apply-toolbar .apply-search {
+  width: 280px;
+  max-width: 100%;
+}
+
+.apply-toolbar .apply-status {
+  width: 140px;
+}
+
+.pagination-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.4rem;
+}
+
 /* ========== 响应式样式 ========== */
 @media (max-width: 1200px) {
   .links {
@@ -938,6 +1092,11 @@ onMounted(() => {
     width: 100%;
     min-height: 32px;
     margin: 0;
+  }
+
+  .apply-toolbar .apply-search,
+  .apply-toolbar .apply-status {
+    width: 100%;
   }
 }
 
