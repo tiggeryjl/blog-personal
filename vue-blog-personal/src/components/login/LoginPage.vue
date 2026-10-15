@@ -515,7 +515,7 @@ const validate = (formType) => {
               </div>
             </div>
             <div class="options">
-              <label class="remember"><input type="checkbox" v-model="remember" /> 记住密码</label>
+              <label class="remember"><input type="checkbox" v-model="remember" /> 记住我</label>
               <a href="#" class="forgot">找回密码？</a>
             </div>
             <div v-if="errorMsg" class="error-msg">{{ errorMsg }}</div>

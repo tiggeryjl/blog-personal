@@ -258,7 +258,7 @@ VALUES
 (40,36,'友链信息统计', '/linkReport', 'report/linkReport/index', 'sys:report:link:list', 1, 'Share', 4, 1,0,NOW(), NOW()),
 
 -- ===================== 7、布局设置【顶级目录 parent_id=0】 =====================
-(41,0, '布局设置', '/meunlayout', 'Layout', NULL, 0, 'Menu', 7, 1,0,NOW(), NOW()),
+(41,0, '系统设置', '/meunlayout', 'Layout', NULL, 0, 'Menu', 7, 1,0,NOW(), NOW()),
 (42,41,'布局设计', '/meunlayout', 'meunlayout/index', 'sys:layout:list', 1, 'InfoFilled', 1, 1,0,NOW(), NOW()),
 
 -- ===================== 8、系统管理（角色管理，超级管理员专属） =====================

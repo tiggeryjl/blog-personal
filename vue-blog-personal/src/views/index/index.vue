@@ -73,7 +73,7 @@ onUnmounted(() => {
 <template>
   <div class="common-index">
     <!-- 公告卡片 -->
-    <div class="notice-card">
+    <div class="notice-card" v-if="false">
       <h3 class="notice-title">📢 网站公告</h3>
       <div class="notice-content">{{ notice }}</div>
     </div>
@@ -200,7 +200,6 @@ onUnmounted(() => {
 
 /* 公告卡片 */
 .notice-card {
-  display: none;
   width: 100%;
   padding: 20px;
   background-color: var(--card-bg);
