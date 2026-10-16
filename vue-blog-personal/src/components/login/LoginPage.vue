@@ -12,6 +12,7 @@ import { ref, computed, onMounted } from 'vue';
 import { Eye, EyeOff, Mail, Sparkles } from 'lucide-vue-next';
 import AnimatedCharacters from './AnimatedCharacters.vue';
 import Captcha from '@/components/Captcha.vue';
+import { getRememberedAccount } from '@/utils/auth';
 
 const props = defineProps({
   brandName: {
@@ -44,10 +45,11 @@ const emit = defineEmits(['login-submit', 'register-submit']);
 
 const isLogin = ref(true);
 
-// 登录表单
-const account = ref('');
+// 登录表单：回填上次勾选"记住我"时保存的账号，密码不回填
+const rememberedAccount = getRememberedAccount();
+const account = ref(rememberedAccount);
 const password = ref('');
-const remember = ref(false);
+const remember = ref(!!rememberedAccount);
 
 // 注册表单
 const nickname = ref('');
@@ -300,9 +302,10 @@ const confirmRegister = async () => {
 // 重置表单（切换登录/注册时调用）
 const resetForm = () => {
   // 清空输入
-  account.value = '';
+  // 账号恢复成"记住我"保存的值，切换登录/注册回来时不用重新输入
+  account.value = rememberedAccount;
   password.value = '';
-  remember.value = false;
+  remember.value = !!rememberedAccount;
 
   nickname.value = '';
   username.value = '';

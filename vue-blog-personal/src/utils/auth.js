@@ -16,4 +16,28 @@ export const requireLogin = (tip = '请先登录后再进行该操作') => {
   return false;
 };
 
-export default { isLoggedIn, requireLogin };
+// ===== 记住我：只保存账号，不保存密码 =====
+const REMEMBERED_ACCOUNT_KEY = 'rememberedAccount';
+
+/**
+ * 读取上次勾选"记住我"时保存的账号
+ *
+ * @returns {string} 账号，没有则返回空串
+ */
+export const getRememberedAccount = () => localStorage.getItem(REMEMBERED_ACCOUNT_KEY) || '';
+
+/**
+ * 保存账号，传空值表示取消勾选"记住我"，此时清除已保存的账号
+ *
+ * @param {string} account 账号
+ */
+export const saveRememberedAccount = (account) => {
+  const value = (account || '').trim();
+  if (value) {
+    localStorage.setItem(REMEMBERED_ACCOUNT_KEY, value);
+  } else {
+    localStorage.removeItem(REMEMBERED_ACCOUNT_KEY);
+  }
+};
+
+export default { isLoggedIn, requireLogin, getRememberedAccount, saveRememberedAccount };

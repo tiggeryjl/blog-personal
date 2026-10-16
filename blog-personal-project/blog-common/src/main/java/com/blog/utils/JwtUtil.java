@@ -10,8 +10,6 @@ import java.util.UUID;
 @Component
 public class JwtUtil {
 
-    private static final long REFRESH_EXPIRE = 7 * 24 * 60 * 60;
-
     /**
      * 生成JWT token（临时）
      *
@@ -118,11 +116,9 @@ public class JwtUtil {
     }
 
     // 写入管理端RefreshToken到HttpOnly Cookie（同域无需Secure，生产HTTPS自行加Secure）
-    public static void setAdminRefreshCookie(String refreshToken, HttpServletResponse response) {
-        String cookieStr = String.format(
-                "admin_refreshToken=%s; Path=/; HttpOnly; Max-Age=%d; SameSite=Lax",
-                refreshToken, REFRESH_EXPIRE);
-        response.setHeader("Set-Cookie", cookieStr);
+    public static void setAdminRefreshCookie(String refreshToken, long maxAgeSeconds, HttpServletResponse response) {
+        response.setHeader("Set-Cookie",
+                buildRefreshCookie("admin_refreshToken", refreshToken, maxAgeSeconds));
     }
 
     // 清除管理端Cookie（退出登录）
@@ -132,15 +128,33 @@ public class JwtUtil {
     }
 
     // 设置用户端刷新Cookie
-    public static void setUserRefreshCookie(String refreshToken, HttpServletResponse response) {
-        String cookieStr = String.format(
-                "user_refreshToken=%s; Path=/; HttpOnly; Max-Age=%d; SameSite=Lax",
-                refreshToken, REFRESH_EXPIRE);
-        response.setHeader("Set-Cookie", cookieStr);
+    public static void setUserRefreshCookie(String refreshToken, long maxAgeSeconds, HttpServletResponse response) {
+        response.setHeader("Set-Cookie",
+                buildRefreshCookie("user_refreshToken", refreshToken, maxAgeSeconds));
     }
     // 清除用户端Cookie
     public static void clearUserRefreshCookie(HttpServletResponse response) {
         String clearCookie = "user_refreshToken=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax";
         response.setHeader("Set-Cookie", clearCookie);
+    }
+
+    /**
+     * 拼装刷新Token的Cookie
+     * maxAgeSeconds 大于 0 时写入 Max-Age，浏览器持久化保存；
+     * 小于等于 0 时不写 Max-Age，浏览器按会话Cookie处理，关闭浏览器即失效
+     *
+     * @param name           Cookie名
+     * @param value          Cookie值
+     * @param maxAgeSeconds  有效期（秒）
+     * @return Cookie字符串
+     */
+    private static String buildRefreshCookie(String name, String value, long maxAgeSeconds) {
+        StringBuilder cookie = new StringBuilder()
+                .append(name).append('=').append(value)
+                .append("; Path=/; HttpOnly; SameSite=Lax");
+        if (maxAgeSeconds > 0) {
+            cookie.append("; Max-Age=").append(maxAgeSeconds);
+        }
+        return cookie.toString();
     }
 }

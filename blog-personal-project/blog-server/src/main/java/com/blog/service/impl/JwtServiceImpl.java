@@ -10,6 +10,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtServiceImpl implements JwtService {
 
+    /**
+     * 未勾选"记住我"时刷新令牌的有效期：12 小时
+     * （Cookie 本身是会话级，关闭浏览器即失效，这里再收窄一层令牌有效期）
+     */
+    private static final long SESSION_REFRESH_TTL_MILLIS = 12 * 60 * 60 * 1000L;
+
     @Autowired
     private JwtProperties jwtProperties;
 
@@ -23,10 +29,11 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public String createRefreshToken(Long userId) {
+    public String createRefreshToken(Long userId, boolean remember) {
+        long ttl = remember ? jwtProperties.getUserRefreshTtl() : SESSION_REFRESH_TTL_MILLIS;
         return JwtUtil.createRefreshToken(
                 jwtProperties.getUserSecretKey(),
-                jwtProperties.getUserRefreshTtl(),
+                ttl,
                 userId);
     }
 
@@ -55,8 +62,8 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public void setAdminRefreshCookie(String refreshToken, HttpServletResponse response) {
-        JwtUtil.setAdminRefreshCookie(refreshToken,response);
+    public void setAdminRefreshCookie(String refreshToken, boolean remember, HttpServletResponse response) {
+        JwtUtil.setAdminRefreshCookie(refreshToken, cookieMaxAgeSeconds(remember), response);
     }
 
     @Override
@@ -65,12 +72,23 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public void setUserRefreshCookie(String refreshToken, HttpServletResponse response) {
-        JwtUtil.setUserRefreshCookie(refreshToken,response);
+    public void setUserRefreshCookie(String refreshToken, boolean remember, HttpServletResponse response) {
+        JwtUtil.setUserRefreshCookie(refreshToken, cookieMaxAgeSeconds(remember), response);
     }
 
     @Override
     public void clearUserRefreshCookie(HttpServletResponse response) {
         JwtUtil.clearUserRefreshCookie(response);
+    }
+
+    /**
+     * 勾选"记住我"返回 Cookie 的 Max-Age（秒），与刷新令牌有效期保持一致；
+     * 未勾选返回 0，此时不写 Max-Age，浏览器按会话Cookie处理
+     *
+     * @param remember 是否勾选记住我
+     * @return Cookie 有效期（秒）
+     */
+    private long cookieMaxAgeSeconds(boolean remember) {
+        return remember ? jwtProperties.getUserRefreshTtl() / 1000 : 0L;
     }
 }

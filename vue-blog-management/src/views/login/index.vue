@@ -9,11 +9,14 @@ import { loginApi } from '@/api/admin.js'
 const router = useRouter()
 const userStore = useUserStore()
 
-// 登录表单
+// 登录表单：回填上次勾选"记住我"时保存的账号，密码不回填
+const REMEMBERED_ACCOUNT_KEY = 'adminRememberedAccount'
+const rememberedAccount = localStorage.getItem(REMEMBERED_ACCOUNT_KEY) || ''
+
 const loginForm = reactive({
-  loginName: '',
+  loginName: rememberedAccount,
   password: '',
-  remember: false
+  remember: !!rememberedAccount
 })
 
 // 加载状态
@@ -28,6 +31,12 @@ const login = async () => {
   try {
     const result = await loginApi(loginForm)
     if (result.code == 200) {
+      // 勾选"记住我"则记住账号，未勾选则清掉之前记住的账号
+      if (loginForm.remember) {
+        localStorage.setItem(REMEMBERED_ACCOUNT_KEY, loginForm.loginName)
+      } else {
+        localStorage.removeItem(REMEMBERED_ACCOUNT_KEY)
+      }
       ElMessage.success('登录成功')
       userStore.loginSuccess(result.data)
       router.push('/index')

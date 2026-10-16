@@ -23,8 +23,8 @@ public class UserLoginDTO implements Serializable {
     //密码
     private String password;
 
-    //记住密码
-    private String remember;
+    //记住我
+    private Boolean remember;
 
     //邮箱验证码
     private String emailCode;

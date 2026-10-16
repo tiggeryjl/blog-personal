@@ -129,9 +129,10 @@ public class UserController {
 
         SysUser user = userService.login(userLoginDTO);
         //TODO 生成token并返回
+        boolean remember = Boolean.TRUE.equals(userLoginDTO.getRemember());
         String token = jwtService.createToken(user.getId(),user.getUsername());
-        String refreshToken  = jwtService.createRefreshToken(user.getId());
-        jwtService.setUserRefreshCookie(refreshToken,resp);
+        String refreshToken  = jwtService.createRefreshToken(user.getId(), remember);
+        jwtService.setUserRefreshCookie(refreshToken, remember, resp);
 
         UserSimpleVO simpleVO = new UserSimpleVO();
         BeanUtils.copyProperties(user, simpleVO);

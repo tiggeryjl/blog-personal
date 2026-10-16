@@ -87,9 +87,10 @@ public class SysAdminController {
         SysUser user = adminService.login(userLoginDTO);
 
         //TODO 生成token并返回
+        boolean remember = Boolean.TRUE.equals(userLoginDTO.getRemember());
         String token = jwtService.createToken(user.getId(),user.getUsername());
-        String refreshToken  = jwtService.createRefreshToken(user.getId());
-        jwtService.setAdminRefreshCookie(refreshToken,resp);
+        String refreshToken  = jwtService.createRefreshToken(user.getId(), remember);
+        jwtService.setAdminRefreshCookie(refreshToken, remember, resp);
 
         UserSimpleVO userSimpleVO = new UserSimpleVO();
         BeanUtils.copyProperties(user, userSimpleVO);

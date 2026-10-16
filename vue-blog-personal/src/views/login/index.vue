@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/userloginstatus'
 import { ElMessage } from 'element-plus';
 import { loginApi, registerApi } from '@/api/auth'
+import { saveRememberedAccount } from '@/utils/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -25,6 +26,8 @@ const handleLogin = async (payload) => {
     })
 
     if (result.code == 200) {
+      // 勾选"记住我"则记住账号，未勾选则清掉之前记住的账号
+      saveRememberedAccount(payload.remember ? payload.account : '')
       ElMessage.success("登录成功!");
       userStore.loginSuccess(result.data)
       // 从受保护页面跳过来的，登录后回到原页面，否则回首页
