@@ -27,6 +27,9 @@ export const changeRoleApi = (data) => request.put('/admin/admin/updateRole', da
 //修改密码
 export const editPwdApi = (user) => request.put('/admin/admin/editPassword', user);
 
+// 重置用户密码（后端生成随机密码并返回，仅返回这一次）
+export const resetUserPwdApi = (id) => request.put(`/admin/admin/${id}/resetPassword`);
+
 //删除
 export const deleteUserApi = (ids) => request.delete(`/admin/admin?ids=${ids}`);
 

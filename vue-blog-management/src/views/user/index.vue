@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, reactive, onMounted, nextTick } from 'vue';
+import { ref, computed, watch, reactive, onMounted, nextTick } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import MyPagination from '@/components/MyPagination.vue';
 import { Plus, Search, Refresh, Edit, Delete, Lock, Unlock, UserFilled } from '@element-plus/icons-vue';
@@ -12,6 +12,7 @@ import {
   updateUserApi,
   getRoleAllApi,
   changeRoleApi,
+  resetUserPwdApi,
 } from '@/api/admin.js';
 import { usePermissionStore } from '@/stores/permission';
 import { useUserStore } from '@/stores/userloginstatus';
@@ -113,6 +114,18 @@ const getRoleType = (row) => {
 const isSuperUser = (row) => {
   if (!row || !row.roleList || row.roleList.length === 0) return false;
   return row.roleList.some((role) => role.roleKey === ROLE_KEY_SUPER);
+};
+
+// 当前登录人是不是超管
+const isCurrentSuperAdmin = computed(() => (permissionStore.roles || []).includes(ROLE_KEY_SUPER));
+
+// 不能操作自己，不能操作超级管理员，普通管理员不能操作其他管理员
+const canToggleStatus = (row) => {
+  if (row.id === loginUserId.value) return false;
+  if (isSuperUser(row)) return false;
+  const targetIsAdmin = !!row.roleList && row.roleList.length > 0;
+  if (targetIsAdmin && !isCurrentSuperAdmin.value) return false;
+  return true;
 };
 
 // 状态切换
@@ -334,6 +347,50 @@ const deleteUser = async (id) => {
   });
 };
 
+// 重置用户密码：后端生成随机密码，前端只展示这一次
+const resetPwdVisible = ref(false);
+const resetPwdValue = ref('');
+
+const resetUserPassword = async (row) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要重置「${row.nickname || row.username}」的密码吗？重置后原密码立即失效。`,
+      '重置密码',
+      { confirmButtonText: '确认重置', cancelButtonText: '取消', type: 'warning' }
+    );
+  } catch {
+    return; // 点了取消
+  }
+
+  const result = await resetUserPwdApi(row.id);
+  if (result.code == 200) {
+    resetPwdValue.value = result.data;
+    resetPwdVisible.value = true;
+  } else {
+    ElMessage.error(result.msg);
+  }
+};
+
+// 复制文本到剪贴板
+const copyResetText = async (text, successTip) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    ElMessage.success(successTip);
+  } catch {
+    ElMessage.error('复制失败，请手动选中复制');
+  }
+};
+
+// 只复制密码
+const copyResetPwd = () => copyResetText(resetPwdValue.value, '已复制密码');
+
+// 复制一整句
+const copyResetPwdMessage = () =>
+  copyResetText(
+    `你的博客账号密码已重置为 ${resetPwdValue.value}，登录后请尽快修改成自己的密码。`,
+    '已复制，直接发给用户即可'
+  );
+
 // 批量删除选中的行
 const selectedUsers = ref([]);
 // 表格选中事件
@@ -535,7 +592,7 @@ onMounted(() => {
               <el-switch
                 v-if="permissionStore.hasPerm('sys:user:edit')"
                 v-model="row.status"
-                :disabled="row.id === loginUserId || isSuperUser(row)"
+                :disabled="!canToggleStatus(row)"
                 inline-prompt
                 active-text="启用"
                 inactive-text="禁用"
@@ -562,7 +619,7 @@ onMounted(() => {
         <el-table-column label="创建时间" prop="createTime" width="150" align="center" />
         <el-table-column label="修改时间" prop="updateTime" width="150" align="center" />
 
-        <el-table-column label="操作" width="260" align="center">
+        <el-table-column label="操作" width="330" align="center">
           <template #default="{ row }">
             <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; align-items: center">
               <template v-if="isSuperUser(row)">
@@ -579,6 +636,9 @@ onMounted(() => {
                   >编辑</el-button
                 >
                 <template v-if="row.id !== loginUserId">
+                  <el-button link v-perm="'sys:user:reset'" type="danger" icon="Key" @click="resetUserPassword(row)"
+                    >重置密码</el-button
+                  >
                   <el-button link v-perm="'sys:user:role'" type="warning" icon="Edit" @click="openRoleDialog(row)"
                     >角色</el-button
                   >
@@ -708,10 +768,59 @@ onMounted(() => {
         </div>
       </template>
     </el-dialog>
+
+    <!-- 重置密码结果 -->
+    <el-dialog v-model="resetPwdVisible" title="密码已重置" width="460px" align-center>
+      <p class="reset-pwd-tip">请把下面的新密码转告用户，关闭后将无法再次查看：</p>
+      <div class="reset-pwd-value">
+        <span class="reset-pwd-text">{{ resetPwdValue }}</span>
+      </div>
+      <div class="reset-pwd-actions">
+        <el-button type="primary" icon="CopyDocument" @click="copyResetPwd">复制密码</el-button>
+        <el-button icon="ChatLineSquare" @click="copyResetPwdMessage">复制整句转告</el-button>
+      </div>
+      <template #footer>
+        <el-button @click="resetPwdVisible = false">我已记下</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <style scoped>
+/* 重置密码弹窗 */
+.reset-pwd-tip {
+  margin: 0 0 12px;
+  color: #606266;
+  font-size: 14px;
+}
+
+.reset-pwd-value {
+  padding: 14px 16px;
+  border: 1px dashed #dcdfe6;
+  border-radius: 6px;
+  background: #f8f9fa;
+  text-align: center;
+}
+
+.reset-pwd-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.reset-pwd-actions .el-button {
+  flex: 1;
+  margin-left: 0;
+}
+
+.reset-pwd-text {
+  font-family: Consolas, Monaco, monospace;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: #303133;
+}
+
 /* 头像容器 - 关键 */
 .avatar-wrapper {
   position: relative;

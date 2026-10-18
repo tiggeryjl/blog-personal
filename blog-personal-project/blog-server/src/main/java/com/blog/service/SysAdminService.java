@@ -96,6 +96,14 @@ public interface SysAdminService {
     void updateRole(UserRoleAssignDTO userRoleAssignDTO);
 
     /**
+     * 重置用户密码为随机密码
+     *
+     * @param userId 用户ID
+     * @return 重置后的新密码，仅返回这一次给管理员转告用户
+     */
+    String resetPassword(Long userId);
+
+    /**
      * 新增用户
      * @param userDTO
      */

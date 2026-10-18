@@ -17,6 +17,7 @@ import com.blog.result.PageResult;
 import com.blog.service.SysAdminService;
 import com.blog.utils.IpUtil;
 import com.blog.utils.MenuTreeUtil;
+import com.blog.utils.PasswordGenerateUtil;
 import com.blog.utils.PasswordSaltUtil;
 import com.blog.utils.UserUtil;
 import com.github.pagehelper.PageHelper;
@@ -236,6 +237,39 @@ public class SysAdminServiceImpl implements SysAdminService {
     }
 
     /**
+     * 重置用户密码为随机密码
+     * 管理员不需要知道用户的旧密码，重置完把新密码转告用户即可
+     */
+    @Override
+    public String resetPassword(Long userId) {
+        if (userId == null) {
+            throw new UserNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+        }
+        // 自己的密码走「修改密码」，那里要验证旧密码，不允许从这个接口绕过
+        if (userId.equals(BaseContext.getCurrentId())) {
+            throw new OperationNotAllowedException("请使用「修改密码」修改自己的密码");
+        }
+        // 超管账号保护：避免普通管理员拿到 sys:user:edit 后直接接管超级管理员
+        if (userRoleMapper.hasRole(userId, SystemConstant.SUPER_ADMIN_ROLE)) {
+            throw new OperationNotAllowedException("超级管理员的密码不可重置");
+        }
+
+        SysUser user = userMapper.getByUserId(userId);
+        if (user == null || DelStatusConstant.DISABLE.equals(user.getDeleteFlag())) {
+            throw new UserNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+        }
+
+        String newPassword = PasswordGenerateUtil.generate();
+        String newSalt = PasswordSaltUtil.generateSalt();
+        user.setSalt(newSalt);
+        user.setPassword(PasswordSaltUtil.encryptPwd(newPassword, newSalt));
+        user.setUpdateTime(LocalDateTime.now());
+        userMapper.update(user);
+
+        return newPassword;
+    }
+
+    /**
      * 修改用户信息
      *
      * @param userDTO
@@ -259,6 +293,33 @@ public class SysAdminServiceImpl implements SysAdminService {
      */
     @Override
     public void updateStatus(Long id, Integer status) {
+        if (id == null || (!StatusConstant.ENABLE.equals(status) && !StatusConstant.DISABLE.equals(status))) {
+            throw new OperationNotAllowedException("用户状态不合法");
+        }
+        Long currentId = BaseContext.getCurrentId();
+        if (id.equals(currentId)) {
+            throw new OperationNotAllowedException("不能启用/禁用自己");
+        }
+
+        SysUser target = userMapper.getByUserId(id);
+        if (target == null || DelStatusConstant.DISABLE.equals(target.getDeleteFlag())) {
+            throw new UserNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+        }
+
+        // 有角色即代表是后台管理员账号；普通博客用户没有角色
+        List<SysRoleSimpleVO> targetRoles = userRoleMapper.selectRoleByUserId(id);
+        if (targetRoles != null && !targetRoles.isEmpty()) {
+            boolean targetIsSuper = targetRoles.stream()
+                    .anyMatch(role -> SystemConstant.SUPER_ADMIN_ROLE.equals(role.getRoleKey()));
+            if (targetIsSuper) {
+                throw new OperationNotAllowedException("超级管理员的账号不可启用/禁用");
+            }
+            // 普通管理员之间不能相互启用禁用，只有超管能管理普通管理员
+            if (!userRoleMapper.hasRole(currentId, SystemConstant.SUPER_ADMIN_ROLE)) {
+                throw new OperationNotAllowedException("普通管理员不能启用/禁用其他管理员的账号");
+            }
+        }
+
         SysUser user = SysUser.builder().id(id)
                 .status(status)
                 .updateTime(LocalDateTime.now()).build();

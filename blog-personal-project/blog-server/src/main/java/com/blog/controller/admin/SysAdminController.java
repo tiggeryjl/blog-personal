@@ -153,6 +153,19 @@ public class SysAdminController {
     }
 
     /**
+     * 重置用户密码（生成随机密码返回给管理员转告用户）
+     *
+     * @param id 用户ID
+     * @return 重置后的新密码
+     */
+    @PreAuthorize("hasPermission(null,'sys:user:reset')")
+    @PutMapping("/{id}/resetPassword")
+    public Result<String> resetPassword(@PathVariable Long id) {
+        log.info("重置用户密码:{}", id);
+        return Result.success(adminService.resetPassword(id));
+    }
+
+    /**
      * 修改用户信息
      * @param userDTO
      * @return
