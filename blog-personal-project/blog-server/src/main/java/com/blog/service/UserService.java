@@ -2,6 +2,8 @@ package com.blog.service;
 
 import com.blog.pojo.dto.EmailRegisterDTO;
 import com.blog.pojo.dto.PasswordEditDTO;
+import com.blog.pojo.dto.ResetPasswordDTO;
+import com.blog.pojo.dto.ResetPasswordVerifyDTO;
 import com.blog.pojo.dto.UserDTO;
 import com.blog.pojo.dto.UserLoginDTO;
 import com.blog.pojo.dto.UserRegisterDTO;
@@ -45,6 +47,28 @@ public interface UserService {
      * @param passwordEditDTO
      */
     void updatePwd(PasswordEditDTO passwordEditDTO);
+
+    /**
+     * 忘记密码：发送邮箱验证码
+     *
+     * @param email 注册邮箱
+     */
+    void sendResetPwdCode(String email);
+
+    /**
+     * 忘记密码：校验邮箱验证码，通过后返回一次性凭证
+     *
+     * @param resetPasswordVerifyDTO 邮箱与验证码
+     * @return 重置密码用的一次性凭证
+     */
+    String verifyResetPwdCode(ResetPasswordVerifyDTO resetPasswordVerifyDTO);
+
+    /**
+     * 忘记密码：凭一次性凭证重置密码
+     *
+     * @param resetPasswordDTO 凭证与新密码
+     */
+    void resetPwdByTicket(ResetPasswordDTO resetPasswordDTO);
 
     /**
      * 根据id查询用户

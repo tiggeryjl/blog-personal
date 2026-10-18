@@ -21,6 +21,15 @@ export const updateApi = (user) => request.put('/user/user/update', user);
 //修改密码
 export const editPwdApi = (user) => request.put('/user/user/editPassword', user);
 
+// 忘记密码：发送邮箱验证码
+export const sendResetPwdCodeApi = (data) => request.post('/user/user/resetPwd/code', data);
+
+// 忘记密码：校验邮箱验证码，通过后返回一次性凭证
+export const verifyResetPwdCodeApi = (data) => request.post('/user/user/resetPwd/verify', data);
+
+// 忘记密码：凭一次性凭证重置密码
+export const resetPwdByTicketApi = (data) => request.post('/user/user/resetPwd', data);
+
 // 刷新token
 export const getRefreshTokenApi = (config) => request.post(`/user/user/refreshToken`, null, config);
 

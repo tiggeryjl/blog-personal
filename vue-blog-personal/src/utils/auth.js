@@ -4,9 +4,8 @@ import { ElMessage } from 'element-plus';
 export const isLoggedIn = () => !!localStorage.getItem('user_token');
 
 /**
- * 需要登录才能进行的操作统一入口（评论、回复、点赞等）
+ * 需要登录才能进行的操作统一入口
  * 未登录时弹提示
- *
  * @param {string} tip 未登录时的提示文案
  * @returns {boolean} true 表示已登录，可以继续执行操作
  */
@@ -16,13 +15,10 @@ export const requireLogin = (tip = '请先登录后再进行该操作') => {
   return false;
 };
 
-// ===== 记住我：只保存账号，不保存密码 =====
 const REMEMBERED_ACCOUNT_KEY = 'rememberedAccount';
 
 /**
  * 读取上次勾选"记住我"时保存的账号
- *
- * @returns {string} 账号，没有则返回空串
  */
 export const getRememberedAccount = () => localStorage.getItem(REMEMBERED_ACCOUNT_KEY) || '';
 

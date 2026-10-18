@@ -66,6 +66,7 @@ const router = createRouter({
       ],
     },
     { path: '/login', name: 'login', component: () => import('@/views/login/index.vue') },
+    { path: '/forgotpwd', name: 'forgotpwd', component: () => import('@/views/login/forget-password/index.vue') },
     // 邮件订阅退订页：从邮件里的退订链接直接进入，不需要登录
     {
       path: '/rss/unsubscribe',

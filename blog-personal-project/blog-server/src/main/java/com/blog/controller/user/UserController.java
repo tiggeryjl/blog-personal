@@ -3,6 +3,9 @@ package com.blog.controller.user;
 import com.blog.context.BaseContext;
 import com.blog.pojo.dto.EmailRegisterDTO;
 import com.blog.pojo.dto.PasswordEditDTO;
+import com.blog.pojo.dto.ResetPasswordCodeDTO;
+import com.blog.pojo.dto.ResetPasswordDTO;
+import com.blog.pojo.dto.ResetPasswordVerifyDTO;
 import com.blog.pojo.dto.UserDTO;
 import com.blog.pojo.dto.UserLoginDTO;
 import com.blog.pojo.dto.UserRegisterDTO;
@@ -152,6 +155,44 @@ public class UserController {
         log.info("修改密码信息:{}", passwordEditDTO);
         passwordEditDTO.setUserId(BaseContext.getCurrentId());
         userService.updatePwd(passwordEditDTO);
+        return Result.success();
+    }
+
+    /**
+     * 忘记密码：发送邮箱验证码
+     *
+     * @param resetPasswordCodeDTO 注册邮箱
+     * @return 统一结果
+     */
+    @PostMapping("/resetPwd/code")
+    public Result sendResetPwdCode(@Valid @RequestBody ResetPasswordCodeDTO resetPasswordCodeDTO) {
+        log.info("发送重置密码验证码:{}", resetPasswordCodeDTO.getEmail());
+        userService.sendResetPwdCode(resetPasswordCodeDTO.getEmail());
+        return Result.success();
+    }
+
+    /**
+     * 忘记密码：校验邮箱验证码，通过后返回一次性凭证
+     *
+     * @param resetPasswordVerifyDTO 邮箱与验证码
+     * @return 重置密码用的一次性凭证
+     */
+    @PostMapping("/resetPwd/verify")
+    public Result<String> verifyResetPwdCode(@Valid @RequestBody ResetPasswordVerifyDTO resetPasswordVerifyDTO) {
+        log.info("校验重置密码验证码:{}", resetPasswordVerifyDTO.getEmail());
+        return Result.success(userService.verifyResetPwdCode(resetPasswordVerifyDTO));
+    }
+
+    /**
+     * 忘记密码：凭一次性凭证重置密码
+     *
+     * @param resetPasswordDTO 凭证与新密码
+     * @return 统一结果
+     */
+    @PostMapping("/resetPwd")
+    public Result resetPwdByTicket(@Valid @RequestBody ResetPasswordDTO resetPasswordDTO) {
+        log.info("重置密码");
+        userService.resetPwdByTicket(resetPasswordDTO);
         return Result.success();
     }
 

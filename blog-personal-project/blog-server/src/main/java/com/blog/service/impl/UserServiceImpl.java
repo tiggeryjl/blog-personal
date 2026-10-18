@@ -7,28 +7,44 @@ import com.blog.exception.RegisterFailedException;
 import com.blog.mapper.SysUserMapper;
 import com.blog.pojo.dto.EmailRegisterDTO;
 import com.blog.pojo.dto.PasswordEditDTO;
+import com.blog.pojo.dto.ResetPasswordDTO;
+import com.blog.pojo.dto.ResetPasswordVerifyDTO;
 import com.blog.pojo.dto.UserDTO;
 import com.blog.pojo.dto.UserLoginDTO;
 import com.blog.pojo.dto.UserRegisterDTO;
 import com.blog.pojo.entity.SysUser;
 import com.blog.pojo.vo.UserPersonalInfoVO;
 import com.blog.pojo.vo.UserSimpleVO;
+import com.blog.service.MailService;
+import com.blog.service.RedisService;
 import com.blog.service.UserService;
 import com.blog.utils.PasswordSaltUtil;
 import com.blog.utils.UserUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
+@Slf4j
 @Service
 public class UserServiceImpl implements UserService {
 
+    private static final SecureRandom RANDOM = new SecureRandom();
+
     @Autowired
     private SysUserMapper userMapper;
+
+    @Autowired
+    private RedisService redisService;
+
+    @Autowired
+    private MailService mailService;
 
     /**
      * 用户注册
@@ -264,6 +280,141 @@ public class UserServiceImpl implements UserService {
         user.setPassword(newEncryptPwd);
 
         userMapper.update(user);
+    }
+
+    /**
+     * 忘记密码：发送邮箱验证码
+     * 同一个邮箱 60 秒内只能发一次，验证码 5 分钟内有效
+     */
+    @Override
+    public void sendResetPwdCode(String email) {
+        String mail = normalizeEmail(email);
+        if (!StringUtils.hasText(mail)) {
+            throw new RegisterFailedException("邮箱不能为空");
+        }
+        if (userMapper.selectByEmail(mail) == null) {
+            throw new RegisterFailedException("该邮箱还没有注册");
+        }
+        // sendHtml 在未配置发件邮箱时会静默跳过，这里提前拦掉，避免用户一直等一封不会来的邮件
+        if (!mailService.isAvailable()) {
+            throw new RegisterFailedException("站点还没有配置发件邮箱，暂时无法发送验证码");
+        }
+
+        String limitKey = ResetPasswordConstant.LIMIT_KEY_PREFIX + mail;
+        if (Boolean.TRUE.equals(redisService.hasKey(limitKey))) {
+            throw new RegisterFailedException("验证码发送太频繁了，请稍后再试");
+        }
+
+        String code = String.format("%06d", RANDOM.nextInt(1000000));
+        String codeKey = ResetPasswordConstant.CODE_KEY_PREFIX + mail;
+        redisService.set(codeKey, code, ResetPasswordConstant.CODE_TTL_SECONDS);
+        redisService.set(limitKey, "1", ResetPasswordConstant.SEND_INTERVAL_SECONDS);
+
+        try {
+            mailService.sendHtml(mail, "【小叶同学的博客】重置密码验证码", buildResetCodeHtml(code));
+        } catch (Exception e) {
+            // 发信失败要把验证码和限流一起清掉
+            redisService.delete(codeKey);
+            redisService.delete(limitKey);
+            log.error("重置密码验证码发送失败，邮箱：{}", mail, e);
+            throw new RegisterFailedException("验证码发送失败，请稍后重试");
+        }
+    }
+
+    /**
+     * 忘记密码：校验邮箱验证码，通过后发放一次性凭证
+     */
+    @Override
+    public String verifyResetPwdCode(ResetPasswordVerifyDTO resetPasswordVerifyDTO) {
+        String mail = normalizeEmail(resetPasswordVerifyDTO.getEmail());
+        String emailCode = trimToEmpty(resetPasswordVerifyDTO.getEmailCode());
+
+        if (!StringUtils.hasText(mail)) {
+            throw new RegisterFailedException("邮箱不能为空");
+        }
+        if (userMapper.selectByEmail(mail) == null) {
+            throw new RegisterFailedException("该邮箱还没有注册");
+        }
+
+        String cachedCode = redisService.get(ResetPasswordConstant.CODE_KEY_PREFIX + mail, String.class);
+        if (!StringUtils.hasText(cachedCode)) {
+            throw new RegisterFailedException("验证码已过期，请重新获取");
+        }
+        if (!cachedCode.equals(emailCode)) {
+            throw new RegisterFailedException("验证码不正确");
+        }
+
+        String ticket = UUID.randomUUID().toString().replace("-", "");
+        redisService.set(ResetPasswordConstant.TICKET_KEY_PREFIX + ticket, mail,
+                ResetPasswordConstant.TICKET_TTL_SECONDS);
+        return ticket;
+    }
+
+    /**
+     * 忘记密码：凭一次性凭证重置密码
+     * 凭证与验证码都在改密成功后才作废，中途失败可以重试
+     */
+    @Override
+    public void resetPwdByTicket(ResetPasswordDTO resetPasswordDTO) {
+        String ticket = trimToEmpty(resetPasswordDTO.getTicket());
+        String newPassword = trimToEmpty(resetPasswordDTO.getNewPassword());
+        String confirmPwd = trimToEmpty(resetPasswordDTO.getConfirmPwd());
+
+        String ticketKey = ResetPasswordConstant.TICKET_KEY_PREFIX + ticket;
+        String mail = StringUtils.hasText(ticket) ? redisService.get(ticketKey, String.class) : null;
+        if (!StringUtils.hasText(mail)) {
+            throw new RegisterFailedException("验证已过期，请重新验证邮箱");
+        }
+
+        SysUser user = userMapper.selectByEmail(mail);
+        if (user == null) {
+            throw new RegisterFailedException("该邮箱还没有注册");
+        }
+        if (newPassword.length() < 6 || newPassword.length() > 20) {
+            throw new RegisterFailedException(MessageConstant.PASSWORD_LEN_SHORT);
+        }
+        if (!newPassword.equals(confirmPwd)) {
+            throw new RegisterFailedException(MessageConstant.PASSWORD_TWO_NOT_EQUAL);
+        }
+
+        String encryptedNewPwd = PasswordSaltUtil.encryptPwd(newPassword, user.getSalt());
+        if (encryptedNewPwd.equals(user.getPassword())) {
+            throw new RegisterFailedException(MessageConstant.PASSWORD_REPEAT);
+        }
+
+        String newSalt = PasswordSaltUtil.generateSalt();
+        user.setSalt(newSalt);
+        user.setPassword(PasswordSaltUtil.encryptPwd(newPassword, newSalt));
+        user.setUpdateTime(LocalDateTime.now());
+        userMapper.update(user);
+
+        // 改密成功，凭证和验证码一起作废
+        redisService.delete(ticketKey);
+        redisService.delete(ResetPasswordConstant.CODE_KEY_PREFIX + mail);
+    }
+
+    /**
+     * 邮箱统一去空格转小写
+     */
+    private String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase();
+    }
+
+    private String trimToEmpty(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    /**
+     * 重置密码验证码的邮件正文
+     */
+    private String buildResetCodeHtml(String code) {
+        return "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#333;line-height:1.9\">"
+                + "<p>您好，</p>"
+                + "<p>您正在重置「小叶同学的博客」的登录密码，本次验证码为：</p>"
+                + "<p style=\"font-size:26px;font-weight:bold;letter-spacing:6px;color:#4f46e5\">" + code + "</p>"
+                + "<p>验证码 " + (ResetPasswordConstant.CODE_TTL_SECONDS / 60) + " 分钟内有效，请勿转发给他人。</p>"
+                + "<p>如果这不是您本人的操作，忽略这封邮件即可，您的密码不会被修改。</p>"
+                + "</div>";
     }
 
     /**
