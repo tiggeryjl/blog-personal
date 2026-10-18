@@ -88,8 +88,8 @@ const handleRegister = async (payload) => {
   /* 水平居中 */
   align-items: center;
   /* 垂直居中 */
-  background: var(--bg-color);
-  /* 柔和背景 */
+  /* 登录/注册页固定浅色背景，不跟随站点主题 */
+  background: #fff;
   margin: 0;
   /* padding: 100px 100px; */
   box-sizing: border-box;
