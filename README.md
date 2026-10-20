@@ -97,7 +97,7 @@ blog-personal/
 |-- blog-personal-project/             # Spring Boot 后端
 |   |-- blog-common/                   # 实体、DTO/VO、结果封装、工具类
 |   `-- blog-server/                   # Controller、Service、Mapper 与配置
-|       `-- src/main/resources/static/ # 数据库初始化脚本
+|       `-- src/main/resources/database/ # 数据库初始化脚本
 |-- LICENSE                            # 项目许可证
 `-- login-template-LICENSE             # 登录模板第三方许可证
 ```
@@ -126,18 +126,15 @@ cd blog-personal
 
 ### 2. 初始化数据库
 
-数据库脚本位于 [`blog-personal-project/blog-server/src/main/resources/static`](./blog-personal-project/blog-server/src/main/resources/static)。使用 MySQL 客户端或图形化工具按以下顺序执行：
+数据库脚本位于 [`blog-personal-project/blog-server/src/main/resources/database/blogyesir.sql`](./blog-personal-project/blog-server/src/main/resources/database/blogyesir.sql)。使用 MySQL 客户端或图形化工具执行一次即可：
 
 ```text
-blogSysUser.sql
-blogArticle.sql
-blogDaily.sql
-blogComment.sql
-blogLink.sql
-blogDevice.sql
+blogyesir.sql
 ```
 
-每个脚本都会创建并使用 `blog` 数据库。脚本包含 `DROP TABLE IF EXISTS` 和演示数据，请仅对空库或可丢弃的开发库执行，已有数据请先备份。`blogUser.sql` 是已淘汰的数据表脚本，不需要导入。
+脚本会创建并使用 `blog` 数据库，包含全部表结构、后台角色与菜单权限，以及一条默认管理员账号，**不含文章、评论、日常、友链等演示数据**。脚本会先 `DROP TABLE IF EXISTS` 同名表，请仅对空库或可丢弃的开发库执行，已有数据请先备份。
+
+默认管理员账号：`admin` / `123456`，首次登录后请立即修改密码。
 
 ### 3. 配置后端
 

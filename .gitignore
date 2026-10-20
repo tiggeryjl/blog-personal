@@ -20,13 +20,11 @@ coverage
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-.idea
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-
 
 ### STS ###
 .apt_generated
@@ -44,9 +42,6 @@ coverage
 *.ipr
 
 target/
-!.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
 
 ### Maven ###
 pom.xml.tag
@@ -57,7 +52,6 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
 
 ### Java ###
 *.class
@@ -66,9 +60,8 @@ buildNumber.properties
 *.ear
 *.logs
 hs_err_pid*
+**/resources/static/
 
-.DS_Store
 Thumbs.db
 
-.codexrules
-.codexignore
+.codex/
