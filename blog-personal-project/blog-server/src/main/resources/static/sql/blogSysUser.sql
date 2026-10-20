@@ -242,6 +242,7 @@ VALUES
 (28,26,'编辑用户', NULL, NULL, 'sys:user:edit', 2, NULL, 2, 1,0,NOW(), NOW()),
 (29,26,'删除用户', NULL, NULL, 'sys:user:delete', 2, NULL, 3, 1,0,NOW(), NOW()),
 (30,26,'分配角色', NULL, NULL, 'sys:user:role', 2, NULL, 4, 1,0,NOW(), NOW()),
+(83,26,'重置密码', NULL, NULL, 'sys:user:reset', 2, NULL, 5, 1,0,NOW(), NOW()),
 
 -- ===================== 5、友链管理【顶级目录 parent_id=0】 =====================
 (31,0, '友链管理', '/link', 'Layout', NULL, 0, 'Share', 5, 1,0,NOW(), NOW()),
@@ -257,9 +258,10 @@ VALUES
 (39,36,'用户信息统计', '/userReport', 'report/userReport/index', 'sys:report:user:list', 1, 'User', 3, 1,0,NOW(), NOW()),
 (40,36,'友链信息统计', '/linkReport', 'report/linkReport/index', 'sys:report:link:list', 1, 'Share', 4, 1,0,NOW(), NOW()),
 
--- ===================== 7、布局设置【顶级目录 parent_id=0】 =====================
-(41,0, '系统设置', '/meunlayout', 'Layout', NULL, 0, 'Menu', 7, 1,0,NOW(), NOW()),
-(42,41,'布局设计', '/meunlayout', 'meunlayout/index', 'sys:layout:list', 1, 'InfoFilled', 1, 1,0,NOW(), NOW()),
+-- ===================== 7、系统设置【顶级目录 parent_id=0】 =====================
+(41,0, '系统设置', '/sysSetting', 'Layout', 'sys:setting', 0, 'Menu', 7, 1,0,NOW(), NOW()),
+(42,41,'布局设计', '/sysSetting', 'sysSetting/menulayout/index', 'sys:layout:list', 1, 'InfoFilled', 2, 1,0,NOW(), NOW()),
+(84,41,'首页公告', '/noticeSetting', 'sysSetting/notice/index', 'sys:notice:edit', 1, 'Bell', 1, 1,0,NOW(), NOW()),
 
 -- ===================== 8、系统管理（角色管理，超级管理员专属） =====================
 (43,0, '系统管理', '/system', 'Layout', 'sys:manage', 0, 'Tools', 8, 1,0,NOW(), NOW()),
@@ -330,13 +332,17 @@ WHERE NOT EXISTS (
     WHERE srm.role_id = 1 AND srm.menu_id = sm.id
 );
 
--- 2、运营管理员(role_id=2)：只绑定内容管理、日常管理模块，排除【系统管理】（用户、角色管理）
+-- 2、运营管理员(role_id=2)：只绑定内容管理、日常管理模块
 INSERT INTO `sys_role_menu` (`role_id`, `menu_id`, `create_time`)
-SELECT 2, id, NOW() FROM sys_menu WHERE id <> 43 AND parent_id <> 43;
+SELECT 2, id, NOW() FROM sys_menu
+WHERE id <> 43 AND parent_id <> 43
+  AND perms NOT IN ('sys:user:reset', 'sys:notice:edit');
 
 -- 3、浏览员(role_id=3)：只绑定所有页面查询权限，不绑定任何按钮操作权限
 INSERT INTO `sys_role_menu` (`role_id`, `menu_id`, `create_time`)
-SELECT 3, id, NOW() FROM sys_menu WHERE menu_type IN (0,1);
+SELECT 3, id, NOW() FROM sys_menu
+WHERE menu_type IN (0,1)
+  AND perms NOT IN ('sys:user:reset', 'sys:notice:edit');
 
 /*!40000 ALTER TABLE `sys_menu` ENABLE KEYS */;
 /*!40000 ALTER TABLE `sys_role_menu` ENABLE KEYS */;

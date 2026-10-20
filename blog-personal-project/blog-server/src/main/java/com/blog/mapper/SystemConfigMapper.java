@@ -27,4 +27,18 @@ public interface SystemConfigMapper {
     int upsertValue(@Param("configKey") String configKey,
                     @Param("configValue") String configValue,
                     @Param("description") String description);
+
+    /**
+     * 写入带类型的配置值，配置键已存在时覆盖（用于 JSON 等结构化配置）
+     *
+     * @param configKey   配置键
+     * @param configValue 配置值
+     * @param configType  配置类型
+     * @param description 配置描述
+     * @return 影响行数
+     */
+    int upsertValueWithType(@Param("configKey") String configKey,
+                            @Param("configValue") String configValue,
+                            @Param("configType") String configType,
+                            @Param("description") String description);
 }

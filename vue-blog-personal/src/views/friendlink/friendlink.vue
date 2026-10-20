@@ -404,8 +404,19 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- 申请弹窗 -->
-    <el-dialog class="el-dialog" v-model="showApplyForm" title="申请友联" width="500px" @closed="handleDialogClosed">
-      <el-form ref="formRef" :model="applyForm" label-width="80px" :rules="rules">
+    <el-dialog
+      v-model="showApplyForm"
+      class="apply-dialog"
+      width="460px"
+      align-center
+      :close-on-click-modal="false"
+      @closed="handleDialogClosed"
+    >
+      <template #header>
+        <h3 class="apply-dialog-title">申请友联</h3>
+      </template>
+
+      <el-form ref="formRef" :model="applyForm" label-position="top" :rules="rules" class="apply-form">
         <el-form-item label="博客名称" prop="linkName">
           <el-input v-model="applyForm.linkName" placeholder="请输入博客名称" />
         </el-form-item>
@@ -422,9 +433,12 @@ onBeforeUnmount(() => {
           <el-input v-model="applyForm.email" placeholder="用于接收结果，提交后可凭邮箱查看申请进度" />
         </el-form-item>
       </el-form>
+
       <template #footer>
-        <el-button @click="showApplyForm = false">取消</el-button>
-        <el-button type="primary" @click="submitApply">提交申请</el-button>
+        <div class="apply-dialog-footer">
+          <button type="button" class="apply-cancel-btn" @click="showApplyForm = false">取消</button>
+          <button type="button" class="apply-submit-btn" @click="submitApply">提交申请</button>
+        </div>
       </template>
     </el-dialog>
   </div>
@@ -986,18 +1000,6 @@ onBeforeUnmount(() => {
     grid-template-columns: 1fr;
   }
 
-  :deep(.el-dialog) {
-    width: 90% !important;
-    margin: 0 auto !important;
-  }
-
-  :deep(.el-form-item) {
-    margin-bottom: 16px;
-  }
-
-  :deep(.el-form-item__label) {
-    font-size: 13px;
-  }
 }
 
 @media (max-width: 576px) {
@@ -1121,5 +1123,157 @@ onBeforeUnmount(() => {
   .desc {
     font-size: 0.78rem;
   }
+}
+</style>
+
+<!--
+  el-dialog 会渲染到组件作用域之外，scoped 的 :deep() 拿不到它的内部节点，
+  所以弹窗外观覆写放在这个非 scoped 块里，用 .apply-dialog 限定作用范围。
+-->
+<style>
+.el-dialog.apply-dialog {
+  max-width: calc(100vw - 40px);
+  padding: 20px 22px 18px;
+  border-radius: 12px;
+  background-color: var(--card-secound-bg);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+}
+
+.apply-dialog .el-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 16px;
+  padding: 0;
+}
+
+.apply-dialog .el-dialog__headerbtn {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: var(--text-secondary-color);
+  transition: all 0.2s ease;
+}
+
+.apply-dialog .el-dialog__headerbtn:hover {
+  background-color: var(--card-bg-hover);
+  color: var(--hover-color);
+}
+
+.apply-dialog .el-dialog__close {
+  color: inherit;
+  font-size: 14px;
+}
+
+.apply-dialog .el-dialog__body {
+  padding: 0;
+  color: var(--text-color);
+}
+
+.apply-dialog .el-dialog__footer {
+  padding: 0;
+  margin-top: 18px;
+}
+
+.apply-dialog-title {
+  margin: 0;
+  color: var(--text-color);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.apply-form .el-form-item {
+  margin-bottom: 16px;
+}
+
+.apply-form .el-form-item__label {
+  padding: 0 0 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary-color);
+}
+
+.apply-dialog .el-input__wrapper {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background-color: var(--card-secound-bg);
+  box-shadow: inset 0 0 0 1px var(--border-color);
+  transition: box-shadow 0.2s ease;
+}
+
+.apply-dialog .el-input__wrapper:hover {
+  box-shadow: inset 0 0 0 1px var(--text-secondary-color);
+}
+
+.apply-dialog .el-input__wrapper.is-focus {
+  box-shadow: inset 0 0 0 1px var(--primary-color);
+}
+
+.apply-dialog .el-input__inner {
+  color: var(--text-color);
+  font-size: 14px;
+}
+
+.apply-dialog .el-input__inner::placeholder,
+.apply-dialog .el-textarea__inner::placeholder {
+  color: var(--text-prompt-color);
+}
+
+.apply-dialog .el-textarea__inner {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background-color: var(--card-secound-bg);
+  color: var(--text-color);
+  font-size: 14px;
+  box-shadow: inset 0 0 0 1px var(--border-color);
+  resize: vertical;
+}
+
+.apply-dialog .el-textarea__inner:focus {
+  box-shadow: inset 0 0 0 1px var(--primary-color);
+}
+
+.apply-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.apply-cancel-btn {
+  padding: 7px 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: transparent;
+  color: var(--text-secondary-color);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.apply-cancel-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.apply-submit-btn {
+  padding: 7px 16px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #409eff, #003ae5);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.apply-submit-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.35);
 }
 </style>

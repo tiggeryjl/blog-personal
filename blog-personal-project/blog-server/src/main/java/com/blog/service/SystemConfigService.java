@@ -30,4 +30,23 @@ public interface SystemConfigService {
      * @param description 配置描述
      */
     void saveValue(String configKey, String configValue, String description);
+
+    /**
+     * 读取 JSON 配置值
+     *
+     * @param configKey 配置键
+     * @param clazz     目标类型
+     * @param <T>       目标类型
+     * @return 反序列化后的对象，配置缺失或解析失败时返回 null
+     */
+    <T> T getJsonValue(String configKey, Class<T> clazz);
+
+    /**
+     * 写入 JSON 配置值
+     *
+     * @param configKey   配置键
+     * @param value       配置对象
+     * @param description 配置描述
+     */
+    void saveJsonValue(String configKey, Object value, String description);
 }

@@ -91,6 +91,7 @@ public class SecurityConfig {
                         // 游客可读接口：首页、文章、分类、标签、评论列表，未登录也能浏览
                         .requestMatchers(HttpMethod.GET,
                                 "/user/home/popular",
+                                "/user/home/notice",
                                 "/user/article/getArticleList",
                                 "/user/article/getCalendarCount",
                                 "/user/article/getArticleDetail/**",

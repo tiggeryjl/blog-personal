@@ -3,6 +3,7 @@ package com.blog.service;
 import com.blog.pojo.vo.ArticleFrontVO;
 import com.blog.pojo.vo.HomeStatisticsVO;
 import com.blog.pojo.vo.HomeTrendVO;
+import com.blog.pojo.vo.HomeNoticeVO;
 import com.blog.pojo.vo.SiteStatisticsVO;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -19,6 +20,27 @@ public interface HomeService {
      * @return 最多20条热门文章
      */
     List<ArticleFrontVO> getPopularArticles();
+
+    /**
+     * 获取首页公告，未启用或没有内容时返回 null
+     *
+     * @return 首页公告
+     */
+    HomeNoticeVO getHomeNotice();
+
+    /**
+     * 获取首页公告配置
+     *
+     * @return 公告配置，从未配置过时返回空配置
+     */
+    HomeNoticeVO getHomeNoticeConfig();
+
+    /**
+     * 保存首页公告
+     *
+     * @param notice 公告内容
+     */
+    void saveHomeNotice(HomeNoticeVO notice);
 
     /**
      * 获取首页网站统计数据

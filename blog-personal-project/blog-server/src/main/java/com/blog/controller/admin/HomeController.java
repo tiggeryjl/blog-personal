@@ -2,6 +2,7 @@ package com.blog.controller.admin;
 
 import com.blog.pojo.vo.HomeStatisticsVO;
 import com.blog.pojo.vo.HomeTrendVO;
+import com.blog.pojo.vo.HomeNoticeVO;
 import com.blog.result.Result;
 import com.blog.service.HomeService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -9,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,6 +41,32 @@ public class HomeController {
         log.info("获取首页网站统计数据");
         HomeStatisticsVO statistics = homeService.getStatistics();
         return Result.success(statistics);
+    }
+
+    /**
+     * 获取首页公告配置
+     *
+     * @return 公告配置
+     */
+    @PreAuthorize("hasPermission(null,'sys:notice:edit')")
+    @GetMapping("/notice")
+    public Result<HomeNoticeVO> getHomeNotice() {
+        log.info("获取首页公告配置");
+        return Result.success(homeService.getHomeNoticeConfig());
+    }
+
+    /**
+     * 保存首页公告
+     *
+     * @param notice 公告内容
+     * @return 统一结果
+     */
+    @PreAuthorize("hasPermission(null,'sys:notice:edit')")
+    @PutMapping("/notice")
+    public Result saveHomeNotice(@RequestBody HomeNoticeVO notice) {
+        log.info("保存首页公告:{}", notice);
+        homeService.saveHomeNotice(notice);
+        return Result.success();
     }
 
     /**

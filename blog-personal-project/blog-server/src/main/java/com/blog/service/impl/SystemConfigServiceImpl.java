@@ -1,5 +1,7 @@
 package com.blog.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.blog.mapper.SystemConfigMapper;
 import com.blog.service.SystemConfigService;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +25,9 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Autowired
     private SystemConfigMapper systemConfigMapper;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public String getValue(String configKey) {
@@ -53,5 +58,33 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             return;
         }
         systemConfigMapper.upsertValue(configKey, configValue, description);
+    }
+
+    @Override
+    public <T> T getJsonValue(String configKey, Class<T> clazz) {
+        String value = getValue(configKey);
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(value, clazz);
+        } catch (JsonProcessingException e) {
+            log.error("系统配置JSON解析失败，配置键：{}", configKey, e);
+            return null;
+        }
+    }
+
+    @Override
+    public void saveJsonValue(String configKey, Object value, String description) {
+        if (!StringUtils.hasText(configKey) || value == null) {
+            return;
+        }
+        try {
+            String json = objectMapper.writeValueAsString(value);
+            systemConfigMapper.upsertValueWithType(configKey, json, "json", description);
+        } catch (JsonProcessingException e) {
+            log.error("系统配置JSON序列化失败，配置键：{}", configKey, e);
+            throw new RuntimeException("系统配置保存失败", e);
+        }
     }
 }

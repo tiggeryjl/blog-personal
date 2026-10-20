@@ -2,20 +2,33 @@
 import { onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { DArrowRight, ChatLineSquare, Document, View, Reading } from '@element-plus/icons-vue';
-import { getPopularArticleListApi } from '@/api/home.js';
+import { getPopularArticleListApi, getHomeNoticeApi } from '@/api/home.js';
 
 const router = useRouter();
 
-// 公告内容
-const notice = ref(`【公告】
-欢迎来到我的个人博客！
-这里会记录技术文章、日常感悟、学习笔记~
+// 首页公告弹窗
+const noticeVisible = ref(false);
+const noticeData = ref({ title: '', content: '', updatedAt: '' });
+// 关闭过的公告记录，避免同一则公告每次进首页都弹
+const NOTICE_DISMISSED_KEY = 'homeNoticeDismissedAt';
 
-后续更新计划：
-▫️ 完善登录注册功能
-▫️ 新增日常发布按钮
-▫️ 优化页面样式
-▫️ 增加设置页面`);
+const loadHomeNotice = async () => {
+  try {
+    const result = await getHomeNoticeApi();
+    if (result.code !== 200 || !result.data || !result.data.content) return;
+    const notice = result.data;
+    if (localStorage.getItem(NOTICE_DISMISSED_KEY) === String(notice.updatedAt || '')) return;
+    noticeData.value = notice;
+    noticeVisible.value = true;
+  } catch (err) {
+    // 公告加载失败不影响首页其他内容
+  }
+};
+
+// 关闭后记住这一则公告，管理员再次编辑（更新时间变化）后会重新弹出
+const rememberNoticeDismissed = () => {
+  localStorage.setItem(NOTICE_DISMISSED_KEY, String(noticeData.value.updatedAt || ''));
+};
 
 const articleList = ref([]);
 const articleLoading = ref(true);
@@ -63,6 +76,7 @@ const goDetail = (id) => {
 onMounted(() => {
   window.addEventListener('layoutChange', updateLayout);
   getPopularArticleList();
+  loadHomeNotice();
 });
 
 onUnmounted(() => {
@@ -72,12 +86,6 @@ onUnmounted(() => {
 
 <template>
   <div class="common-index">
-    <!-- 公告卡片 -->
-    <div class="notice-card" v-if="false">
-      <h3 class="notice-title">📢 网站公告</h3>
-      <div class="notice-content">{{ notice }}</div>
-    </div>
-
     <div class="quick-link-box">
       <div
         class="quick-btn"
@@ -176,6 +184,28 @@ onUnmounted(() => {
         {{ hotTip.text }}
       </div>
     </div>
+
+    <!-- 站点公告弹窗 -->
+    <el-dialog
+      v-model="noticeVisible"
+      class="notice-dialog"
+      width="480px"
+      align-center
+      :close-on-click-modal="false"
+      @close="rememberNoticeDismissed"
+    >
+      <template #header>
+        <h3 class="notice-dialog-title">{{ noticeData.title || '网站公告' }}</h3>
+      </template>
+
+      <div class="notice-dialog-content">{{ noticeData.content }}</div>
+
+      <template #footer>
+        <div class="notice-dialog-footer">
+          <button type="button" class="notice-confirm-btn" @click="noticeVisible = false">我知道了</button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -198,26 +228,44 @@ onUnmounted(() => {
   gap: 20px;
 }
 
-/* 公告卡片 */
-.notice-card {
-  width: 100%;
-  padding: 20px;
-  background-color: var(--card-bg);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.notice-title {
-  margin: 0 0 12px 0;
-  font-size: 28px;
+.notice-dialog-title {
+  margin: 0;
   color: var(--text-color);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
-.notice-content {
-  color: var(--text-main-color);
+.notice-dialog-content {
+  max-height: 50vh;
+  overflow-y: auto;
   font-size: 14px;
-  line-height: 1.7;
+  line-height: 1.9;
+  color: var(--text-main-color);
   white-space: pre-wrap;
+  word-break: break-word;
+  padding-right: 4px;
+}
+
+.notice-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.notice-confirm-btn {
+  padding: 7px 20px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #409eff, #003ae5);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.notice-confirm-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.35);
 }
 
 .quick-link-box {
@@ -704,5 +752,60 @@ onUnmounted(() => {
     font-size: 16px;
     gap: 4px;
   }
+}
+</style>
+
+<!--
+  el-dialog 会渲染到组件作用域之外，scoped 的 :deep() 拿不到它的内部节点，
+  所以弹窗外观覆写放在这个非 scoped 块里，用 .notice-dialog 限定作用范围。
+-->
+<style>
+.el-dialog.notice-dialog {
+  max-width: calc(100vw - 40px);
+  padding: 20px 22px 18px;
+  border-radius: 12px;
+  background-color: var(--card-secound-bg);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+}
+
+.notice-dialog .el-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 16px;
+  padding: 0;
+}
+
+.notice-dialog .el-dialog__headerbtn {
+  position: static;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: var(--text-secondary-color);
+  transition: all 0.2s ease;
+}
+
+.notice-dialog .el-dialog__headerbtn:hover {
+  background-color: var(--card-bg-hover);
+  color: var(--hover-color);
+}
+
+.notice-dialog .el-dialog__close {
+  color: inherit;
+  font-size: 14px;
+}
+
+.notice-dialog .el-dialog__body {
+  padding: 0;
+  color: var(--text-color);
+}
+
+.notice-dialog .el-dialog__footer {
+  padding: 0;
+  margin-top: 18px;
 }
 </style>

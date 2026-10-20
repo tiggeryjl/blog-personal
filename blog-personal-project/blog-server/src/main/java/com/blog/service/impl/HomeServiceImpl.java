@@ -9,6 +9,7 @@ import com.blog.pojo.vo.ArticleFrontVO;
 import com.blog.pojo.vo.HomeStatisticsVO;
 import com.blog.pojo.vo.HomeTrendItemVO;
 import com.blog.pojo.vo.HomeTrendVO;
+import com.blog.pojo.vo.HomeNoticeVO;
 import com.blog.pojo.vo.SiteStatisticsVO;
 import com.blog.service.HomeService;
 import com.blog.service.SystemConfigService;
@@ -20,6 +21,7 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,6 +58,45 @@ public class HomeServiceImpl implements HomeService {
     @Override
     public List<ArticleFrontVO> getPopularArticles() {
         return homeMapper.selectPopularArticles(LayoutConstant.HOME_POPULAR_ARTICLE_LIMIT);
+    }
+
+    /**
+     * 获取首页公告，未启用或没有内容时返回 null
+     */
+    @Override
+    public HomeNoticeVO getHomeNotice() {
+        HomeNoticeVO notice = getHomeNoticeConfig();
+        if (!Boolean.TRUE.equals(notice.getEnabled()) || !StringUtils.hasText(notice.getContent())) {
+            return null;
+        }
+        return notice;
+    }
+
+    /**
+     * 获取首页公告配置
+     */
+    @Override
+    public HomeNoticeVO getHomeNoticeConfig() {
+        HomeNoticeVO notice = systemConfigService.getJsonValue(
+                SystemConstant.HOME_NOTICE_CONFIG_KEY, HomeNoticeVO.class);
+        if (notice == null) {
+            return HomeNoticeVO.builder().enabled(false).title("").content("").updatedAt("").build();
+        }
+        return notice;
+    }
+
+    /**
+     * 保存首页公告
+     */
+    @Override
+    public void saveHomeNotice(HomeNoticeVO notice) {
+        HomeNoticeVO save = HomeNoticeVO.builder()
+                .enabled(Boolean.TRUE.equals(notice.getEnabled()))
+                .title(notice.getTitle() == null ? "" : notice.getTitle().trim())
+                .content(notice.getContent() == null ? "" : notice.getContent().trim())
+                .updatedAt(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .build();
+        systemConfigService.saveJsonValue(SystemConstant.HOME_NOTICE_CONFIG_KEY, save, "首页公告");
     }
 
     /**
