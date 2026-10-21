@@ -523,7 +523,8 @@ VALUES
 
 -- ===================== 7、系统设置【顶级目录 parent_id=0】 =====================
 (41,0, '系统设置', '/sysSetting', 'Layout', 'sys:setting', 0, 'Menu', 7, 1,0,NOW(), NOW()),
-(42,41,'布局设计', '/sysSetting', 'sysSetting/menulayout/index', 'sys:layout:list', 1, 'InfoFilled', 2, 1,0,NOW(), NOW()),
+(42,41,'操作日志', '/operLog', 'sysSetting/operlog/index', 'sys:operlog:list', 1, 'Tickets', 2, 1,0,NOW(), NOW()),
+(85,42,'删除日志', NULL, NULL, 'sys:operlog:delete', 2, NULL, 1, 1,0,NOW(), NOW()),
 (84,41,'首页公告', '/noticeSetting', 'sysSetting/notice/index', 'sys:notice:edit', 1, 'Bell', 1, 1,0,NOW(), NOW()),
 
 -- ===================== 8、系统管理（角色管理，超级管理员专属） =====================

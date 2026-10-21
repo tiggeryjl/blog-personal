@@ -60,7 +60,7 @@ buildNumber.properties
 *.ear
 *.logs
 hs_err_pid*
-**/resources/static/
+**/resources/database/sql
 
 Thumbs.db
 

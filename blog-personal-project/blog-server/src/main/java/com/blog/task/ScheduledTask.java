@@ -3,6 +3,8 @@ package com.blog.task;
 import com.blog.mapper.ArticleMapper;
 import com.blog.mapper.DailyMapper;
 import com.blog.service.RssService;
+import com.blog.service.OperLogService;
+import com.blog.constant.OperLogConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -25,6 +27,9 @@ public class ScheduledTask {
 
     @Autowired
     private RssService rssService;
+
+    @Autowired
+    private OperLogService operLogService;
 
     /**
      * 每分钟执行一次，扫描并发布所有到期的定时文章和日常
@@ -52,6 +57,20 @@ public class ScheduledTask {
             log.info("RSS订阅通知任务执行完成，本次新文章-{}-篇", articleCount);
         } catch (Exception e) {
             log.error("RSS订阅通知任务执行异常", e);
+        }
+    }
+
+    /**
+     * 每天凌晨 3 点清理超过保留天数的操作日志
+     */
+    @Scheduled(cron = "0 0 3 * * ?")
+    public void cleanExpiredOperLog() {
+        try {
+            int count = operLogService.cleanExpired();
+            log.info("操作日志清理完成，删除 {} 条（保留 {} 天）",
+                    count, OperLogConstant.RETENTION_DAYS);
+        } catch (Exception e) {
+            log.error("操作日志清理任务执行异常", e);
         }
     }
 }

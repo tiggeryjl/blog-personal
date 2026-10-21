@@ -82,11 +82,11 @@ public class SysAdminController {
      */
     @PostMapping("/login")
     public Result<LoginVO> login(@RequestBody UserLoginDTO userLoginDTO, HttpServletResponse resp) {
-        log.info("管理员登录信息:{}", userLoginDTO);
+        log.info("管理员登录信息:{}", userLoginDTO.getNickname());
 
         SysUser user = adminService.login(userLoginDTO);
 
-        //TODO 生成token并返回
+        //生成token并返回
         boolean remember = Boolean.TRUE.equals(userLoginDTO.getRemember());
         String token = jwtService.createToken(user.getId(),user.getUsername());
         String refreshToken  = jwtService.createRefreshToken(user.getId(), remember);
@@ -146,7 +146,7 @@ public class SysAdminController {
      */
     @PutMapping("/editPassword")
     public Result updatePwd(@RequestBody PasswordEditDTO passwordEditDTO){
-        log.info("修改密码信息:{}", passwordEditDTO);
+        log.info("管理员id:{}-修改密码", passwordEditDTO.getUserId());
         passwordEditDTO.setUserId(BaseContext.getCurrentId());
         adminService.updatePwd(passwordEditDTO);
         return Result.success();

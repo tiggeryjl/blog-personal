@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.blog.mapper.OperLogMapper">
+
+    <!-- 写入操作日志 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_oper_log (oper_user_id, oper_username, oper_nickname, module_name, oper_title,
+                                  oper_type, request_url, request_method, ip_address, browser, os,
+                                  location, oper_param, oper_result, cost_time, status, error_msg,
+                                  delete_flag, create_time)
+        VALUES (#{operUserId}, #{operUsername}, #{operNickname}, #{moduleName}, #{operTitle},
+                #{operType}, #{requestUrl}, #{requestMethod}, #{ipAddress}, #{browser}, #{os},
+                #{location}, #{operParam}, #{operResult}, #{costTime}, #{status}, #{errorMsg},
+                0, #{createTime})
+    </insert>
+
+    <!-- 分页查询操作日志 -->
+    <select id="pageQuery" resultType="com.blog.pojo.vo.OperLogVO">
+        SELECT id, oper_user_id, oper_username, oper_nickname, module_name, oper_title,
+               oper_type, request_url, request_method, ip_address, browser, os,
+               cost_time, status, create_time
+        FROM sys_oper_log
+        <where>
+            delete_flag = 0
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    oper_username LIKE CONCAT('%', #{keyword}, '%')
+                    OR oper_nickname LIKE CONCAT('%', #{keyword}, '%')
+                    OR oper_title LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+            <if test="moduleName != null and moduleName != ''">
+                AND module_name LIKE CONCAT('%', #{moduleName}, '%')
+            </if>
+            <if test="operType != null">AND oper_type = #{operType}</if>
+            <if test="status != null">AND status = #{status}</if>
+            <if test="beginTime != null">AND create_time &gt;= #{beginTime}</if>
+            <if test="endTime != null">AND create_time &lt;= #{endTime}</if>
+        </where>
+        ORDER BY create_time DESC, id DESC
+    </select>
+
+    <!-- 查询日志详情 -->
+    <select id="getById" resultType="com.blog.pojo.vo.OperLogVO">
+        SELECT id, oper_user_id, oper_username, oper_nickname, module_name, oper_title,
+               oper_type, request_url, request_method, ip_address, browser, os, location,
+               oper_param, oper_result, cost_time, status, error_msg, create_time
+        FROM sys_oper_log
+        WHERE id = #{id}
+          AND delete_flag = 0
+    </select>
+
+    <!-- 批量删除 -->
+    <delete id="deleteByIds">
+        DELETE FROM sys_oper_log
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </delete>
+
+    <!-- 清空日志 -->
+    <delete id="clearAll">
+        DELETE FROM sys_oper_log
+    </delete>
+
+    <!-- 删除过期日志 -->
+    <delete id="deleteBefore">
+        DELETE FROM sys_oper_log
+        WHERE create_time &lt; #{time}
+    </delete>
+
+</mapper>

@@ -121,8 +121,9 @@ public class UserController {
      */
     @PostMapping("/login")
     public Result<LoginVO> login(@RequestBody UserLoginDTO userLoginDTO, HttpServletResponse resp) {
-        log.info("用户登录信息:{}", userLoginDTO);
+        log.info("用户登录信息:{}", userLoginDTO.getNickname());
 
+        //TODO 等待上线放开注释
 //        String captchaVerifyParam = userLoginDTO.getCaptchaVerifyParam();
 //        log.info("滑块验证码校验信息:{}", captchaVerifyParam);
 //        // 1. 校验验证码
@@ -131,7 +132,7 @@ public class UserController {
 //        }
 
         SysUser user = userService.login(userLoginDTO);
-        //TODO 生成token并返回
+        //生成token并返回
         boolean remember = Boolean.TRUE.equals(userLoginDTO.getRemember());
         String token = jwtService.createToken(user.getId(),user.getUsername());
         String refreshToken  = jwtService.createRefreshToken(user.getId(), remember);
@@ -152,7 +153,7 @@ public class UserController {
      */
     @PutMapping("/editPassword")
     public Result updatePwd(@RequestBody PasswordEditDTO passwordEditDTO){
-        log.info("修改密码信息:{}", passwordEditDTO);
+        log.info("用户id:{}-修改密码", passwordEditDTO.getUserId());
         passwordEditDTO.setUserId(BaseContext.getCurrentId());
         userService.updatePwd(passwordEditDTO);
         return Result.success();

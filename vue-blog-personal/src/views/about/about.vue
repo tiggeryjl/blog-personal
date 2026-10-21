@@ -158,12 +158,10 @@ onMounted(() => {
           关于这个网站
         </h3>
         <div class="section-body">
-          <!-- TODO: 按你的实际情况改这一段描述 -->
           <p>
             本站是一个前后端分离的个人博客，采用简约风格，支持默认 / 深色 / 浅色三套主题，文章、日常、友链、留言、RSS
             订阅等功能均为自己开发实现。
           </p>
-          <!-- TODO: 按你的实际情况增删下面的技术栈标签 -->
           <div class="tech-row">
             <span class="tech-label">前端</span>
             <div class="skills">
