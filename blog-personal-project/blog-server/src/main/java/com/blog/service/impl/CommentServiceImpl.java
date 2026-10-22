@@ -152,24 +152,8 @@ public class CommentServiceImpl implements CommentService {
         rows.addAll(commentMapper.selectPublicRepliesByParentIds(mainIds, StatusConstant.ENABLE));
 
         List<CommentVo> messageTree = CommentTreeUtil.buildFlatReplyTree(rows);
-        for (CommentVo comment : messageTree) {
-            markAdminRecursively(comment);
-        }
         fillLikedStatus(messageTree);
         return new PageResult(pageInfo.getTotal(), messageTree);
-    }
-
-    /**
-     * 递归标记留言及其回复是否为博主
-     */
-    private void markAdminRecursively(CommentVo comment) {
-        comment.setAdmin(sysUserRoleMapper.hasRole(
-                comment.getUserId(), SystemConstant.SUPER_ADMIN_ROLE));
-        if (comment.getReplies() != null) {
-            for (CommentVo reply : comment.getReplies()) {
-                markAdminRecursively(reply);
-            }
-        }
     }
 
     /**
@@ -645,11 +629,6 @@ public class CommentServiceImpl implements CommentService {
         List<CommentVo> commentVoList = commentMapper.getPublicComments(query);
         if (commentVoList == null || commentVoList.isEmpty()) {
             return Collections.emptyList();
-        }
-        for (CommentVo comment : commentVoList) {
-//            comment.setAdmin(sysUserRoleMapper.hasRole(
-//                    comment.getUserId(), SystemConstant.SUPER_ADMIN_ROLE));
-            markAdminRecursively(comment);
         }
 
         List<CommentVo> commentVos = CommentTreeUtil.buildFlatReplyTree(commentVoList);

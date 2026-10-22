@@ -457,7 +457,12 @@ onMounted(() => {
                 {{ row.userNickname ? row.userNickname.charAt(0) : '' }}
               </el-avatar>
               <div class="user-info">
-                <div class="user-name">{{ row.userNickname || '—' }}</div>
+                <div class="user-name-line">
+                  <div class="user-name">{{ row.userNickname || '—' }}</div>
+                  <el-tag v-if="row.admin" size="small" type="primary" effect="light" round class="admin-badge">
+                    博主
+                  </el-tag>
+                </div>
                 <div class="user-id">ID: {{ row.userId }}</div>
               </div>
             </div>
@@ -676,11 +681,25 @@ onMounted(() => {
   min-width: 0;
 }
 
+.user-name-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .user-name {
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.admin-badge {
+  flex-shrink: 0;
+  height: 18px;
+  padding: 0 6px;
+  font-size: 10px;
 }
 
 .user-id {
