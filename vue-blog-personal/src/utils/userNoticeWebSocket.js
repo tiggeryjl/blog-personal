@@ -22,9 +22,7 @@ const buildWebSocketUrl = (token) => {
 };
 
 const showNotice = (notice) => {
-  const summary = [notice.operatorName, notice.actionText, notice.articleTitle]
-    .filter(Boolean)
-    .join(' ');
+  const summary = [notice.operatorName, notice.actionText, notice.articleTitle].filter(Boolean).join(' ');
 
   ElNotification({
     title: notice.title || '消息通知',
@@ -117,7 +115,7 @@ export const useUserNoticeWebSocket = () => {
 
     currentSocket.onopen = () => {
       if (socket !== currentSocket) return;
-      console.log('用户通知WebSocket连接成功');
+      // console.log('用户通知WebSocket连接成功');
       startHeartbeat();
     };
 
@@ -142,7 +140,7 @@ export const useUserNoticeWebSocket = () => {
       if (socket !== currentSocket) return;
       socket = null;
       stopHeartbeat();
-      console.log('用户通知WebSocket连接断开');
+      // console.log('用户通知WebSocket连接断开');
       scheduleReconnect(connect);
     };
 

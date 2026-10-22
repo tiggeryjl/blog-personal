@@ -31,9 +31,9 @@ export const usePermissionStore = defineStore('permission', {
           router.removeRoute(name);
         } catch (e) {}
       });
-      console.log('开始获取权限...');
+      // console.log('开始获取权限...');
       const result = await getUserInfoApi();
-      console.log(result.data.permissions);
+      // console.log(result.data.permissions);
       useUserStore().updateUserInfo(result.data.user);
       this.permissionList = result.data.permissions || [];
       const routes = filterAsyncRoutes(result.data.routers || []);

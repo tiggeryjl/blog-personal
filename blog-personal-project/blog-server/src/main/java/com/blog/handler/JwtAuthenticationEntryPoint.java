@@ -20,6 +20,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
     public void commence(HttpServletRequest request,
                          HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json;charset=utf-8");
         Result<Object> result = Result.error(401, MessageConstant.TOKEN_EXPIRED);
         response.getWriter().write(JSON.toJSONString(result));

@@ -16,6 +16,11 @@ public class SystemConstant {
     public static final String HOME_NOTICE_CONFIG_KEY = "notice.home";
 
     /**
+     * 站点信息配置键（友链页展示的博客名称、链接、头像、简介）
+     */
+    public static final String SITE_PROFILE_CONFIG_KEY = "site.profile";
+
+    /**
      * 超级管理员角色ID
      */
     public static final Long SUPER_ADMIN_ROLE_ID = 1L;

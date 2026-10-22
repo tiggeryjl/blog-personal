@@ -92,6 +92,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET,
                                 "/user/home/popular",
                                 "/user/home/notice",
+                                "/user/site/profile",
+                                "/user/music/list",
                                 "/user/article/getArticleList",
                                 "/user/article/getCalendarCount",
                                 "/user/article/getArticleDetail/**",

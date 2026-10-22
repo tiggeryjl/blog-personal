@@ -1,115 +1,120 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Minus } from '@element-plus/icons-vue'
-import PermissionViewTip from '@/components/PermissionViewTip.vue'
-import { findAllApi, addApi, queryInfoApi, updateApi, updateStatusApi, deleteCategoryApi } from '@/api/category.js'
-import { findAllTagApi, addTagApi, queryInfoTagApi, updateTagApi, updateTagStatusApi, deleteTagApi } from '@/api/tag.js'
+import { ref, reactive, onMounted } from 'vue';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { Plus, Minus } from '@element-plus/icons-vue';
+import PermissionViewTip from '@/components/PermissionViewTip.vue';
+import { findAllApi, addApi, queryInfoApi, updateApi, updateStatusApi, deleteCategoryApi } from '@/api/category.js';
+import {
+  findAllTagApi,
+  addTagApi,
+  queryInfoTagApi,
+  updateTagApi,
+  updateTagStatusApi,
+  deleteTagApi,
+} from '@/api/tag.js';
 
-const activeTab = ref('category')
+const activeTab = ref('category');
 
 // ===================== 分类模块 =====================
-const categoryList = ref([])
+const categoryList = ref([]);
 const categoryForm = reactive({
   id: '',
   name: '',
   description: '',
-  status: 1
-})
-const categoryDialog = ref(false)
-const isEditCategory = ref(false)
-const categoryFormRef = ref(null)
+  status: 1,
+});
+const categoryDialog = ref(false);
+const isEditCategory = ref(false);
+const categoryFormRef = ref(null);
 
 const getCategoryList = async () => {
-  const result = await findAllApi()
+  const result = await findAllApi();
   if (result.code == 200) {
-    categoryList.value = result.data
+    categoryList.value = result.data;
   }
-}
+};
 
 const categoryRules = {
   name: [{ required: true, message: '请输入分类名称', trigger: 'blur' }],
-  description: [{ required: true, message: '请输入分类描述', trigger: 'blur' }]
-}
+  description: [{ required: true, message: '请输入分类描述', trigger: 'blur' }],
+};
 
 //保存分类
 const saveCategory = async () => {
-  if (!categoryFormRef.value) return
+  if (!categoryFormRef.value) return;
   categoryFormRef.value.validate(async (valid) => {
     if (valid) {
       let result;
-      if (categoryForm.id) {//有ID修改操作
+      if (categoryForm.id) {
+        //有ID修改操作
         result = await updateApi(categoryForm);
-      } else {//无ID新增操作
+      } else {
+        //无ID新增操作
         result = await addApi(categoryForm);
       }
 
       if (result.code == 200) {
         ElMessage.success('保存成功');
-        categoryDialog.value = false
-        getCategoryList()
+        categoryDialog.value = false;
+        getCategoryList();
       } else {
         ElMessage.error(result.msg);
       }
     } else {
       ElMessage.error('表单校验不通过');
     }
-  })
-
-}
+  });
+};
 
 const openAddCate = () => {
-  isEditCategory.value = false
-  Object.assign(categoryForm, { id: '', name: '', description: '', status: 1 })
+  isEditCategory.value = false;
+  Object.assign(categoryForm, { id: '', name: '', description: '', status: 1 });
   //重置表单校验规则-提示信息
   if (categoryFormRef.value) {
-    categoryFormRef.value?.resetFields()
+    categoryFormRef.value?.resetFields();
   }
-  categoryDialog.value = true
-}
+  categoryDialog.value = true;
+};
 
 const openEditCate = async (id) => {
   //重置表单校验规则-提示信息
   if (categoryFormRef.value) {
-    categoryFormRef.value?.resetFields()
+    categoryFormRef.value?.resetFields();
   }
-  const result = await queryInfoApi(id)
+  const result = await queryInfoApi(id);
   if (result.code == 200) {
-    isEditCategory.value = true
-    categoryDialog.value = true
+    isEditCategory.value = true;
+    categoryDialog.value = true;
     //因为用的reactive，所有直接赋值会让该变量失去响应式报错
-    Object.assign(categoryForm, result.data)
+    Object.assign(categoryForm, result.data);
   } else {
     ElMessage.error('查询分类失败');
   }
-}
+};
 
 const categoryStatus = async (row) => {
-  const newStatus = row.status === 1 ? 0 : 1
+  const newStatus = row.status === 1 ? 0 : 1;
 
-  const result = await updateStatusApi(row.id, newStatus)
+  const result = await updateStatusApi(row.id, newStatus);
   if (result.code == 200) {
     // row.status = newStatus
-    getCategoryList()
-    const msg = newStatus === 1 ? '分类已启用' : '分类已禁用'
-    ElMessage.success(msg)
+    getCategoryList();
+    const msg = newStatus === 1 ? '分类已启用' : '分类已禁用';
+    ElMessage.success(msg);
   } else {
-    ElMessage.error('状态修改失败')
+    ElMessage.error('状态修改失败');
   }
-}
+};
 
 //删除单个分类
 const delCate = async (id) => {
-  ElMessageBox.confirm(
-    '您确认要删除该分类吗?',
-    '提示',
-    {
-      confirmButtonText: '确认',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  )
-    .then(async () => {//点击确认按钮
+  ElMessageBox.confirm('您确认要删除该分类吗?', '提示', {
+    confirmButtonText: '确认',
+    cancelButtonText: '取消',
+    type: 'warning',
+  })
+    .then(async () => {
+      //点击确认按钮
       const result = await deleteCategoryApi(id);
       if (result.code == 200) {
         ElMessage.success('删除成功');
@@ -118,27 +123,24 @@ const delCate = async (id) => {
         ElMessage.error(result.msg);
       }
     })
-    .catch(() => {//点击取消按钮
+    .catch(() => {
+      //点击取消按钮
       ElMessage.info('已取消删除');
-    })
-}
+    });
+};
 
 //记录复选框的分类数组ids
 const categoryIds = ref([]);
 const handleSelectionCateChange = (val) => {
-  categoryIds.value = val.map(item => item.id);
-}
+  categoryIds.value = val.map((item) => item.id);
+};
 // 批量删除
 const delCates = async () => {
-  ElMessageBox.confirm(
-    '您确认要删除选中的所有分类吗?',
-    '提示',
-    {
-      confirmButtonText: '确认',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  )
+  ElMessageBox.confirm('您确认要删除选中的所有分类吗?', '提示', {
+    confirmButtonText: '确认',
+    cancelButtonText: '取消',
+    type: 'warning',
+  })
     .then(async () => {
       if (categoryIds.value && categoryIds.value.length > 0) {
         const result = await deleteCategoryApi(categoryIds.value);
@@ -149,164 +151,159 @@ const delCates = async () => {
           ElMessage.error(result.msg);
         }
       } else {
-        ElMessage.error("您未选择任何记录");
+        ElMessage.error('您未选择任何记录');
       }
     })
     .catch(() => {
       ElMessage.info('已取消删除');
-    })
-}
+    });
+};
 
 // ===================== 标签模块 =====================
-const tagList = ref([])
-const tagForm = reactive({ id: '', name: '', status: 1 })
-const tagDialog = ref(false)
-const isEditTag = ref(false)
-const tagFormRef = ref(null) // 标签表单ref
+const tagList = ref([]);
+const tagForm = reactive({ id: '', name: '', status: 1 });
+const tagDialog = ref(false);
+const isEditTag = ref(false);
+const tagFormRef = ref(null); // 标签表单ref
 
 const getTagList = async () => {
-  const result = await findAllTagApi()
+  const result = await findAllTagApi();
   if (result.code == 200) {
-    tagList.value = result.data
+    tagList.value = result.data;
   }
-}
+};
 
 // 标签表单校验规则
 const tagRules = {
-  name: [{ required: true, message: '请输入标签名称', trigger: 'blur' }]
-}
+  name: [{ required: true, message: '请输入标签名称', trigger: 'blur' }],
+};
 
 //保存标签
 const saveTag = async () => {
-  if (!tagFormRef.value) return
+  if (!tagFormRef.value) return;
   tagFormRef.value.validate(async (valid) => {
     if (valid) {
       let result;
-      if (tagForm.id) {//有ID修改操作
+      if (tagForm.id) {
+        //有ID修改操作
         result = await updateTagApi(tagForm);
-      } else {//无ID新增操作
+      } else {
+        //无ID新增操作
         result = await addTagApi(tagForm);
       }
 
       if (result.code == 200) {
         ElMessage.success('保存成功');
-        tagDialog.value = false
-        getTagList()
+        tagDialog.value = false;
+        getTagList();
       } else {
         ElMessage.error(result.msg);
       }
     } else {
       ElMessage.error('表单校验不通过');
     }
-  })
-
-}
+  });
+};
 
 const openAddTag = () => {
-  isEditTag.value = false
-  Object.assign(tagForm, { id: '', name: '', status: 1 })
+  isEditTag.value = false;
+  Object.assign(tagForm, { id: '', name: '', status: 1 });
   //重置表单校验规则-提示信息
   if (tagFormRef.value) {
-    tagFormRef.value?.resetFields()
+    tagFormRef.value?.resetFields();
   }
-  tagDialog.value = true
-}
+  tagDialog.value = true;
+};
 
 const openEditTag = async (id) => {
   if (tagFormRef.value) {
-    tagFormRef.value?.resetFields()
+    tagFormRef.value?.resetFields();
   }
-  const result = await queryInfoTagApi(id)
+  const result = await queryInfoTagApi(id);
   if (result.code == 200) {
-    isEditTag.value = true
-    tagDialog.value = true
-    Object.assign(tagForm, result.data)
+    isEditTag.value = true;
+    tagDialog.value = true;
+    Object.assign(tagForm, result.data);
   } else {
     ElMessage.error('查询分类失败');
   }
-}
+};
 
 const delTag = async (id) => {
-  ElMessageBox.confirm(
-    '您确认要删除该标签吗?',
-    '提示',
-    {
-      confirmButtonText: '确认',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  )
-    .then(async () => {//点击确认按钮
+  ElMessageBox.confirm('您确认要删除该标签吗?', '提示', {
+    confirmButtonText: '确认',
+    cancelButtonText: '取消',
+    type: 'warning',
+  })
+    .then(async () => {
+      //点击确认按钮
       const result = await deleteTagApi(id);
       if (result.code == 200) {
         ElMessage.success('删除成功');
-        getTagList()
+        getTagList();
       } else {
         ElMessage.error(result.msg);
       }
     })
-    .catch(() => {//点击取消按钮
+    .catch(() => {
+      //点击取消按钮
       ElMessage.info('已取消删除');
-    })
-}
+    });
+};
 
 const tagIds = ref([]);
 const handleSelectionTagChange = (val) => {
-  tagIds.value = val.map(item => item.id);
-  console.log(tagIds.value)
-}
+  tagIds.value = val.map((item) => item.id);
+  // console.log(tagIds.value)
+};
 
 const delTags = async (id) => {
-  ElMessageBox.confirm(
-    '您确认要删除选中的所有标签吗?',
-    '提示',
-    {
-      confirmButtonText: '确认',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  )
+  ElMessageBox.confirm('您确认要删除选中的所有标签吗?', '提示', {
+    confirmButtonText: '确认',
+    cancelButtonText: '取消',
+    type: 'warning',
+  })
     .then(async () => {
       if (tagIds.value && tagIds.value.length > 0) {
         const result = await deleteTagApi(tagIds.value);
         if (result.code == 200) {
           ElMessage.success('批量删除成功');
-          getTagList()
+          getTagList();
         } else {
           ElMessage.error(result.msg);
         }
       } else {
-        ElMessage.error("您未选择任何记录");
+        ElMessage.error('您未选择任何记录');
       }
     })
     .catch(() => {
       ElMessage.info('已取消删除');
-    })
-}
+    });
+};
 
 const tagStatus = async (row) => {
-  const newStatus = row.status === 1 ? 0 : 1
+  const newStatus = row.status === 1 ? 0 : 1;
 
-  const result = await updateTagStatusApi(row.id, newStatus)
+  const result = await updateTagStatusApi(row.id, newStatus);
   if (result.code == 200) {
-    getTagList()
-    const msg = newStatus === 1 ? '标签已启用' : '标签已禁用'
-    ElMessage.success(msg)
+    getTagList();
+    const msg = newStatus === 1 ? '标签已启用' : '标签已禁用';
+    ElMessage.success(msg);
   } else {
-    ElMessage.error('状态修改失败')
+    ElMessage.error('状态修改失败');
   }
-}
+};
 
 onMounted(() => {
-  getCategoryList()
-  getTagList()
-})
+  getCategoryList();
+  getTagList();
+});
 </script>
 
 <template>
   <div class="main-container">
     <h1>分类标签管理</h1>
-    <PermissionViewTip :perms="['sys:category:add','sys:category:edit','sys:category:delete']" />
+    <PermissionViewTip :perms="['sys:category:add', 'sys:category:edit', 'sys:category:delete']" />
 
     <el-tabs v-model="activeTab">
       <!-- 分类 -->
@@ -316,16 +313,18 @@ onMounted(() => {
             <el-button v-perm="'sys:category:add'" type="primary" @click="openAddCate">
               <el-icon>
                 <Plus />
-              </el-icon> 新增分类
+              </el-icon>
+              新增分类
             </el-button>
             <el-button v-perm="'sys:category:delete'" type="danger" @click="delCates">
               <el-icon>
                 <Minus />
-              </el-icon> 批量删除
+              </el-icon>
+              批量删除
             </el-button>
           </div>
 
-          <el-table :data="categoryList" border style="width:100%" @selection-change="handleSelectionCateChange">
+          <el-table :data="categoryList" border style="width: 100%" @selection-change="handleSelectionCateChange">
             <el-table-column type="selection" width="50" align="center" />
             <el-table-column label="分类名称" prop="name" min-width="150" align="center" />
             <el-table-column label="描述" prop="description" min-width="220" align="center" />
@@ -338,8 +337,11 @@ onMounted(() => {
             <el-table-column label="修改时间" prop="updateTime" width="190" align="center" />
             <el-table-column label="操作" width="220" align="center">
               <template #default="{ row }">
-                <el-button link v-perm="'sys:category:edit'" type="primary" @click="openEditCate(row.id)">编辑</el-button>
-                <el-button link v-perm="'sys:category:edit'" type="warning" @click="categoryStatus(row)">{{ row.status ? '禁用' : '启用'
+                <el-button link v-perm="'sys:category:edit'" type="primary" @click="openEditCate(row.id)"
+                  >编辑</el-button
+                >
+                <el-button link v-perm="'sys:category:edit'" type="warning" @click="categoryStatus(row)">{{
+                  row.status ? '禁用' : '启用'
                 }}</el-button>
                 <el-button link v-perm="'sys:category:delete'" type="danger" @click="delCate(row.id)">删除</el-button>
               </template>
@@ -355,16 +357,18 @@ onMounted(() => {
             <el-button v-perm="'sys:category:add'" type="primary" @click="openAddTag">
               <el-icon>
                 <Plus />
-              </el-icon> 新增标签
+              </el-icon>
+              新增标签
             </el-button>
             <el-button v-perm="'sys:category:delete'" type="danger" @click="delTags">
               <el-icon>
                 <Minus />
-              </el-icon> 批量删除
+              </el-icon>
+              批量删除
             </el-button>
           </div>
 
-          <el-table :data="tagList" border style="width:100%" @selection-change="handleSelectionTagChange">
+          <el-table :data="tagList" border style="width: 100%" @selection-change="handleSelectionTagChange">
             <el-table-column type="selection" width="50" align="center" />
             <el-table-column label="标签名称" prop="name" min-width="120" align="center" />
             <el-table-column label="状态" width="100" align="center">
@@ -376,8 +380,12 @@ onMounted(() => {
             <el-table-column label="修改时间" prop="updateTime" width="180" align="center" />
             <el-table-column label="操作" width="220" align="center">
               <template #default="{ row }">
-                <el-button link v-perm="'sys:category:edit'" type="primary" @click="openEditTag(row.id)">编辑</el-button>
-                <el-button link v-perm="'sys:category:edit'" type="warning" @click="tagStatus(row)">{{ row.status ? '禁用' : '启用' }}</el-button>
+                <el-button link v-perm="'sys:category:edit'" type="primary" @click="openEditTag(row.id)"
+                  >编辑</el-button
+                >
+                <el-button link v-perm="'sys:category:edit'" type="warning" @click="tagStatus(row)">{{
+                  row.status ? '禁用' : '启用'
+                }}</el-button>
                 <el-button link v-perm="'sys:category:delete'" type="danger" @click="delTag(row.id)">删除</el-button>
               </template>
             </el-table-column>

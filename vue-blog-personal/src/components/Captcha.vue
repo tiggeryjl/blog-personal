@@ -12,7 +12,7 @@ const customWidth = 360;
 
 // 验证成功回调
 const onSuccess = (result) => {
-  console.log('阿里云返回结果:', result);
+  // console.log('阿里云返回结果:', result);
   if (result) {
     emit('captchaSuccess', result);
   } else {
@@ -38,7 +38,7 @@ const onerror = (err) => {
 };
 
 const onClose = () => {
-  console.log('用户关闭验证码弹窗');
+  // console.log('用户关闭验证码弹窗');
   emit('captchaFail');
 };
 

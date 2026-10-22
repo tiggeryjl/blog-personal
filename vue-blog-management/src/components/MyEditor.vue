@@ -2,25 +2,30 @@
 import '@wangeditor/editor/dist/css/style.css';
 import { onBeforeUnmount, ref, shallowRef, onMounted, computed } from 'vue';
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue';
-import { useUserStore } from '@/stores/userloginstatus'
+import { useUserStore } from '@/stores/userloginstatus';
+import { ElMessage } from 'element-plus';
 
-const userStore = useUserStore()
+const userStore = useUserStore();
 
 const props = defineProps({
   modelValue: {
     type: String,
-    default: ''
-  }
-})
-const emit = defineEmits(['update:modelValue'])
+    default: '',
+  },
+});
+const emit = defineEmits(['update:modelValue']);
 
 // 编辑器实例，必须用 shallowRef，重要！
 const editorRef = shallowRef();
 
 const valueHtml = computed({
-  get() { return props.modelValue },
-  set(val) { emit('update:modelValue', val) }
-})
+  get() {
+    return props.modelValue;
+  },
+  set(val) {
+    emit('update:modelValue', val);
+  },
+});
 
 const mode = 'default';
 
@@ -35,18 +40,18 @@ const editorConfig = {
       fieldName: 'file', // 后端接收文件参数名，和el-upload统一
       // 请求头，函数形式实时读取最新token
       headers: {
-        Authorization: computed(() => `Bearer ${userStore.token}`).value
+        Authorization: computed(() => `Bearer ${userStore.token}`).value,
       },
       maxFileSize: 10 * 1024 * 1024, // 10MB 图片限制
       // 上传成功回调，把图片插入编辑器
       customInsert(res, insertFn) {
         // res.data 是后端返回的图片URL
-        insertFn(res.data)
+        insertFn(res.data);
       },
       // 上传失败提示
       onFailed(file, res) {
-        alert(`图片上传失败：${res.msg || '服务器异常'}`)
-      }
+        ElMessage.error(`图片上传失败：${res?.msg || '服务器异常'}`);
+      },
     },
 
     // 视频上传配置
@@ -54,37 +59,43 @@ const editorConfig = {
       server: '/api/upload/upload',
       fieldName: 'file',
       headers: {
-        Authorization: computed(() => `Bearer ${userStore.token}`).value
+        Authorization: computed(() => `Bearer ${userStore.token}`).value,
       },
       maxFileSize: 50 * 1024 * 1024, // 视频50MB
       customInsert(res, insertFn) {
-        const playUrl = res.data + '?response-content-disposition=inline'
-        console.log('后端返回视频地址：', playUrl)
-        insertFn(playUrl)
+        const playUrl = res.data + '?response-content-disposition=inline';
+        // console.log('后端返回视频地址：', playUrl);
+        insertFn(playUrl);
       },
       onFailed(file, res) {
-        alert(`视频上传失败：${res.msg || '服务器异常'}`)
-      }
-    }
-  }
+        ElMessage.error(`视频上传失败：${res?.msg || '服务器异常'}`);
+      },
+    },
+  },
 };
 
 // 组件销毁时，也及时销毁编辑器，重要！
 onBeforeUnmount(() => {
   const editor = editorRef.value;
-  if (editor) editor.destroy();;
+  if (editor) editor.destroy();
 });
 
 // 编辑器回调函数
 const handleCreated = (editor) => {
   editorRef.value = editor; // 记录 editor 实例，重要！
 };
-const handleChange = (editor) => { };
-const handleDestroyed = (editor) => { };
-const handleFocus = (editor) => { };
-const handleBlur = (editor) => { };
-const customAlert = (info, type) => {
-  alert(`【自定义提示】${type} - ${info}`);
+const handleChange = (editor) => {};
+const handleDestroyed = (editor) => {};
+const handleFocus = (editor) => {};
+const handleBlur = (editor) => {};
+const customAlert = (info, type = 'warning') => {
+  const messageType = ['success', 'warning', 'info', 'error'].includes(type) ? type : 'warning';
+  ElMessage({
+    message: info,
+    type: messageType,
+    showClose: true,
+    grouping: true,
+  });
 };
 const customPaste = (editor, event, callback) => {
   callback(true);
@@ -93,12 +104,27 @@ const customPaste = (editor, event, callback) => {
 
 <template>
   <div class="editor-container">
-    <Toolbar class="editor-toolbar" :editor="editorRef" :defaultConfig="toolbarConfig" :mode="mode"
-      style="border-bottom: 1px solid #ccc" />
-    <Editor class="editor-content" :defaultConfig="editorConfig" :mode="mode" v-model="valueHtml"
-      style="height: 600px; overflow-y: hidden " @onCreated="handleCreated" @onChange="handleChange"
-      @onDestroyed="handleDestroyed" @onFocus="handleFocus" @onBlur="handleBlur" @customAlert="customAlert"
-      @customPaste="customPaste" />
+    <Toolbar
+      class="editor-toolbar"
+      :editor="editorRef"
+      :defaultConfig="toolbarConfig"
+      :mode="mode"
+      style="border-bottom: 1px solid #ccc"
+    />
+    <Editor
+      class="editor-content"
+      :defaultConfig="editorConfig"
+      :mode="mode"
+      v-model="valueHtml"
+      style="height: 600px; overflow-y: hidden"
+      @onCreated="handleCreated"
+      @onChange="handleChange"
+      @onDestroyed="handleDestroyed"
+      @onFocus="handleFocus"
+      @onBlur="handleBlur"
+      @customAlert="customAlert"
+      @customPaste="customPaste"
+    />
   </div>
 </template>
 

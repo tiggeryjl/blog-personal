@@ -62,7 +62,7 @@ router.beforeEach(async (to, from, next) => {
         // 刷新一次路由放行，防止路由白屏
         next({ ...to, replace: true });
       } catch (err) {
-        console.error('获取权限失败:', err);
+        // console.error('获取权限失败:', err);
         permissionStore.setFetchPermission(true);
         // 判断是否为 401（未授权）
         if (err.response?.status === 401) {
@@ -104,7 +104,7 @@ router.beforeEach(async (to, from, next) => {
       }
     } catch (refreshErr) {
       // 刷新失败：refreshToken过期/不存在，强制去登录
-      console.log('静默刷新token失败', refreshErr);
+      // console.log('静默刷新token失败', refreshErr);
       await userStore.logout();
       ElMessage.info('登录过期，请重新登录');
       next('/login');

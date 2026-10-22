@@ -116,8 +116,7 @@ async function sendMessage() {
     });
 
     // 🔥 流结束后，localFullText 就是完整内容
-    console.log('✅ 完整内容:', localFullText);
-    // 可以在这里做最终处理（比如更新数据库）
+    // console.log('✅ 完整内容:', localFullText);
 
     // 如果流结束后内容为空，可设置提示
     if (!localFullText) {

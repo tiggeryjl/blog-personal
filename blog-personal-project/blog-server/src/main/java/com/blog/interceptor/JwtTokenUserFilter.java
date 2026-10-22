@@ -68,6 +68,8 @@ public class JwtTokenUserFilter extends OncePerRequestFilter {
             if (!jwtService.validateToken(token)) {
 //                filterChain.doFilter(request, response);
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json;charset=UTF-8");
+                response.setCharacterEncoding("UTF-8");
                 response.getWriter().write(objectMapper.writeValueAsString(Result.error(401, MessageConstant.LOGIN_EXPIRED_NOT_FOUND)));
                 return;
             }
@@ -79,6 +81,8 @@ public class JwtTokenUserFilter extends OncePerRequestFilter {
                 // 用户已被删除/禁用
                 if (loginUser == null) {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.setCharacterEncoding("UTF-8");
                     response.getWriter().write(objectMapper.writeValueAsString(Result.error(401, MessageConstant.ACCOUNT_NOT_FOUND)));
                     return;
                 }

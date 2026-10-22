@@ -397,6 +397,10 @@ onMounted(() => {
   overflow: visible;
 }
 
+.theme-music:not(:has(.music-container)) {
+  display: none;
+}
+
 .theme-music:hover {
   background: var(--card-bg-hover);
 }
@@ -587,8 +591,20 @@ onMounted(() => {
     transform: scale(0.95);
   }
 
-  /* 5. 隐藏音乐组件 */
+  /* 5. 移动端音乐组件保留在菜单内 */
   .theme-music {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    height: 48px !important;
+    padding: 6px 12px !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .theme-music:not(:has(.music-container)) {
     display: none !important;
   }
 

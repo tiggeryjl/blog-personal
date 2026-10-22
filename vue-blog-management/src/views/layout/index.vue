@@ -76,6 +76,7 @@ const loginAvatar = ref(userInfo.value?.avatar || '');
 
 // 过滤掉侧边栏需要隐藏的路由
 const filterDynamicRoutes = computed(() => {
+  console.log('dynamicRoutes.value', dynamicRoutes.value);
   return (dynamicRoutes.value || []).filter((route) => !route.meta?.hidden);
 });
 
@@ -340,7 +341,7 @@ const initWebSocket = async () => {
   const currentSocket = socket;
   currentSocket.onopen = () => {
     if (socket !== currentSocket) return;
-    console.log('WebSocket连接成功');
+    // console.log('WebSocket连接成功');
     onlineCountVersion = -1;
     currentSocket.send(ONLINE_COUNT_SUBSCRIBE_MESSAGE);
   };
@@ -380,7 +381,7 @@ const initWebSocket = async () => {
     if (socket !== currentSocket) return;
     socket = null;
     stopHeartbeat();
-    console.log('WebSocket连接断开');
+    // console.log('WebSocket连接断开');
     scheduleReconnect();
   };
 

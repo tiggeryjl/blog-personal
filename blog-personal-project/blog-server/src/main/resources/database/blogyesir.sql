@@ -330,6 +330,26 @@ CREATE TABLE link
     KEY idx_link_name (link_name)
 ) COMMENT ='友情链接表';
 
+-- 音乐表
+DROP TABLE IF EXISTS music;
+CREATE TABLE music
+(
+    id          bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '音乐ID',
+    name        varchar(100) NOT NULL COMMENT '歌曲名称',
+    singer      varchar(100) DEFAULT '' COMMENT '歌手',
+    url         varchar(500) NOT NULL COMMENT '音频地址',
+    cover       varchar(500) DEFAULT '' COMMENT '封面地址',
+    lyric       varchar(500) DEFAULT '' COMMENT 'LRC歌词地址',
+    duration    int          DEFAULT 0 COMMENT '时长(秒)',
+    sort        int          DEFAULT 0 COMMENT '排序',
+    status      tinyint      NOT NULL DEFAULT 1 COMMENT '状态 0下架 1上架',
+    delete_flag tinyint      NOT NULL DEFAULT 0 COMMENT '逻辑删除 0正常 1删除',
+    create_time datetime     DEFAULT NULL COMMENT '创建时间',
+    update_time datetime     DEFAULT NULL COMMENT '更新时间',
+    PRIMARY KEY (id),
+    KEY idx_status_sort (status, sort)
+) COMMENT ='音乐表';
+
 -- 四、统计、订阅与日志
 
 -- 点赞表
@@ -482,6 +502,11 @@ VALUES
 (12,11,'新增分类', NULL, NULL, 'sys:category:add', 2, NULL, 1, 1,0,NOW(), NOW()),
 (13,11,'编辑分类', NULL, NULL, 'sys:category:edit', 2, NULL, 2, 1,0,NOW(), NOW()),
 (14,11,'删除分类', NULL, NULL, 'sys:category:delete', 2, NULL, 3, 1,0,NOW(), NOW()),
+-- 音乐管理页面
+(86,2, '音乐管理', '/music', 'music/index', 'sys:music:list', 1, 'Headset', 4, 1,0,NOW(), NOW()),
+(87,86,'新增音乐', NULL, NULL, 'sys:music:add', 2, NULL, 1, 1,0,NOW(), NOW()),
+(88,86,'编辑音乐', NULL, NULL, 'sys:music:edit', 2, NULL, 2, 1,0,NOW(), NOW()),
+(89,86,'删除音乐', NULL, NULL, 'sys:music:delete', 2, NULL, 3, 1,0,NOW(), NOW()),
 
 -- ===================== 3、评论管理【顶级目录 parent_id=0】 =====================
 (15,0, '评论管理', '/comment', 'Layout', NULL, 0, 'Comment', 3, 1,0,NOW(), NOW()),
@@ -525,7 +550,7 @@ VALUES
 (41,0, '系统设置', '/sysSetting', 'Layout', 'sys:setting', 0, 'Menu', 7, 1,0,NOW(), NOW()),
 (42,41,'操作日志', '/operLog', 'sysSetting/operlog/index', 'sys:operlog:list', 1, 'Tickets', 2, 1,0,NOW(), NOW()),
 (85,42,'删除日志', NULL, NULL, 'sys:operlog:delete', 2, NULL, 1, 1,0,NOW(), NOW()),
-(84,41,'首页公告', '/noticeSetting', 'sysSetting/notice/index', 'sys:notice:edit', 1, 'Bell', 1, 1,0,NOW(), NOW()),
+(84,41,'站点设置', '/noticeSetting', 'sysSetting/notice/index', 'sys:notice:edit', 1, 'Setting', 1, 1,0,NOW(), NOW()),
 
 -- ===================== 8、系统管理（角色管理，超级管理员专属） =====================
 (43,0, '系统管理', '/system', 'Layout', 'sys:manage', 0, 'Tools', 8, 1,0,NOW(), NOW()),

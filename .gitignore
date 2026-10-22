@@ -62,6 +62,9 @@ buildNumber.properties
 hs_err_pid*
 **/resources/database/sql
 
+# 本地音乐素材，上传 OSS 后不提交到仓库
+music-import/
+
 Thumbs.db
 
 .codex/

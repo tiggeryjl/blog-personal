@@ -5,8 +5,17 @@ import { CopyDocument, Search } from '@element-plus/icons-vue';
 import { useUserStore } from '@/store/userloginstatus';
 import MarqueeText from '@/components/MarqueeText.vue';
 import { getPublicLinkListApi, applyLinkApi, getApplicationPageApi, urgeLinkApi } from '@/api/link.js';
+import { getSiteProfileApi } from '@/api/site.js';
 
 const userStore = useUserStore();
+
+// 站点信息（管理端配置，未配置时链接显示“即将上线”）
+const siteProfile = reactive({
+  name: '',
+  url: '',
+  avatar: '',
+  desc: '',
+});
 
 const linkList = ref([]);
 const urgingId = ref(null);
@@ -47,15 +56,33 @@ const isOwn = (item) => {
   return isLogin.value && !!userEmail && !!linkEmail && userEmail === linkEmail;
 };
 
-const copyUrl = async () => {
-  const blogUrl = 'https://your-blog-url.com';
+// 加载站点信息，失败不影响友链页其他内容
+const loadSiteProfile = async () => {
   try {
-    await navigator.clipboard.writeText(blogUrl);
-    ElMessage.success('复制成功！');
+    const result = await getSiteProfileApi();
+    if (result.code === 200 && result.data) {
+      siteProfile.name = result.data.name || '';
+      siteProfile.url = result.data.url || '';
+      siteProfile.avatar = result.data.avatar || '';
+      siteProfile.desc = result.data.desc || '';
+    }
   } catch (err) {
-    ElMessage.error('复制失败，请重试或者联系博主!');
+    // 静默失败
   }
 };
+
+const copyText = async (text, successTip) => {
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    ElMessage.success(successTip);
+  } catch (err) {
+    ElMessage.error('复制失败，请手动选中复制');
+  }
+};
+
+const copyAvatarUrl = () => copyText(siteProfile.avatar, '头像地址已复制');
+const copySiteUrl = () => copyText(siteProfile.url, '网站链接已复制');
 
 // 申请弹窗
 const showApplyForm = ref(false);
@@ -243,6 +270,7 @@ const formatTime = (t) => {
 onMounted(() => {
   loadLinks();
   loadApplications();
+  loadSiteProfile();
 });
 
 onBeforeUnmount(() => {
@@ -264,23 +292,33 @@ onBeforeUnmount(() => {
           <div class="my-blog-info">
             <h3>我的博客信息</h3>
             <div class="my-card">
-              <img src="https://picsum.photos/100/100" alt="我的头像" />
+              <img v-if="siteProfile.avatar" :src="siteProfile.avatar" alt="我的头像" />
               <div class="my-detail">
                 <div class="info-row">
                   <span class="info-label">网站名称:</span>
-                  <span class="my-name">小叶同学</span>
-                  <button class="copy-button tooltip" @click="copyUrl">
+                  <span class="my-name">{{ siteProfile.name || '小叶同学的博客' }}</span>
+                  <button
+                    v-if="siteProfile.avatar"
+                    class="copy-button tooltip"
+                    @click="copyAvatarUrl"
+                  >
                     <el-icon><CopyDocument /></el-icon>复制头像url
                     <span class="tooltip-text">点击复制我的头像url</span>
                   </button>
                 </div>
-                <div class="info-row">
+                <div v-if="siteProfile.desc" class="info-row">
                   <span class="info-label">网站简介:</span>
-                  <span class="my-desc">你的博客简介｜记录生活与技术</span>
+                  <span class="my-desc">{{ siteProfile.desc }}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">网站链接:</span>
-                  <span class="my-url">https://your-blog-url.com</span>
+                  <span class="my-url" :class="{ pending: !siteProfile.url }">
+                    {{ siteProfile.url || '即将上线' }}
+                  </span>
+                  <button v-if="siteProfile.url" class="copy-button tooltip" @click="copySiteUrl">
+                    <el-icon><CopyDocument /></el-icon>复制链接
+                    <span class="tooltip-text">点击复制网站链接</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -622,6 +660,11 @@ onBeforeUnmount(() => {
   color: var(--text-secondary-color);
   margin: 0;
   word-break: break-all;
+}
+
+.my-url.pending {
+  color: var(--text-secondary-color);
+  font-style: italic;
 }
 
 .copy-button {
