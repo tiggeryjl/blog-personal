@@ -1,12 +1,15 @@
 package com.blog.pojo.dto;
 
+import com.blog.validation.ValidationGroups;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -18,15 +21,24 @@ import java.util.List;
 @NoArgsConstructor
 public class ArticleDTO implements Serializable {
 
+    @NotNull(groups = {
+            ValidationGroups.Update.class,
+            ValidationGroups.Status.class,
+            ValidationGroups.Timed.class
+    }, message = "文章ID不能为空")
     private Long id;
 
     //标题
+    @NotBlank(message = "文章标题不能为空")
+    @Size(max = 200, message = "文章标题不能超过200个字符")
     private String title;
 
     //摘要
+    @Size(max = 500, message = "文章摘要不能超过500个字符")
     private String summary;
 
     //内容
+    @NotBlank(message = "文章内容不能为空")
     private String content;
 
     //分类id
@@ -67,5 +79,6 @@ public class ArticleDTO implements Serializable {
     private Integer deleteFlag;
 
     // 排序
+    @Min(value = 0, message = "排序不能小于0")
     private Integer sort;
 }

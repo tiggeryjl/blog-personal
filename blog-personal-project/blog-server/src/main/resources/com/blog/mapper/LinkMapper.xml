@@ -71,7 +71,7 @@
     </select>
 
     <!-- 统计各审核状态数量 -->
-    <select id="countByAuditStatus" resultType="java.util.Map">
+    <select id="countByAuditStatus" resultType="com.blog.pojo.vo.LinkStatsVO">
         SELECT
             COUNT(*) AS total,
             CAST(SUM(CASE WHEN audit_status = 0 THEN 1 ELSE 0 END) AS SIGNED) AS pending,

@@ -3,7 +3,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.blog.mapper.HomeMapper">
 
-    <!-- 用户端首页热门文章：置顶、热门或有互动的公开文章，主动互动优先于浏览量 -->
+    <!-- 用户端首页热门文章，置顶优先，其余按互动权重和时间衰减计算热度 -->
     <select id="selectPopularArticles" resultType="com.blog.pojo.vo.ArticleFrontVO">
         SELECT
             a.id,
@@ -28,7 +28,7 @@
         LEFT JOIN sys_user u ON a.user_id = u.id
         LEFT JOIN category ON a.category_id = category.id
         LEFT JOIN (
-            SELECT target_id, COUNT(*) AS like_num
+            SELECT target_id, COUNT(DISTINCT user_id) AS like_num
             FROM user_like
             WHERE target_type = 0
               AND delete_flag = 0
@@ -36,26 +36,39 @@
         ) like_stats ON like_stats.target_id = a.id
         LEFT JOIN (
             SELECT source_id, COUNT(*) AS comment_num
-            FROM `comment`
+            FROM comment
             WHERE type = 0
               AND delete_flag = 0
               AND status = 1
             GROUP BY source_id
         ) comment_stats ON comment_stats.source_id = a.id
         WHERE a.delete_flag = 0
-          AND a.status IN (1, 3)
-          AND (
-              COALESCE(a.is_top, 0) = 1
-              OR COALESCE(a.is_hot, 0) = 1
-              OR COALESCE(a.view_num, 0) &gt; 0
-              OR COALESCE(like_stats.like_num, 0) &gt; 0
-              OR COALESCE(comment_stats.comment_num, 0) &gt; 0
-          )
+          AND a.status = 1
         ORDER BY
             COALESCE(a.is_top, 0) DESC,
-            COALESCE(a.is_hot, 0) DESC,
-            (COALESCE(like_stats.like_num, 0) + COALESCE(comment_stats.comment_num, 0)) DESC,
-            COALESCE(a.view_num, 0) DESC,
+            (
+                (
+                    LOG(1 + COALESCE(a.view_num, 0)) * #{ranking.viewWeight}
+                    + LOG(1 + COALESCE(like_stats.like_num, 0)) * #{ranking.likeWeight}
+                    + LOG(1 + COALESCE(comment_stats.comment_num, 0)) * #{ranking.commentWeight}
+                )
+                * POW(
+                    0.5,
+                    GREATEST(
+                        TIMESTAMPDIFF(
+                            HOUR,
+                            COALESCE(a.publish_time, a.create_time, NOW()),
+                            NOW()
+                        ),
+                        0
+                    ) / #{ranking.halfLifeHours}
+                )
+                * CASE
+                    WHEN COALESCE(a.is_hot, 0) = 1
+                    THEN #{ranking.recommendBoost}
+                    ELSE 1
+                END
+            ) DESC,
             COALESCE(a.publish_time, a.create_time) DESC,
             a.id DESC
         LIMIT #{limit}
@@ -67,7 +80,7 @@
             (SELECT COUNT(*) FROM article WHERE delete_flag = 0)                                                                   AS articleTotal,
             (SELECT COUNT(*) FROM daily WHERE delete_flag = 0)                                                                     AS dailyTotal,
             (SELECT COUNT(*) FROM sys_user WHERE delete_flag = 0)                                                                  AS userTotal,
-            (SELECT COUNT(*) FROM `comment` WHERE delete_flag = 0)                                                                 AS commentTotal,
+            (SELECT COUNT(*) FROM comment WHERE delete_flag = 0)                                                                 AS commentTotal,
             (SELECT COUNT(*) FROM link WHERE delete_flag = 0)                                                                      AS linkTotal,
             (SELECT COUNT(*) FROM user_like WHERE delete_flag = 0)                                                                 AS likeTotal,
             (SELECT COUNT(*) FROM sys_user WHERE delete_flag = 0 AND create_time >= CURDATE())                                     AS todayNewUser,

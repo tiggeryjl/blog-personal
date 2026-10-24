@@ -1,12 +1,16 @@
 package com.blog.controller.admin;
 
+import com.blog.validation.ValidationGroups;
 import com.blog.pojo.dto.MenuDTO;
 import com.blog.pojo.vo.SysMenuVo;
 import com.blog.result.Result;
 import com.blog.service.SysMenuService;
+import jakarta.validation.Valid;
+import jakarta.validation.groups.Default;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,7 +43,7 @@ public class SysMenuController {
      */
     @PreAuthorize("hasPermission(null,'sys:menu:add')")
     @PostMapping("/add")
-    public Result addRole(@RequestBody MenuDTO menuDTO){
+    public Result addRole(@Valid @RequestBody MenuDTO menuDTO){
         log.info("新增权限:{}", menuDTO);
         menuService.add(menuDTO);
         return Result.success();
@@ -52,7 +56,8 @@ public class SysMenuController {
      */
     @PreAuthorize("hasPermission(null,'sys:menu:edit')")
     @PutMapping("/update")
-    public Result update(@RequestBody MenuDTO menuDTO){
+    public Result update(@Validated({Default.class, ValidationGroups.Update.class})
+                         @RequestBody MenuDTO menuDTO){
         log.info("修改权限:{}", menuDTO);
         menuService.update(menuDTO);
         return Result.success();

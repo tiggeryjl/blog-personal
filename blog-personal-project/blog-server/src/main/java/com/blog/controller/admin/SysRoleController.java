@@ -1,5 +1,6 @@
 package com.blog.controller.admin;
 
+import com.blog.validation.ValidationGroups;
 import com.blog.pojo.dto.RoleDTO;
 import com.blog.pojo.dto.RoleMenuAssignDTO;
 import com.blog.pojo.dto.RolePageQueryDTO;
@@ -9,9 +10,12 @@ import com.blog.pojo.vo.UserInfoVO;
 import com.blog.result.PageResult;
 import com.blog.result.Result;
 import com.blog.service.SysRoleService;
+import jakarta.validation.Valid;
+import jakarta.validation.groups.Default;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -44,7 +48,7 @@ public class SysRoleController {
      */
     @PreAuthorize("hasPermission(null,'sys:role:add')")
     @PostMapping("/add")
-    public Result addRole(@RequestBody RoleDTO roleDTO){
+    public Result addRole(@Valid @RequestBody RoleDTO roleDTO){
         log.info("新增角色:{}", roleDTO);
         roleService.add(roleDTO);
         return Result.success();
@@ -57,7 +61,8 @@ public class SysRoleController {
      */
     @PreAuthorize("hasPermission(null,'sys:role:edit')")
     @PutMapping("/update")
-    public Result update(@RequestBody RoleDTO roleDTO){
+    public Result update(@Validated({Default.class, ValidationGroups.Update.class})
+                         @RequestBody RoleDTO roleDTO){
         log.info("修改角色:{}", roleDTO);
         roleService.update(roleDTO);
         return Result.success();
@@ -133,7 +138,7 @@ public class SysRoleController {
      */
     @PreAuthorize("hasPermission(null,'sys:role:assign')")
     @PutMapping("/assignPermission")
-    public Result<UserInfoVO> assignRoleMenu(@RequestBody RoleMenuAssignDTO roleMenuAssignDTO) {
+    public Result<UserInfoVO> assignRoleMenu(@Valid @RequestBody RoleMenuAssignDTO roleMenuAssignDTO) {
         log.info("分配权限:{}",roleMenuAssignDTO);
         roleService.assignRoleMenu(roleMenuAssignDTO);
         return Result.success();

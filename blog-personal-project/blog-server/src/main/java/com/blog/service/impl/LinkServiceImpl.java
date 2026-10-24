@@ -14,6 +14,7 @@ import com.blog.pojo.dto.LinkDTO;
 import com.blog.pojo.dto.LinkPageQueryDTO;
 import com.blog.pojo.entity.Link;
 import com.blog.pojo.entity.SysUser;
+import com.blog.pojo.vo.LinkStatsVO;
 import com.blog.pojo.vo.LinkVo;
 import com.blog.result.PageResult;
 import com.blog.service.LinkService;
@@ -28,7 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 友链
@@ -61,7 +61,7 @@ public class LinkServiceImpl implements LinkService {
      * 统计各审核状态数量
      */
     @Override
-    public Map<String, Long> stats() {
+    public LinkStatsVO stats() {
         return linkMapper.countByAuditStatus();
     }
 

@@ -1,5 +1,6 @@
 package com.blog.controller.admin;
 
+import com.blog.validation.ValidationGroups;
 import com.blog.context.BaseContext;
 import com.blog.pojo.dto.*;
 import com.blog.pojo.entity.LoginUser;
@@ -12,6 +13,8 @@ import com.blog.result.PageResult;
 import com.blog.result.Result;
 import com.blog.service.JwtService;
 import com.blog.service.SysAdminService;
+import jakarta.validation.Valid;
+import jakarta.validation.groups.Default;
 import com.blog.utils.AliyunAcsClient;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -81,7 +85,7 @@ public class SysAdminController {
      * @return
      */
     @PostMapping("/login")
-    public Result<LoginVO> login(@RequestBody UserLoginDTO userLoginDTO, HttpServletResponse resp) {
+    public Result<LoginVO> login(@Valid @RequestBody UserLoginDTO userLoginDTO, HttpServletResponse resp) {
         log.info("管理员登录信息:{}", userLoginDTO.getNickname());
 
         SysUser user = adminService.login(userLoginDTO);
@@ -134,7 +138,7 @@ public class SysAdminController {
      */
     @PreAuthorize("hasPermission(null,'sys:user:add')")
     @PostMapping("/add")
-    public Result<RoleSelectVO> add(@RequestBody UserDTO userDTO){
+    public Result<RoleSelectVO> add(@Valid @RequestBody UserDTO userDTO){
         log.info("新增用户:{}",userDTO);
         adminService.add(userDTO);
         return Result.success();
@@ -145,7 +149,7 @@ public class SysAdminController {
      * @return
      */
     @PutMapping("/editPassword")
-    public Result updatePwd(@RequestBody PasswordEditDTO passwordEditDTO){
+    public Result updatePwd(@Valid @RequestBody PasswordEditDTO passwordEditDTO){
         log.info("管理员id:{}-修改密码", passwordEditDTO.getUserId());
         passwordEditDTO.setUserId(BaseContext.getCurrentId());
         adminService.updatePwd(passwordEditDTO);
@@ -172,7 +176,7 @@ public class SysAdminController {
      */
     @PreAuthorize("hasPermission(null,'sys:user:edit')")
     @PutMapping("/update")
-    public Result update(@RequestBody UserDTO userDTO){
+    public Result update(@Valid @RequestBody UserDTO userDTO){
         log.info("修改用户:{}", userDTO);
         adminService.update(userDTO);
         return Result.success();
@@ -210,7 +214,7 @@ public class SysAdminController {
      */
     @PreAuthorize("hasPermission(null,'sys:user:role')")
     @PutMapping("/updateRole")
-    public Result updateRole(@RequestBody UserRoleAssignDTO userRoleAssignDTO){
+    public Result updateRole(@Valid @RequestBody UserRoleAssignDTO userRoleAssignDTO){
         log.info("分配用户角色:{}", userRoleAssignDTO);
         adminService.updateRole(userRoleAssignDTO);
         return Result.success();

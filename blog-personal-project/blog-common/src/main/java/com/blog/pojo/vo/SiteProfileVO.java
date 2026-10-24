@@ -1,5 +1,7 @@
 package com.blog.pojo.vo;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,6 +23,8 @@ public class SiteProfileVO implements Serializable {
     /**
      * 网站名称
      */
+    @NotBlank(message = "网站名称不能为空")
+    @Size(max = 50, message = "网站名称不能超过50个字符")
     private String name;
 
     /**

@@ -78,6 +78,9 @@ public class UserServiceImpl implements UserService {
 
         SysUser user = new SysUser();
         BeanUtils.copyProperties(userRegisterDTO, user);
+        user.setUsername(StringUtils.hasText(username) ? username : buildUniqueUsername(email));
+        user.setPhone(StringUtils.hasText(phone) ? phone : null);
+        user.setEmail(email);
 
         // 为空：null / 空串 / 全空格
         if (!StringUtils.hasText(user.getNickname())) {
@@ -467,14 +470,8 @@ public class UserServiceImpl implements UserService {
      * @param isRegister true=注册（所有字段必填） false=修改（字段可为空，有值才校验）
      */
     public void Verification(String username, String phone, String email,boolean  isRegister) {
-        // ===================== 注册：字段不能为空 =====================
+        // ===================== 注册：仅邮箱必填，用户名和手机号可选 =====================
         if (isRegister) {
-            if (!StringUtils.hasText(username)) {
-                throw new RegisterFailedException("用户名不能为空");
-            }
-            if (!StringUtils.hasText(phone)) {
-                throw new RegisterFailedException("手机号不能为空");
-            }
             if (!StringUtils.hasText(email)) {
                 throw new RegisterFailedException("邮箱不能为空");
             }

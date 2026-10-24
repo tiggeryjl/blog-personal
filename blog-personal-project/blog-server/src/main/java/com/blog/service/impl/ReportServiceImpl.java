@@ -1,9 +1,13 @@
 package com.blog.service.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.blog.exception.CustomException;
 import com.blog.mapper.ReportMapper;
 import com.blog.pojo.vo.HomeTrendItemVO;
 import com.blog.pojo.vo.ReportDistributionVO;
+import com.blog.pojo.vo.ReportTopWeeklyArticleVO;
+import com.blog.pojo.vo.WeeklyReportDataVO;
 import com.blog.service.ReportService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +33,9 @@ public class ReportServiceImpl implements ReportService {
     @Autowired
     private ReportMapper reportMapper;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     /**
      * 模块汇总指标
      * @param module 模块works/comment/user/link
@@ -37,7 +44,7 @@ public class ReportServiceImpl implements ReportService {
      * @return
      */
     @Override
-    public Map<String, Object> summary(String module, LocalDate begin, LocalDate end) {
+    public Object summary(String module, LocalDate begin, LocalDate end) {
         LocalDateTime[] range = resolveRange(begin, end);
         switch (module) {
             case "works":
@@ -131,7 +138,7 @@ public class ReportServiceImpl implements ReportService {
      * @return
      */
     @Override
-    public List<Map<String, Object>> top(String module, String metric, Integer limit, LocalDate begin, LocalDate end) {
+    public List<?> top(String module, String metric, Integer limit, LocalDate begin, LocalDate end) {
         LocalDateTime[] range = resolveRange(begin, end);
         int size = (limit == null || limit <= 0) ? 10 : Math.min(limit, 50);
         switch (module) {
@@ -161,15 +168,19 @@ public class ReportServiceImpl implements ReportService {
         LocalDateTime begin = today.minusDays(6).atStartOfDay();
         LocalDateTime end = today.plusDays(1).atStartOfDay();
 
-        Map<String, Object> data = reportMapper.selectWeeklyReportData(begin, end);
-        List<Map<String, Object>> topList = reportMapper.selectTopArticlesByWeeklyViews(begin, end, 5);
+        WeeklyReportDataVO weeklyData = reportMapper.selectWeeklyReportData(begin, end);
+        Map<String, Object> data = objectMapper.convertValue(
+                weeklyData,
+                new TypeReference<Map<String, Object>>() {}
+        );
+        List<ReportTopWeeklyArticleVO> topList = reportMapper.selectTopArticlesByWeeklyViews(begin, end, 5);
         StringBuilder top5 = new StringBuilder();
         for (int i = 0; i < topList.size(); i++) {
-            Map<String, Object> item = topList.get(i);
+            ReportTopWeeklyArticleVO item = topList.get(i);
             if (i > 0) {
                 top5.append("\n");
             }
-            top5.append(i + 1).append(". 《").append(item.get("title")).append("》 阅读量 ").append(item.get("viewCount"));
+            top5.append(i + 1).append(". 《").append(item.getTitle()).append("》 阅读量 ").append(item.getViewCount());
         }
         data.put("newSubscribers", data.getOrDefault("newUsers", 0));
         data.put("top5Articles", top5.toString());

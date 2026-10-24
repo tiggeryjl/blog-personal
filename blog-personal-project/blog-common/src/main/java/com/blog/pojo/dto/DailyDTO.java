@@ -1,6 +1,10 @@
 package com.blog.pojo.dto;
 
+import com.blog.validation.ValidationGroups;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,11 +28,17 @@ public class DailyDTO implements Serializable {
     /**
      * 主键ID
      */
+    @NotNull(groups = {
+            ValidationGroups.Update.class,
+            ValidationGroups.Status.class,
+            ValidationGroups.Timed.class
+    }, message = "日常ID不能为空")
     private Long id;
 
     /**
      * 日常内容
      */
+    @NotBlank(message = "日常内容不能为空")
     private String content;
 
     /**
@@ -49,6 +59,7 @@ public class DailyDTO implements Serializable {
     /**
      * 是否置顶 0否 1是
      */
+    @NotBlank(message = "置顶状态不合法")
     private Integer isTop;
 
     /**
@@ -71,5 +82,6 @@ public class DailyDTO implements Serializable {
     /**
      * 排序权重
      */
+    @Min(value = 0, message = "排序不能小于0")
     private Integer sort;
 }

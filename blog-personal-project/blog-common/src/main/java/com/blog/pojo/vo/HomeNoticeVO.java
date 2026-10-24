@@ -1,5 +1,7 @@
 package com.blog.pojo.vo;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,11 +21,13 @@ public class HomeNoticeVO implements Serializable {
     /**
      * 是否启用
      */
+    @NotNull(message = "公告启用状态不能为空")
     private Boolean enabled;
 
     /**
      * 公告标题
      */
+    @Size(max = 50, message = "公告标题不能超过50个字符")
     private String title;
 
     /**

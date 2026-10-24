@@ -2,13 +2,13 @@ package com.blog.mapper;
 
 import com.blog.pojo.dto.LinkPageQueryDTO;
 import com.blog.pojo.entity.Link;
+import com.blog.pojo.vo.LinkStatsVO;
 import com.blog.pojo.vo.LinkVo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 友情链接 Mapper
@@ -60,7 +60,7 @@ public interface LinkMapper {
      *
      * @return total/pending/approved/rejected 数量
      */
-    Map<String, Long> countByAuditStatus();
+    LinkStatsVO countByAuditStatus();
 
     /**
      * 校验网站链接是否已存在（未删除数据）

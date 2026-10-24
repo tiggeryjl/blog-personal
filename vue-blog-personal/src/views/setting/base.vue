@@ -174,7 +174,7 @@ const formatSex = (sexVal) => {
           <div class="info-item">
             <label>昵称</label>
             <template v-if="!editKeys.includes('nickname')">
-              <span>{{ originalUserInfo?.nickname }}</span>
+              <span class="info" @click="handleEdit('nickname')">{{ originalUserInfo?.nickname || '未填写' }}</span>
               <el-button text size="small" icon="Edit" @click="handleEdit('nickname')">修改</el-button>
             </template>
             <input v-else v-model="form.nickname" class="custom-input" />
@@ -183,7 +183,7 @@ const formatSex = (sexVal) => {
           <div class="info-item">
             <label>用户名</label>
             <template v-if="!editKeys.includes('username')">
-              <span>{{ originalUserInfo.username }}</span>
+              <span class="info" @click="handleEdit('username')">{{ originalUserInfo.username || '未填写' }}</span>
               <el-button text size="small" icon="Edit" @click="handleEdit('username')">修改</el-button>
             </template>
             <input v-else v-model="form.username" class="custom-input" />
@@ -192,7 +192,7 @@ const formatSex = (sexVal) => {
           <div class="info-item">
             <label>邮箱</label>
             <template v-if="!editKeys.includes('email')">
-              <span>{{ originalUserInfo.email }}</span>
+              <span class="info" @click="handleEdit('email')">{{ originalUserInfo.email || '未填写' }}</span>
               <el-button text size="small" icon="Edit" @click="handleEdit('email')">修改</el-button>
             </template>
             <input v-else v-model="form.email" class="custom-input" />
@@ -201,7 +201,7 @@ const formatSex = (sexVal) => {
           <div class="info-item">
             <label>手机号</label>
             <template v-if="!editKeys.includes('phone')">
-              <span>{{ originalUserInfo.phone }}</span>
+              <span class="info" @click="handleEdit('phone')">{{ originalUserInfo.phone || '未填写' }}</span>
               <el-button text size="small" icon="Edit" @click="handleEdit('phone')">修改</el-button>
             </template>
             <input v-else v-model="form.phone" class="custom-input" />
@@ -210,7 +210,7 @@ const formatSex = (sexVal) => {
           <div class="info-item">
             <label>性别</label>
             <template v-if="!editKeys.includes('sex')">
-              <span>{{ formatSex(originalUserInfo?.sex) }}</span>
+              <span class="info" @click="handleEdit('sex')">{{ formatSex(originalUserInfo?.sex) }}</span>
               <el-button text size="small" icon="Edit" @click="handleEdit('sex')">修改</el-button>
             </template>
             <div v-else class="radio-group">
@@ -371,6 +371,10 @@ const formatSex = (sexVal) => {
   color: var(--text-color);
   flex: unset;
   line-height: 38px;
+}
+
+.info-item .info:hover {
+  color: var(--primary-color);
 }
 
 .custom-input {

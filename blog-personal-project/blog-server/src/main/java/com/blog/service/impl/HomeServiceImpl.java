@@ -11,6 +11,7 @@ import com.blog.pojo.vo.HomeTrendItemVO;
 import com.blog.pojo.vo.HomeTrendVO;
 import com.blog.pojo.vo.HomeNoticeVO;
 import com.blog.pojo.vo.SiteStatisticsVO;
+import com.blog.properties.ArticleRankingProperties;
 import com.blog.service.HomeService;
 import com.blog.service.SystemConfigService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -50,6 +51,9 @@ public class HomeServiceImpl implements HomeService {
     @Autowired
     private SystemConfigService systemConfigService;
 
+    @Autowired
+    private ArticleRankingProperties articleRankingProperties;
+
     /**
      * 获取用户端首页热门文章
      *
@@ -57,7 +61,10 @@ public class HomeServiceImpl implements HomeService {
      */
     @Override
     public List<ArticleFrontVO> getPopularArticles() {
-        return homeMapper.selectPopularArticles(LayoutConstant.HOME_POPULAR_ARTICLE_LIMIT);
+        return homeMapper.selectPopularArticles(
+                LayoutConstant.HOME_POPULAR_ARTICLE_LIMIT,
+                articleRankingProperties
+        );
     }
 
     /**

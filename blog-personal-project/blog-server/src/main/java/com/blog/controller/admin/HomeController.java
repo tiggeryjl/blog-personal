@@ -5,6 +5,7 @@ import com.blog.pojo.vo.HomeTrendVO;
 import com.blog.pojo.vo.HomeNoticeVO;
 import com.blog.result.Result;
 import com.blog.service.HomeService;
+import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +64,7 @@ public class HomeController {
      */
     @PreAuthorize("hasPermission(null,'sys:notice:edit')")
     @PutMapping("/notice")
-    public Result saveHomeNotice(@RequestBody HomeNoticeVO notice) {
+    public Result saveHomeNotice(@Valid @RequestBody HomeNoticeVO notice) {
         log.info("保存首页公告:{}", notice);
         homeService.saveHomeNotice(notice);
         return Result.success();

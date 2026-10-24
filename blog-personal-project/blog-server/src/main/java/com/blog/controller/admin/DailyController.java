@@ -1,14 +1,18 @@
 package com.blog.controller.admin;
 
+import com.blog.validation.ValidationGroups;
 import com.blog.pojo.dto.DailyDTO;
 import com.blog.pojo.dto.DailyPageQueryDTO;
 import com.blog.pojo.entity.Daily;
 import com.blog.result.PageResult;
 import com.blog.result.Result;
 import com.blog.service.DailyService;
+import jakarta.validation.Valid;
+import jakarta.validation.groups.Default;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -43,7 +47,7 @@ public class DailyController {
      */
     @PreAuthorize("hasPermission(null,'sys:works:add')")
     @PostMapping("/add")
-    public Result add(@RequestBody DailyDTO dailyDTO) {
+    public Result add(@Valid @RequestBody DailyDTO dailyDTO) {
         log.info("新增日常:{}", dailyDTO);
         dailyService.add(dailyDTO);
         return Result.success();
@@ -68,7 +72,8 @@ public class DailyController {
      */
     @PreAuthorize("hasPermission(null,'sys:works:edit')")
     @PutMapping("/update")
-    public Result update(@RequestBody DailyDTO dailyDTO) {
+    public Result update(@Validated({Default.class, ValidationGroups.Update.class})
+                         @RequestBody DailyDTO dailyDTO) {
         log.info("修改日常:{}", dailyDTO);
         dailyService.update(dailyDTO);
         return Result.success();
@@ -81,7 +86,8 @@ public class DailyController {
      */
     @PreAuthorize("hasPermission(null,'sys:works:edit')")
     @PutMapping("/status")
-    public Result updateStatus(@RequestBody DailyDTO dailyDTO) {
+    public Result updateStatus(@Validated(ValidationGroups.Status.class)
+                               @RequestBody DailyDTO dailyDTO) {
         log.info("修改日常状态:{}", dailyDTO);
         dailyService.updateStatus(dailyDTO);
         return Result.success();
@@ -107,7 +113,8 @@ public class DailyController {
      */
     @PreAuthorize("hasPermission(null,'sys:works:edit')")
     @PostMapping("/setTimed")
-    public Result setTimed(@RequestBody DailyDTO dailyDTO) {
+    public Result setTimed(@Validated(ValidationGroups.Timed.class)
+                           @RequestBody DailyDTO dailyDTO) {
         log.info("设置日常定时发布:{}", dailyDTO);
         dailyService.setTimedPublish(dailyDTO);
         return Result.success();

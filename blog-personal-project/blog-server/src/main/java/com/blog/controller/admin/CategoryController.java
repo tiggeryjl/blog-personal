@@ -1,5 +1,6 @@
 package com.blog.controller.admin;
 
+import com.blog.validation.ValidationGroups;
 import com.blog.pojo.dto.CategoryDTO;
 import com.blog.pojo.dto.RecyclePageQueryDTO;
 import com.blog.pojo.vo.CategoryVo;
@@ -7,9 +8,12 @@ import com.blog.pojo.vo.OptionVO;
 import com.blog.result.PageResult;
 import com.blog.result.Result;
 import com.blog.service.CategoryService;
+import jakarta.validation.Valid;
+import jakarta.validation.groups.Default;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,7 +36,7 @@ public class CategoryController {
      */
     @PreAuthorize("hasPermission(null,'sys:category:add')")
     @PostMapping("/add")
-    public Result add(@RequestBody CategoryDTO categoryDTO){
+    public Result add(@Valid @RequestBody CategoryDTO categoryDTO){
         log.info("新增分类{}",categoryDTO);
         categoryService.add(categoryDTO);
         return Result.success();
@@ -70,7 +74,8 @@ public class CategoryController {
      */
     @PreAuthorize("hasPermission(null,'sys:category:edit')")
     @PutMapping("/update")
-    public Result update(@RequestBody CategoryDTO categoryDTO){
+    public Result update(@Validated({Default.class, ValidationGroups.Update.class})
+                         @RequestBody CategoryDTO categoryDTO){
         log.info("修改分类{}",categoryDTO);
         categoryService.update(categoryDTO);
         return Result.success();

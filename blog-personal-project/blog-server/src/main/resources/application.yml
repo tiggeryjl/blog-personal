@@ -52,6 +52,13 @@ blog:
     #站点地址/域名
     site-url: ${RSS_SITE_URL:http://localhost:5173}
     title: 小叶同学的博客
+  ranking:
+    article:
+      view-weight: 1.0
+      like-weight: 4.0
+      comment-weight: 6.0
+      half-life-hours: 168.0
+      recommend-boost: 1.2
   mail:
     #新文章邮件通知开关
     enabled: ${MAIL_ENABLED:true}

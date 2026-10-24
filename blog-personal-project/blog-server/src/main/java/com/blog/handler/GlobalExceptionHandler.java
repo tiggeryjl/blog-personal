@@ -3,6 +3,7 @@ package com.blog.handler;
 import com.blog.constant.MessageConstant;
 import com.blog.exception.BaseException;
 import com.blog.result.Result;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.access.AccessDeniedException;
@@ -102,6 +103,22 @@ public class GlobalExceptionHandler {
         String msg = ex.getBindingResult().getFieldErrors().stream()
                 .findFirst()
                 .map(fieldError -> fieldError.getDefaultMessage())
+                .orElse("参数校验失败");
+        return Result.error(400, msg);
+    }
+
+    /**
+     * 方法参数校验异常
+     *
+     * @param ex 参数校验异常
+     * @return 统一结果
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public Result<?> constraintViolation(ConstraintViolationException ex) {
+        log.error("方法参数校验失败：{}", ex.getMessage());
+        String msg = ex.getConstraintViolations().stream()
+                .findFirst()
+                .map(violation -> violation.getMessage())
                 .orElse("参数校验失败");
         return Result.error(400, msg);
     }

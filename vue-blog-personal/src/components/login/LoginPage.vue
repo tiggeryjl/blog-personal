@@ -336,11 +336,8 @@ const loginRules = {
 };
 
 const registerRules = {
-  username: [{ required: true, message: '请输入用户名' }],
-  phone: [
-    { required: true, message: '请输入手机号' },
-    { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确' },
-  ],
+  username: [{ pattern: /^[a-zA-Z0-9_]{3,16}$/, message: '用户名需为3-16位字母、数字或下划线' }],
+  phone: [{ pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确' }],
   email: [{ required: true, message: '请输入邮箱' }],
   password: [
     { required: true, message: '请输入密码' },
@@ -378,6 +375,10 @@ const validate = (formType) => {
       const ruleList = rules[key];
 
       for (let rule of ruleList) {
+        // 非必填字段为空时跳过格式校验
+        if (!val && !rule.required) {
+          continue;
+        }
         // 必填
         if (rule.required && !val) {
           errorMsg.value = rule.message;
@@ -550,7 +551,7 @@ const validate = (formType) => {
           <form @submit.prevent="onRegister" class="form" novalidate>
             <div class="field">
               <label>昵称</label>
-              <input type="text" placeholder="请输入昵称(可选填)" v-model="nickname" />
+              <input type="text" placeholder="请输入昵称" v-model="nickname" />
             </div>
             <div class="field">
               <label>账号</label>
@@ -562,7 +563,7 @@ const validate = (formType) => {
             </div>
             <div class="field">
               <label>邮箱</label>
-              <input type="text" placeholder="请输入邮箱" v-model="regEmail" />
+              <input type="text" placeholder="请输入邮箱 *" v-model="regEmail" />
             </div>
 
             <div class="field">

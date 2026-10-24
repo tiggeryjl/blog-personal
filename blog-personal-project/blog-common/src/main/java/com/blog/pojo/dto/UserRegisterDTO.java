@@ -1,6 +1,8 @@
 package com.blog.pojo.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,25 +29,28 @@ import java.io.Serializable;
 public class UserRegisterDTO implements Serializable {
 
     //昵称
+    @Size(max = 50, message = "昵称不能超过50个字符")
     private String nickname;
 
     //用户名
-    @NotBlank(message = "用户名不能为空")
     private String username;
 
     //手机号
-    @NotBlank(message = "手机号不能为空")
     private String phone;
 
     //邮箱
     @NotBlank(message = "邮箱不能为空")
+    @Size(max = 100, message = "邮箱不能超过100个字符")
+    @Email(message = "邮箱格式错误")
     private String email;
 
     //密码
     @NotBlank(message = "密码不能为空")
+    @Size(min = 6, max = 20, message = "密码长度需为6-20位")
     private String password;
 
     @NotBlank(message = "确认密码不能为空")
+    @Size(min = 6, max = 20, message = "确认密码长度需为6-20位")
     private String confirmPwd;
 
     //邮箱验证码

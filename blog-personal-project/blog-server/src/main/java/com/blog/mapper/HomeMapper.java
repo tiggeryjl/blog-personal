@@ -4,6 +4,7 @@ import com.blog.pojo.vo.ArticleFrontVO;
 import com.blog.pojo.vo.HomeStatisticsVO;
 import com.blog.pojo.vo.HomeTrendItemVO;
 import com.blog.pojo.vo.SiteStatisticsVO;
+import com.blog.properties.ArticleRankingProperties;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -18,11 +19,9 @@ public interface HomeMapper {
 
     /**
      * 查询用户端首页热门文章
-     *
-     * @param limit 最大返回数量
-     * @return 首页热门文章
      */
-    List<ArticleFrontVO> selectPopularArticles(@Param("limit") int limit);
+    List<ArticleFrontVO> selectPopularArticles(@Param("limit") int limit,
+                                               @Param("ranking") ArticleRankingProperties ranking);
 
     /**
      * 统计首页网站数据

@@ -456,6 +456,9 @@ public class SysAdminServiceImpl implements SysAdminService {
         }
         String salt = PasswordSaltUtil.generateSalt();
         String pwd = PasswordSaltUtil.encryptPwd(PasswordConstant.DEFAULT_PASSWORD, salt);
+        if (user.getSex()==null) {
+            user.setSex(MultiStatusConstant.TWO);
+        }
         user.setSalt(salt);
         user.setPassword(pwd);
         if (StringUtils.hasText(user.getAvatar())){
@@ -480,12 +483,12 @@ public class SysAdminServiceImpl implements SysAdminService {
     public void Verification(String username, String phone, String email, boolean isRegister) {
         // ===================== 注册：字段不能为空 =====================
         if (isRegister) {
-            if (!StringUtils.hasText(username)) {
-                throw new RegisterFailedException("用户名不能为空");
-            }
-            if (!StringUtils.hasText(phone)) {
-                throw new RegisterFailedException("手机号不能为空");
-            }
+//            if (!StringUtils.hasText(username)) {
+//                throw new RegisterFailedException("用户名不能为空");
+//            }
+//            if (!StringUtils.hasText(phone)) {
+//                throw new RegisterFailedException("手机号不能为空");
+//            }
             if (!StringUtils.hasText(email)) {
                 throw new RegisterFailedException("邮箱不能为空");
             }

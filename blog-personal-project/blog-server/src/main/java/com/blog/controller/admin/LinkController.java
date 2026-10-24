@@ -3,6 +3,7 @@ package com.blog.controller.admin;
 import com.blog.pojo.dto.LinkAuditDTO;
 import com.blog.pojo.dto.LinkDTO;
 import com.blog.pojo.dto.LinkPageQueryDTO;
+import com.blog.pojo.vo.LinkStatsVO;
 import com.blog.pojo.vo.LinkVo;
 import com.blog.result.PageResult;
 import com.blog.result.Result;
@@ -14,7 +15,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 友链管理
@@ -46,7 +46,7 @@ public class LinkController {
      */
     @PreAuthorize("hasPermission(null,'sys:link:list')")
     @GetMapping("/stats")
-    public Result<Map<String, Long>> stats() {
+    public Result<LinkStatsVO> stats() {
         log.info("统计友链审核状态数量");
         return Result.success(linkService.stats());
     }

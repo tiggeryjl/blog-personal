@@ -1,5 +1,6 @@
 package com.blog.controller.admin;
 
+import com.blog.validation.ValidationGroups;
 import com.blog.pojo.dto.TagDTO;
 import com.blog.pojo.dto.RecyclePageQueryDTO;
 import com.blog.pojo.vo.OptionVO;
@@ -7,9 +8,12 @@ import com.blog.pojo.vo.TagVo;
 import com.blog.result.PageResult;
 import com.blog.result.Result;
 import com.blog.service.TagService;
+import jakarta.validation.Valid;
+import jakarta.validation.groups.Default;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,7 +36,7 @@ public class TagController {
      */
     @PreAuthorize("hasPermission(null,'sys:category:add')")
     @PostMapping("/add")
-    public Result add(@RequestBody TagDTO tagDTO){
+    public Result add(@Valid @RequestBody TagDTO tagDTO){
         log.info("新增标签{}",tagDTO);
         tagService.add(tagDTO);
         return Result.success();
@@ -70,7 +74,8 @@ public class TagController {
      */
     @PreAuthorize("hasPermission(null,'sys:category:edit')")
     @PutMapping("/update")
-    public Result update(@RequestBody TagDTO tagDTO){
+    public Result update(@Validated({Default.class, ValidationGroups.Update.class})
+                         @RequestBody TagDTO tagDTO){
         log.info("修改标签{}",tagDTO);
         tagService.update(tagDTO);
         return Result.success();

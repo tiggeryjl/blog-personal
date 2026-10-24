@@ -47,7 +47,7 @@ public class UserController {
      * @return
      */
     @PostMapping("/register")
-    public Result register(@RequestBody UserRegisterDTO userRegisterDTO) {
+    public Result register(@Valid @RequestBody UserRegisterDTO userRegisterDTO) {
         log.info("用户注册信息:{}", userRegisterDTO);
         userService.register(userRegisterDTO);
         return Result.success();
@@ -120,7 +120,7 @@ public class UserController {
      * @return
      */
     @PostMapping("/login")
-    public Result<LoginVO> login(@RequestBody UserLoginDTO userLoginDTO, HttpServletResponse resp) {
+    public Result<LoginVO> login(@Valid @RequestBody UserLoginDTO userLoginDTO, HttpServletResponse resp) {
         log.info("用户登录信息:{}", userLoginDTO.getNickname());
 
         //TODO 等待上线放开注释
@@ -152,7 +152,7 @@ public class UserController {
      * @return
      */
     @PutMapping("/editPassword")
-    public Result updatePwd(@RequestBody PasswordEditDTO passwordEditDTO){
+    public Result updatePwd(@Valid @RequestBody PasswordEditDTO passwordEditDTO){
         log.info("用户id:{}-修改密码", passwordEditDTO.getUserId());
         passwordEditDTO.setUserId(BaseContext.getCurrentId());
         userService.updatePwd(passwordEditDTO);
@@ -215,7 +215,7 @@ public class UserController {
      * @return
      */
     @PutMapping("/update")
-    public Result update(@RequestBody UserDTO userDTO){
+    public Result update(@Valid @RequestBody UserDTO userDTO){
         log.info("修改用户:{}", userDTO);
         userDTO.setId(BaseContext.getCurrentId());
         userService.update(userDTO);

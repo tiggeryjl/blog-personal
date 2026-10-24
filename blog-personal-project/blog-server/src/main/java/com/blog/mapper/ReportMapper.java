@@ -1,13 +1,23 @@
 package com.blog.mapper;
 
 import com.blog.pojo.vo.HomeTrendItemVO;
+import com.blog.pojo.vo.ReportCommentSummaryVO;
 import com.blog.pojo.vo.ReportDistributionVO;
+import com.blog.pojo.vo.ReportLinkSummaryVO;
+import com.blog.pojo.vo.ReportTopActiveUserVO;
+import com.blog.pojo.vo.ReportTopArticleVO;
+import com.blog.pojo.vo.ReportTopCommentArticleVO;
+import com.blog.pojo.vo.ReportTopDailyVO;
+import com.blog.pojo.vo.ReportTopPendingLinkVO;
+import com.blog.pojo.vo.ReportTopWeeklyArticleVO;
+import com.blog.pojo.vo.ReportUserSummaryVO;
+import com.blog.pojo.vo.ReportWorksSummaryVO;
+import com.blog.pojo.vo.WeeklyReportDataVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 数据分析报表 Mapper
@@ -20,8 +30,8 @@ public interface ReportMapper {
     /**
      * 作品模块汇总指标
      */
-    Map<String, Object> selectWorksSummary(@Param("begin") LocalDateTime begin,
-                                           @Param("end") LocalDateTime end);
+    ReportWorksSummaryVO selectWorksSummary(@Param("begin") LocalDateTime begin,
+                                            @Param("end") LocalDateTime end);
 
     /**
      * 文章新增趋势
@@ -57,20 +67,20 @@ public interface ReportMapper {
     /**
      * 阅读量 TOP 文章
      */
-    List<Map<String, Object>> selectTopArticleByViews(@Param("limit") int limit);
+    List<ReportTopArticleVO> selectTopArticleByViews(@Param("limit") int limit);
 
     /**
      * 点赞 TOP 日常
      */
-    List<Map<String, Object>> selectTopDailyByLikes(@Param("limit") int limit);
+    List<ReportTopDailyVO> selectTopDailyByLikes(@Param("limit") int limit);
 
     // ==================== 评论统计 ====================
 
     /**
      * 评论模块汇总指标
      */
-    Map<String, Object> selectCommentSummary(@Param("begin") LocalDateTime begin,
-                                             @Param("end") LocalDateTime end);
+    ReportCommentSummaryVO selectCommentSummary(@Param("begin") LocalDateTime begin,
+                                                @Param("end") LocalDateTime end);
 
     /**
      * 评论新增趋势
@@ -94,16 +104,16 @@ public interface ReportMapper {
     /**
      * 评论最多文章 TOP
      */
-    List<Map<String, Object>> selectTopCommentArticle(@Param("begin") LocalDateTime begin,
-                                                      @Param("end") LocalDateTime end,
-                                                      @Param("limit") int limit);
+    List<ReportTopCommentArticleVO> selectTopCommentArticle(@Param("begin") LocalDateTime begin,
+                                                            @Param("end") LocalDateTime end,
+                                                            @Param("limit") int limit);
 
     // ==================== 用户统计 ====================
 
     /**
      * 用户模块汇总指标
      */
-    Map<String, Object> selectUserSummary(@Param("begin") LocalDateTime begin,
+    ReportUserSummaryVO selectUserSummary(@Param("begin") LocalDateTime begin,
                                           @Param("end") LocalDateTime end);
 
     /**
@@ -121,16 +131,16 @@ public interface ReportMapper {
     /**
      * 活跃用户 TOP
      */
-    List<Map<String, Object>> selectTopActiveUsers(@Param("begin") LocalDateTime begin,
-                                                   @Param("end") LocalDateTime end,
-                                                   @Param("limit") int limit);
+    List<ReportTopActiveUserVO> selectTopActiveUsers(@Param("begin") LocalDateTime begin,
+                                                     @Param("end") LocalDateTime end,
+                                                     @Param("limit") int limit);
 
     // ==================== 友链统计 ====================
 
     /**
      * 友链模块汇总指标
      */
-    Map<String, Object> selectLinkSummary(@Param("begin") LocalDateTime begin,
+    ReportLinkSummaryVO selectLinkSummary(@Param("begin") LocalDateTime begin,
                                           @Param("end") LocalDateTime end);
 
     /**
@@ -148,20 +158,20 @@ public interface ReportMapper {
     /**
      * 待审核友链 TOP
      */
-    List<Map<String, Object>> selectTopPendingLinks(@Param("limit") int limit);
+    List<ReportTopPendingLinkVO> selectTopPendingLinks(@Param("limit") int limit);
 
     // ==================== AI 周报 ====================
 
     /**
      * 周报基础数据（阅读量/评论/新增文章/新增用户）
      */
-    Map<String, Object> selectWeeklyReportData(@Param("begin") LocalDateTime begin,
-                                               @Param("end") LocalDateTime end);
+    WeeklyReportDataVO selectWeeklyReportData(@Param("begin") LocalDateTime begin,
+                                              @Param("end") LocalDateTime end);
 
     /**
      * 本周阅读量 TOP 文章
      */
-    List<Map<String, Object>> selectTopArticlesByWeeklyViews(@Param("begin") LocalDateTime begin,
-                                                             @Param("end") LocalDateTime end,
-                                                             @Param("limit") int limit);
+    List<ReportTopWeeklyArticleVO> selectTopArticlesByWeeklyViews(@Param("begin") LocalDateTime begin,
+                                                                 @Param("end") LocalDateTime end,
+                                                                 @Param("limit") int limit);
 }

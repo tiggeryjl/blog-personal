@@ -35,7 +35,7 @@ public class ReportController {
      */
     @PreAuthorize("@reportPermission.check(#module)")
     @GetMapping("/{module}/summary")
-    public Result<Map<String, Object>> summary(
+    public Result<Object> summary(
             @PathVariable String module,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate begin,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate end) {
@@ -83,7 +83,7 @@ public class ReportController {
      */
     @PreAuthorize("@reportPermission.check(#module)")
     @GetMapping("/{module}/top")
-    public Result<List<Map<String, Object>>> top(
+    public Result<List<?>> top(
             @PathVariable String module,
             @RequestParam(required = false) String metric,
             @RequestParam(required = false) Integer limit,

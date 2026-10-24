@@ -3,6 +3,7 @@ package com.blog.controller.admin;
 import com.blog.pojo.vo.SiteProfileVO;
 import com.blog.result.Result;
 import com.blog.service.SiteProfileService;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -38,7 +39,7 @@ public class SiteController {
      */
     @PreAuthorize("hasPermission(null,'sys:notice:edit')")
     @PutMapping("/profile")
-    public Result saveProfile(@RequestBody SiteProfileVO profile) {
+    public Result saveProfile(@Valid @RequestBody SiteProfileVO profile) {
         log.info("保存站点信息:{}", profile.getName());
         siteProfileService.saveProfile(profile);
         return Result.success();

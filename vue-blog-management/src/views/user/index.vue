@@ -172,9 +172,9 @@ const userForm = reactive({
 // 表单验证
 const userFormRef = ref(null);
 const rules = ref({
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  // username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   phone: [
-    { required: true, message: '请输入手机号', trigger: 'blur' },
+    // { required: true, message: '请输入手机号', trigger: 'blur' },
     { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' },
   ],
   email: [

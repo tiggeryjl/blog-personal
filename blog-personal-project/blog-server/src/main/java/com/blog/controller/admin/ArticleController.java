@@ -1,5 +1,6 @@
 package com.blog.controller.admin;
 
+import com.blog.validation.ValidationGroups;
 import com.blog.pojo.dto.ArticleDTO;
 import com.blog.pojo.dto.ArticlePageQueryDTO;
 import com.blog.pojo.vo.ArticleDetailVO;
@@ -7,9 +8,12 @@ import com.blog.pojo.vo.ArticleVo;
 import com.blog.result.PageResult;
 import com.blog.result.Result;
 import com.blog.service.ArticleService;
+import jakarta.validation.Valid;
+import jakarta.validation.groups.Default;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -84,7 +88,7 @@ public class ArticleController {
      */
     @PreAuthorize("hasPermission(null,'sys:article:add')")
     @PostMapping("/add")
-    public Result add(@RequestBody ArticleDTO articleDTO){
+    public Result add(@Valid @RequestBody ArticleDTO articleDTO){
         log.info("新增文章:{}",articleDTO);
         articleService.add(articleDTO);
         return Result.success();
@@ -110,7 +114,8 @@ public class ArticleController {
      */
     @PreAuthorize("hasPermission(null,'sys:article:edit')")
     @PutMapping("/update")
-    public Result update(@RequestBody ArticleDTO articleDTO){
+    public Result update(@Validated({Default.class, ValidationGroups.Update.class})
+                         @RequestBody ArticleDTO articleDTO){
         log.info("修改文章:{}",articleDTO);
         articleService.update(articleDTO);
         return Result.success();
@@ -121,7 +126,8 @@ public class ArticleController {
      */
     @PreAuthorize("hasPermission(null,'sys:article:edit')")
     @PostMapping("/setTimed")
-    public Result setTimed(@RequestBody ArticleDTO articleDTO) {
+    public Result setTimed(@Validated(ValidationGroups.Timed.class)
+                           @RequestBody ArticleDTO articleDTO) {
         log.info("设置定时发布:{}",articleDTO);
         articleService.setTimedPublish(articleDTO);
         return Result.success();
@@ -167,7 +173,8 @@ public class ArticleController {
      */
     @PreAuthorize("hasPermission(null,'sys:article:edit')")
     @PutMapping("/status")
-    public Result updateStatus(@RequestBody ArticleDTO articleDTO){
+    public Result updateStatus(@Validated(ValidationGroups.Status.class)
+                               @RequestBody ArticleDTO articleDTO){
         log.info("修改文章状态:{}",articleDTO);
         articleService.updateStatus(articleDTO);
         return Result.success();

@@ -3,6 +3,7 @@ package com.blog.controller.user;
 import com.blog.pojo.dto.RssSubscribeDTO;
 import com.blog.result.Result;
 import com.blog.service.RssService;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +23,7 @@ public class RssController {
      * 订阅新文章通知
      */
     @PostMapping("/subscribe")
-    public Result subscribe(@RequestBody RssSubscribeDTO dto) {
+    public Result subscribe(@Valid @RequestBody RssSubscribeDTO dto) {
         log.info("RSS邮箱订阅：{}", dto.getEmail());
         rssService.subscribe(dto);
         return Result.success();

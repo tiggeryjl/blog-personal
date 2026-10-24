@@ -18,7 +18,7 @@ public interface ReportService {
      * @param begin
      * @param end
      */
-    Map<String, Object> summary(String module, LocalDate begin, LocalDate end);
+    Object summary(String module, LocalDate begin, LocalDate end);
 
     /**
      * 按天趋势
@@ -48,7 +48,7 @@ public interface ReportService {
      * @param begin
      * @param end
      */
-    List<Map<String, Object>> top(String module, String metric, Integer limit, LocalDate begin, LocalDate end);
+    List<?> top(String module, String metric, Integer limit, LocalDate begin, LocalDate end);
 
     /**
      * 近7天AI 周报基础数据

@@ -4,11 +4,11 @@ import com.blog.pojo.dto.LinkApplyDTO;
 import com.blog.pojo.dto.LinkAuditDTO;
 import com.blog.pojo.dto.LinkDTO;
 import com.blog.pojo.dto.LinkPageQueryDTO;
+import com.blog.pojo.vo.LinkStatsVO;
 import com.blog.pojo.vo.LinkVo;
 import com.blog.result.PageResult;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 友情链接服务
@@ -28,7 +28,7 @@ public interface LinkService {
      *
      * @return total/pending/approved/rejected 数量
      */
-    Map<String, Long> stats();
+    LinkStatsVO stats();
 
     /**
      * 根据ID查询友链

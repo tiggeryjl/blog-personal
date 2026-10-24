@@ -7,12 +7,17 @@ import com.blog.pojo.dto.WeeklyStatsDTO;
 import com.blog.result.Result;
 import com.blog.service.AdminAiService;
 import com.blog.service.AiService;
+import com.blog.validation.ValidationGroups;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
@@ -21,6 +26,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/AiChat/ai")
+@Validated
 public class AIController {
 
     @Autowired
@@ -62,7 +68,8 @@ public class AIController {
      * 写文章初稿
      */
     @PostMapping("/write")
-    public Result writeArticle(@RequestBody AiRequestDTO aiRequestDTO) {
+    public Result writeArticle(
+            @Validated(ValidationGroups.WriteArticle.class) @RequestBody AiRequestDTO aiRequestDTO) {
         String result = aiService.writeArticle(aiRequestDTO.getTopic(), aiRequestDTO.getStyle(), aiRequestDTO.getLength());
         return Result.success(result);
     }
@@ -71,7 +78,8 @@ public class AIController {
      * 文章润色
      */
     @PostMapping("/polish")
-    public Result polish(@RequestBody AiRequestDTO aiRequestDTO) {
+    public Result polish(
+            @Validated(ValidationGroups.PolishArticle.class) @RequestBody AiRequestDTO aiRequestDTO) {
         String result = aiService.polishArticle(aiRequestDTO.getContent(), aiRequestDTO.getStyle());
         return Result.success(result);
     }
@@ -80,7 +88,10 @@ public class AIController {
      * 生成标题
      */
     @PostMapping("/titles")
-    public Result generateTitles(@RequestBody String content) {
+    public Result generateTitles(
+            @NotBlank(message = "标题生成内容不能为空")
+            @Size(max = 20000, message = "标题生成内容不能超过20000个字符")
+            @RequestBody String content) {
         List<String> titles = aiService.generateTitles(content);
         return Result.success(titles);
     }
@@ -91,7 +102,7 @@ public class AIController {
      * 生成周报
      */
     @PostMapping("/weekly-report")
-    public Result weeklyReport(@RequestBody WeeklyStatsDTO stats) {
+    public Result weeklyReport(@Valid @RequestBody WeeklyStatsDTO stats) {
         String report = adminAiService.generateWeeklyReport(stats);
         return Result.success(report);
     }
@@ -111,7 +122,10 @@ public class AIController {
      * 日志分析
      */
     @PostMapping("/analyze-logs")
-    public Result analyzeLogs(@RequestBody String logContent) {
+    public Result analyzeLogs(
+            @NotBlank(message = "日志内容不能为空")
+            @Size(max = 50000, message = "日志内容不能超过50000个字符")
+            @RequestBody String logContent) {
         String analysis = aiService.analyzeLogs(logContent);
         return Result.success(analysis);
     }
@@ -120,7 +134,10 @@ public class AIController {
      * SEO建议
      */
     @PostMapping("/seo")
-    public Result seoAdvice(@RequestBody String content) {
+    public Result seoAdvice(
+            @NotBlank(message = "SEO分析内容不能为空")
+            @Size(max = 20000, message = "SEO分析内容不能超过20000个字符")
+            @RequestBody String content) {
         String advice = aiService.getSeoAdvice(content);
         return Result.success(advice);
     }
