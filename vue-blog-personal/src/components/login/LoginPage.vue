@@ -8,11 +8,12 @@ Copyright (c) 2026 niumg9527
 使用范围：个人非商用博客，严格遵循原开源协议全部条款。
 -->
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Eye, EyeOff, Mail, Sparkles } from 'lucide-vue-next';
 import AnimatedCharacters from './AnimatedCharacters.vue';
 import Captcha from '@/components/Captcha.vue';
 import { getRememberedAccount } from '@/utils/auth';
+import { sendRegisterCodeApi } from '@/api/auth';
 
 const props = defineProps({
   brandName: {
@@ -65,11 +66,11 @@ const needLoginCaptcha = ref(false);
 const loginEmailCode = ref('');
 const loginCodeBtnDisabled = ref(false);
 const loginCodeBtnText = ref('获取验证码');
-//注册验证码
-const needEmailCode = ref(false);
+// 注册验证码
 const codeBtnDisabled = ref(false);
 const codeBtnText = ref('获取验证码');
 const emailCode = ref('');
+let registerCodeTimer = null;
 
 // 展示密码动画状态
 const showLoginPwd = ref(false);
@@ -87,6 +88,10 @@ defineExpose({
   },
   setLoading: (v) => {
     loading.value = v;
+  },
+  registrationSucceeded: () => {
+    isLogin.value = true;
+    errorMsg.value = '';
   },
 });
 
@@ -253,54 +258,58 @@ const onRegister = async () => {
     confirmPwd: regConfirmPwd.value,
     emailCode: emailCode.value,
   });
-  isLogin.value = true;
 };
 
-onMounted(() => {});
-
-const captchaBack = async (res) => {
-  if (res.ret !== 0) return alert('滑块失败');
-
-  localStorage.setItem('lastTicket', res.ticket);
-  localStorage.setItem('lastRandstr', res.randstr);
-
-  // 先检查是否需要邮箱验证
-  const { data } = await axios.post('/api/register/check', {
-    username: username.value,
-    password: password.value,
-    regEmail: regEmail.value,
-    ticket: res.ticket,
-    randstr: res.randstr,
-  });
-
-  if (data.needEmailCode) {
-    needEmailCode.value = true;
-    alert('当前为风险注册，需要邮箱验证');
-  } else {
-    alert('注册成功');
-  }
-};
 // 发送邮箱验证码
 const sendEmailCode = async () => {
-  await axios.post('/api/register/sendCode', { account: account.value });
-  // 倒计时逻辑自己加
-};
+  const email = regEmail.value.trim();
+  if (!email) {
+    errorMsg.value = '请先填写邮箱';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errorMsg.value = '邮箱格式错误';
+    return;
+  }
+  if (registerCodeTimer) {
+    return;
+  }
 
-// 确认注册（带邮箱验证码）
-const confirmRegister = async () => {
-  await axios.post('/api/register/confirm', {
-    username: username.value,
-    password: password.value,
-    regEmail: regEmail.value,
-    emailCode: emailCode.value,
-    ticket: localStorage.getItem('lastTicket'),
-    randstr: localStorage.getItem('lastRandstr'),
-  });
-  alert('注册成功');
+  errorMsg.value = '';
+  codeBtnDisabled.value = true;
+  try {
+    const result = await sendRegisterCodeApi({ email });
+    if (result.code !== 200) {
+      errorMsg.value = result.msg || '验证码发送失败';
+      codeBtnDisabled.value = false;
+      return;
+    }
+
+    let seconds = 60;
+    codeBtnText.value = `重新发送(${seconds}s)`;
+    registerCodeTimer = setInterval(() => {
+      seconds -= 1;
+      if (seconds <= 0) {
+        clearInterval(registerCodeTimer);
+        registerCodeTimer = null;
+        codeBtnDisabled.value = false;
+        codeBtnText.value = '获取验证码';
+      } else {
+        codeBtnText.value = `重新发送(${seconds}s)`;
+      }
+    }, 1000);
+  } catch (error) {
+    errorMsg.value = error?.response?.data?.msg || '验证码发送失败，请稍后重试';
+    codeBtnDisabled.value = false;
+  }
 };
 
 // 重置表单（切换登录/注册时调用）
 const resetForm = () => {
+  if (registerCodeTimer) {
+    clearInterval(registerCodeTimer);
+    registerCodeTimer = null;
+  }
   // 清空输入
   // 账号恢复成"记住我"保存的值，切换登录/注册回来时不用重新输入
   account.value = rememberedAccount;
@@ -318,7 +327,6 @@ const resetForm = () => {
 
   // 清空验证状态
   needLoginCaptcha.value = false;
-  needEmailCode.value = false;
   loginCodeBtnDisabled.value = false;
   loginCodeBtnText.value = '获取验证码';
   codeBtnDisabled.value = false;
@@ -328,6 +336,13 @@ const resetForm = () => {
   errorMsg.value = '';
   loading.value = false;
 };
+
+onUnmounted(() => {
+  if (registerCodeTimer) {
+    clearInterval(registerCodeTimer);
+    registerCodeTimer = null;
+  }
+});
 
 //表单校验
 const loginRules = {
@@ -339,6 +354,10 @@ const registerRules = {
   username: [{ pattern: /^[a-zA-Z0-9_]{3,16}$/, message: '用户名需为3-16位字母、数字或下划线' }],
   phone: [{ pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确' }],
   email: [{ required: true, message: '请输入邮箱' }],
+  emailCode: [
+    { required: true, message: '请输入验证码' },
+    { pattern: /^\d{6}$/, message: '验证码应为6位数字' },
+  ],
   password: [
     { required: true, message: '请输入密码' },
     { min: 6, message: '密码至少6位' },
@@ -363,6 +382,7 @@ const validate = (formType) => {
         username: username.value,
         phone: phone.value,
         email: regEmail.value,
+        emailCode: emailCode.value,
         password: regPassword.value,
         confirmPwd: regConfirmPwd.value,
       };
@@ -455,9 +475,9 @@ const validate = (formType) => {
         <AnimatedCharacters :is-typing="isTyping" :has-secret="!!currentPassword" :secret-visible="showPassword" />
       </div>
       <div class="footer-links">
-        <a href="#">隐私政策</a>
+        <!-- <a href="#">隐私政策</a>
         <a href="#">服务条款</a>
-        <a href="#">联系</a>
+        <a href="#">联系</a> -->
       </div>
       <div class="deco-grid" />
       <div class="deco-circle deco-circle-1" />
@@ -567,6 +587,16 @@ const validate = (formType) => {
             </div>
 
             <div class="field">
+              <label>验证码</label>
+              <div class="captcha-wrap">
+                <input v-model="emailCode" placeholder="请输入验证码" maxlength="6" inputmode="numeric" />
+                <button type="button" class="captcha-btn" :disabled="codeBtnDisabled" @click="sendEmailCode">
+                  {{ codeBtnText }}
+                </button>
+              </div>
+            </div>
+
+            <div class="field">
               <label>设置密码</label>
               <div class="password-wrap">
                 <input :type="showRegPwd ? 'text' : 'password'" v-model="regPassword" placeholder="请输入密码" />
@@ -584,16 +614,6 @@ const validate = (formType) => {
                 <button type="button" class="eye-btn" @click="showRegPwd = !showRegPwd">
                   <EyeOff v-if="showRegPwd" :size="20" />
                   <Eye v-else :size="20" />
-                </button>
-              </div>
-            </div>
-
-            <div class="field" v-if="needEmailCode">
-              <label>验证码</label>
-              <div class="captcha-wrap">
-                <input v-model="emailCode" placeholder="请输入验证码" />
-                <button type="button" class="captcha-btn" :disabled="codeBtnDisabled" @click="sendEmailCode">
-                  {{ codeBtnText }}
                 </button>
               </div>
             </div>
@@ -795,7 +815,9 @@ const validate = (formType) => {
 
 /** 验证码样式 */
 .captcha-wrap {
-  flex: 0 0 60%;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
   position: relative;
   display: flex;
   align-items: center;

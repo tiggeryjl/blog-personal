@@ -3,15 +3,25 @@ package com.blog.service.impl;
 import com.blog.service.RedisService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Service
 public class RedisServiceImpl implements RedisService {
+
+    private static final DefaultRedisScript<Long> INCREMENT_SCRIPT = new DefaultRedisScript<>(
+            "local current = redis.call('INCRBY', KEYS[1], ARGV[1]); "
+                    + "if current == tonumber(ARGV[1]) then "
+                    + "redis.call('EXPIRE', KEYS[1], ARGV[2]); "
+                    + "end; return current;",
+            Long.class
+    );
 
     @Autowired
     RedisTemplate<String,Object> redisTemplate;
@@ -36,6 +46,21 @@ public class RedisServiceImpl implements RedisService {
      */
     public void set(String key,Object value,long timeout){
         redisTemplate.opsForValue().set(key,value,timeout,TimeUnit.SECONDS);
+    }
+
+    @Override
+    public boolean setIfAbsent(String key, Object value, long timeout) {
+        Boolean result = redisTemplate.opsForValue()
+                .setIfAbsent(key, value, timeout, TimeUnit.SECONDS);
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public long incrementAndExpire(String key, long delta, long timeout) {
+        return redisTemplate.execute(
+                INCREMENT_SCRIPT,
+                List.of(key),
+                delta,timeout);
     }
 
     /**

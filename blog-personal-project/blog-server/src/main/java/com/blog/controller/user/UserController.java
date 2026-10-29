@@ -6,6 +6,7 @@ import com.blog.pojo.dto.PasswordEditDTO;
 import com.blog.pojo.dto.ResetPasswordCodeDTO;
 import com.blog.pojo.dto.ResetPasswordDTO;
 import com.blog.pojo.dto.ResetPasswordVerifyDTO;
+import com.blog.pojo.dto.RegisterCodeDTO;
 import com.blog.pojo.dto.UserDTO;
 import com.blog.pojo.dto.UserLoginDTO;
 import com.blog.pojo.dto.UserRegisterDTO;
@@ -17,6 +18,7 @@ import com.blog.result.Result;
 import com.blog.service.JwtService;
 import com.blog.service.UserService;
 import com.blog.utils.AliyunAcsClient;
+import com.blog.utils.IpUtil;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,6 +53,20 @@ public class UserController {
         log.info("用户注册信息:{}", userRegisterDTO);
         userService.register(userRegisterDTO);
         return Result.success();
+    }
+
+    /**
+     * 发送注册邮箱验证码
+     *
+     * @param registerCodeDTO 注册邮箱
+     * @return 统一结果
+     */
+    @PostMapping("/register/code")
+    public Result sendRegisterCode(@Valid @RequestBody RegisterCodeDTO registerCodeDTO,
+                                   HttpServletRequest request) {
+        log.info("发送注册验证码，邮箱：{}", registerCodeDTO.getEmail());
+        userService.sendRegisterCode(registerCodeDTO.getEmail(), IpUtil.getClientIp(request));
+        return Result.success("验证码已发送");
     }
 
     /**

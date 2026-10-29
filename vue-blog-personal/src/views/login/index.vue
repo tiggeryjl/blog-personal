@@ -58,14 +58,15 @@ const handleRegister = async (payload) => {
       emailCode: payload.emailCode
     })
 
-    if (result.code == 200) {
+    if (result.code === 200) {
       ElMessage.success("注册成功，请登录!");
+      loginRef.value?.registrationSucceeded()
     } else {
       loginRef.value?.setError(result.msg)
     }
   } catch (error) {
     console.error('注册异常：', error);
-
+    loginRef.value?.setError(error?.response?.data?.msg || '注册失败，请稍后重试')
   } finally {
     loginRef.value?.setLoading(false)
   }

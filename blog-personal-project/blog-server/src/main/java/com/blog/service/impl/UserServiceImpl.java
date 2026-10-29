@@ -28,7 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.security.SecureRandom;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 @Slf4j
@@ -53,16 +55,16 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     public void register(UserRegisterDTO userRegisterDTO) {
-        String username = userRegisterDTO.getUsername().trim();
-        String phone = userRegisterDTO.getPhone().trim();
-        String email = userRegisterDTO.getEmail().trim();
-        String pwd = userRegisterDTO.getPassword().trim();
-        String confirmPwd = userRegisterDTO.getConfirmPwd().trim();
+        String username = normalizeOptional(userRegisterDTO.getUsername());
+        String phone = normalizeOptional(userRegisterDTO.getPhone());
+        String email = normalizeEmail(userRegisterDTO.getEmail());
+        String pwd = normalizeOptional(userRegisterDTO.getPassword());
+        String confirmPwd = normalizeOptional(userRegisterDTO.getConfirmPwd());
 
         //校验
         Verification(username, phone, email,true);
 
-        // ===================== 4. 单独校验密码 =====================
+        // ===================== 单独校验密码 =====================
         if (pwd.length() < 6 || pwd.length() > 20) {
             throw new RegisterFailedException(MessageConstant.PASSWORD_LEN_SHORT);
         }
@@ -70,6 +72,8 @@ public class UserServiceImpl implements UserService {
             throw new RegisterFailedException(MessageConstant.PASSWORD_TWO_NOT_EQUAL);
         }
 
+        // 校验注册邮箱验证码，成功后立即失效
+        verifyRegisterCode(email, userRegisterDTO.getEmailCode());
 
         // ===================== 5. 全部校验通过,插入数据 =====================
         String salt = PasswordSaltUtil.generateSalt();
@@ -96,6 +100,78 @@ public class UserServiceImpl implements UserService {
         user.setUpdateTime(LocalDateTime.now());
 
         userMapper.register(user);
+    }
+
+    /**
+     * 发送注册邮箱验证码
+     *
+     * @param email 注册邮箱
+     * @param ip 请求IP
+     */
+    @Override
+    public void sendRegisterCode(String email, String ip) {
+        String mail = normalizeEmail(email);
+        if (!StringUtils.hasText(mail)) {
+            throw new RegisterFailedException("邮箱不能为空");
+        }
+        if (!mail.matches(UserUtil.EMAIL_REGEX)) {
+            throw new RegisterFailedException(MessageConstant.EMAIL_FORMAT_ERROR);
+        }
+        if (userMapper.selectByEmail(mail) != null) {
+            throw new RegisterFailedException(MessageConstant.EMAIL_EXISTS);
+        }
+        if (!mailService.isAvailable()) {
+            throw new RegisterFailedException("站点还没有配置发件邮箱，暂时无法发送验证码");
+        }
+
+        String intervalKey = RegisterVerificationConstant.LIMIT_KEY_PREFIX + mail;
+        if (!redisService.setIfAbsent(intervalKey,"1",
+                RegisterVerificationConstant.SEND_INTERVAL_SECONDS)) {
+            throw new RegisterFailedException("验证码发送太频繁了，请稍后再试");
+        }
+
+        String date = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+        String emailDailyKey = RegisterVerificationConstant.EMAIL_DAILY_KEY_PREFIX
+                + date + ":" + mail;
+        long emailCount = redisService.incrementAndExpire(
+                emailDailyKey,
+                1,
+                RegisterVerificationConstant.DAILY_COUNT_TTL_SECONDS
+        );
+        if (emailCount > RegisterVerificationConstant.EMAIL_DAILY_LIMIT) {
+            throw new RegisterFailedException("该邮箱今日验证码发送次数已达上限");
+        }
+
+        String safeIp = StringUtils.hasText(ip) ? ip.trim() : "unknown";
+        if (safeIp.length() > 100) {
+            safeIp = safeIp.substring(0, 100);
+        }
+        String ipDailyKey = RegisterVerificationConstant.IP_DAILY_KEY_PREFIX
+                + date + ":" + safeIp;
+        long ipCount = redisService.incrementAndExpire(
+                ipDailyKey,
+                1,
+                RegisterVerificationConstant.DAILY_COUNT_TTL_SECONDS
+        );
+        if (ipCount > RegisterVerificationConstant.IP_DAILY_LIMIT) {
+            throw new RegisterFailedException("当前网络今日验证码发送次数已达上限");
+        }
+
+        String code = String.format("%06d", RANDOM.nextInt(1000000));
+        String codeKey = RegisterVerificationConstant.CODE_KEY_PREFIX + mail;
+        String attemptKey = RegisterVerificationConstant.ATTEMPT_KEY_PREFIX + mail;
+        redisService.set(codeKey, code, RegisterVerificationConstant.CODE_TTL_SECONDS);
+        redisService.delete(attemptKey);
+
+        try {
+            mailService.sendHtml(mail,"【小叶同学的博客】注册验证码",buildRegisterCodeHtml(code));
+        } catch (Exception e) {
+            redisService.delete(codeKey);
+            redisService.delete(attemptKey);
+            redisService.delete(intervalKey);
+            log.error("注册验证码发送失败，邮箱：{}", mail, e);
+            throw new RegisterFailedException("验证码发送失败，请稍后重试");
+        }
     }
 
     /**
@@ -403,6 +479,16 @@ public class UserServiceImpl implements UserService {
         return email == null ? "" : email.trim().toLowerCase();
     }
 
+    /**
+     * 可选字符串去空格，null 转成空字符串
+     *
+     * @param value 原始值
+     * @return 标准化后的值
+     */
+    private String normalizeOptional(String value) {
+        return value == null ? "" : value.trim();
+    }
+
     private String trimToEmpty(String value) {
         return value == null ? "" : value.trim();
     }
@@ -417,6 +503,55 @@ public class UserServiceImpl implements UserService {
                 + "<p style=\"font-size:26px;font-weight:bold;letter-spacing:6px;color:#4f46e5\">" + code + "</p>"
                 + "<p>验证码 " + (ResetPasswordConstant.CODE_TTL_SECONDS / 60) + " 分钟内有效，请勿转发给他人。</p>"
                 + "<p>如果这不是您本人的操作，忽略这封邮件即可，您的密码不会被修改。</p>"
+                + "</div>";
+    }
+
+    /**
+     * 校验注册邮箱验证码
+     *
+     * @param email 注册邮箱
+     * @param emailCode 用户输入的验证码
+     */
+    private void verifyRegisterCode(String email, String emailCode) {
+        String codeKey = RegisterVerificationConstant.CODE_KEY_PREFIX + email;
+        String attemptKey = RegisterVerificationConstant.ATTEMPT_KEY_PREFIX + email;
+        String cachedCode = redisService.get(codeKey, String.class);
+        if (!StringUtils.hasText(cachedCode)) {
+            throw new RegisterFailedException("验证码已过期，请重新获取");
+        }
+
+        String inputCode = trimToEmpty(emailCode);
+        if (!cachedCode.equals(inputCode)) {
+            long attempts = redisService.incrementAndExpire(
+                    attemptKey,
+                    1,
+                    RegisterVerificationConstant.CODE_TTL_SECONDS
+            );
+            if (attempts >= RegisterVerificationConstant.MAX_ATTEMPTS) {
+                redisService.delete(codeKey);
+                redisService.delete(attemptKey);
+                throw new RegisterFailedException("验证码错误次数过多，请重新获取");
+            }
+            throw new RegisterFailedException("验证码不正确");
+        }
+
+        redisService.delete(codeKey);
+        redisService.delete(attemptKey);
+    }
+
+    /**
+     * 注册验证码邮件正文
+     *
+     * @param code 验证码
+     * @return HTML正文
+     */
+    private String buildRegisterCodeHtml(String code) {
+        return "<div style=\"font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#333;line-height:1.9\">"
+                + "<p>您好，</p>"
+                + "<p>您正在注册「小叶同学的博客」账号，本次验证码为：</p>"
+                + "<p style=\"font-size:26px;font-weight:bold;letter-spacing:6px;color:#4f46e5\">" + code + "</p>"
+                + "<p>验证码 5 分钟内有效，请勿转发给他人。</p>"
+                + "<p>如果这不是您本人的操作，请忽略这封邮件。</p>"
                 + "</div>";
     }
 

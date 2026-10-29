@@ -20,6 +20,26 @@ public interface RedisService {
     void set(String key,Object value,long timeout);
 
     /**
+     * 仅当 key 不存在时设置缓存，适合发送频率限流
+     *
+     * @param key 键
+     * @param value 值
+     * @param timeout 过期时长（秒）
+     * @return 是否设置成功
+     */
+    boolean setIfAbsent(String key, Object value, long timeout);
+
+    /**
+     * 原子递增计数器，并在首次创建时设置过期时间
+     *
+     * @param key 键
+     * @param delta 增量
+     * @param timeout 过期时长（秒）
+     * @return 递增后的值
+     */
+    long incrementAndExpire(String key, long delta, long timeout);
+
+    /**
      * 获取缓存
      */
     <T> T get(String key,Class<T> clazz);

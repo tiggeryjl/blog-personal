@@ -6,6 +6,9 @@ export const loginApi = (user) => request.post('/user/user/login', user);
 //用户注册
 export const registerApi = (user) => request.post('/user/user/register', user);
 
+// 发送注册邮箱验证码
+export const sendRegisterCodeApi = (data) => request.post('/user/user/register/code', data);
+
 // 判断邮箱是否已注册（留言板简约登录/注册）
 export const emailExistsApi = (email) => request.get('/user/user/emailExists', { params: { email } });
 

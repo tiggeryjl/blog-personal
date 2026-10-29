@@ -54,6 +54,8 @@ public class UserRegisterDTO implements Serializable {
     private String confirmPwd;
 
     //邮箱验证码
+    @NotBlank(message = "邮箱验证码不能为空")
+    @Size(min = 6, max = 6, message = "邮箱验证码应为6位")
     private String emailCode;
 
 }

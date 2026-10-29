@@ -21,6 +21,14 @@ public interface UserService {
     void register(UserRegisterDTO userRegisterDTO);
 
     /**
+     * 发送注册邮箱验证码
+     *
+     * @param email 注册邮箱
+     * @param ip 请求IP
+     */
+    void sendRegisterCode(String email, String ip);
+
+    /**
      * 判断邮箱是否已注册
      *
      * @param email 邮箱

@@ -1,268 +1,266 @@
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import { getMusicListApi } from '@/api/music'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { ElMessage } from 'element-plus';
+import { getMusicListApi } from '@/api/music';
 
-const LOOP_MODE_KEY = 'blog_music_loop_mode'
-const VOLUME_KEY = 'blog_music_volume'
-const DEFAULT_VOLUME = 70
+const LOOP_MODE_KEY = 'blog_music_loop_mode';
+const VOLUME_KEY = 'blog_music_volume';
+const DEFAULT_VOLUME = 70;
 
 const getStoredNumber = (key, fallback, min, max) => {
-  const value = Number(localStorage.getItem(key))
-  return Number.isFinite(value) && value >= min && value <= max ? value : fallback
-}
+  const value = Number(localStorage.getItem(key));
+  return Number.isFinite(value) && value >= min && value <= max ? value : fallback;
+};
 
-const audioEl = ref(null)
-const musicContainer = ref(null)
-const tracks = ref([])
-const currentIndex = ref(0)
-const isPlaying = ref(false)
-const showPanel = ref(false)
-const showVolume = ref(false)
-const currentTime = ref(0)
-const audioDuration = ref(0)
-const volume = ref(getStoredNumber(VOLUME_KEY, DEFAULT_VOLUME, 0, 100))
-const loopMode = ref(getStoredNumber(LOOP_MODE_KEY, 0, 0, 2))
-const lyricLines = ref([])
+const audioEl = ref(null);
+const musicContainer = ref(null);
+const tracks = ref([]);
+const currentIndex = ref(0);
+const isPlaying = ref(false);
+const showPanel = ref(false);
+const showVolume = ref(false);
+const currentTime = ref(0);
+const audioDuration = ref(0);
+const volume = ref(getStoredNumber(VOLUME_KEY, DEFAULT_VOLUME, 0, 100));
+const loopMode = ref(getStoredNumber(LOOP_MODE_KEY, 0, 0, 2));
+const lyricLines = ref([]);
 
-const currentSong = computed(() => tracks.value[currentIndex.value] || null)
+const currentSong = computed(() => tracks.value[currentIndex.value] || null);
 const progress = computed(() => {
-  const total = audioDuration.value || Number(currentSong.value?.duration) || 0
-  return total ? Math.min(100, (currentTime.value / total) * 100) : 0
-})
-const displayDuration = computed(
-  () => audioDuration.value || Number(currentSong.value?.duration) || 0
-)
+  const total = audioDuration.value || Number(currentSong.value?.duration) || 0;
+  return total ? Math.min(100, (currentTime.value / total) * 100) : 0;
+});
+const displayDuration = computed(() => audioDuration.value || Number(currentSong.value?.duration) || 0);
 const loopIcon = computed(() => {
-  if (loopMode.value === 1) return ['fas', 'arrow-rotate-right']
-  if (loopMode.value === 2) return ['fas', 'shuffle']
-  return ['fas', 'repeat']
-})
+  if (loopMode.value === 1) return ['fas', 'arrow-rotate-right'];
+  if (loopMode.value === 2) return ['fas', 'shuffle'];
+  return ['fas', 'repeat'];
+});
 const loopText = computed(() => {
-  if (loopMode.value === 1) return '单曲循环'
-  if (loopMode.value === 2) return '随机播放'
-  return '列表循环'
-})
+  if (loopMode.value === 1) return '单曲循环';
+  if (loopMode.value === 2) return '随机播放';
+  return '列表循环';
+});
 const volumeIcon = computed(() => {
-  if (volume.value === 0) return ['fas', 'volume-xmark']
-  if (volume.value < 45) return ['fas', 'volume-low']
-  return ['fas', 'volume-high']
-})
+  if (volume.value === 0) return ['fas', 'volume-xmark'];
+  if (volume.value < 45) return ['fas', 'volume-low'];
+  return ['fas', 'volume-high'];
+});
 const activeLyricIndex = computed(() => {
-  if (!lyricLines.value.length) return -1
-  let index = -1
+  if (!lyricLines.value.length) return -1;
+  let index = -1;
   for (let i = 0; i < lyricLines.value.length; i += 1) {
-    if (lyricLines.value[i].time <= currentTime.value + 0.15) index = i
-    else break
+    if (lyricLines.value[i].time <= currentTime.value + 0.15) index = i;
+    else break;
   }
-  return index
-})
+  return index;
+});
 
 const formatTime = (seconds) => {
-  const value = Number(seconds) || 0
-  const minutes = Math.floor(value / 60)
-  const rest = Math.floor(value % 60)
-  return `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`
-}
+  const value = Number(seconds) || 0;
+  const minutes = Math.floor(value / 60);
+  const rest = Math.floor(value % 60);
+  return `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
+};
 
 const parseLrc = (text) => {
-  const result = []
+  const result = [];
   String(text || '')
     .split(/\r?\n/)
     .forEach((line) => {
-      const timeTags = [...line.matchAll(/\[(\d{1,2}):(\d{2}(?:\.\d{1,3})?)\]/g)]
-      if (!timeTags.length) return
-      const content = line.replace(/\[[^\]]+\]/g, '').trim()
-      if (!content) return
+      const timeTags = [...line.matchAll(/\[(\d{1,2}):(\d{2}(?:\.\d{1,3})?)\]/g)];
+      if (!timeTags.length) return;
+      const content = line.replace(/\[[^\]]+\]/g, '').trim();
+      if (!content) return;
       timeTags.forEach((tag) => {
         result.push({
           time: Number(tag[1]) * 60 + Number(tag[2]),
           text: content,
-        })
-      })
-    })
-  return result.sort((a, b) => a.time - b.time)
-}
+        });
+      });
+    });
+  return result.sort((a, b) => a.time - b.time);
+};
 
-let lyricRequestVersion = 0
+let lyricRequestVersion = 0;
 const loadLyrics = async (song) => {
-  const requestVersion = ++lyricRequestVersion
-  lyricLines.value = []
-  if (!song?.lyric) return
+  const requestVersion = ++lyricRequestVersion;
+  lyricLines.value = [];
+  if (!song?.lyric) return;
 
   try {
-    let content = song.lyric
+    let content = song.lyric;
     if (/^https?:\/\//i.test(song.lyric)) {
-      const response = await fetch(song.lyric)
-      if (!response.ok) throw new Error('歌词请求失败')
-      content = await response.text()
+      const response = await fetch(song.lyric);
+      if (!response.ok) throw new Error('歌词请求失败');
+      content = await response.text();
     }
     if (requestVersion === lyricRequestVersion) {
-      lyricLines.value = parseLrc(content)
+      lyricLines.value = parseLrc(content);
     }
   } catch (error) {
-    console.warn('加载歌词失败：', error)
+    console.warn('加载歌词失败：', error);
   }
-}
+};
 
 const playAudio = async () => {
-  if (!audioEl.value || !currentSong.value?.url) return
+  if (!audioEl.value || !currentSong.value?.url) return;
   try {
-    await audioEl.value.play()
+    await audioEl.value.play();
   } catch (error) {
     if (error?.name === 'NotAllowedError') {
-      ElMessage.info('浏览器限制自动播放，请点击播放按钮开始')
+      ElMessage.info('浏览器限制自动播放，请点击播放按钮开始');
     } else {
-      console.warn('播放失败：', error)
+      console.warn('播放失败：', error);
     }
   }
-}
+};
 
 const togglePlay = async () => {
-  if (!audioEl.value || !currentSong.value) return
+  if (!audioEl.value || !currentSong.value) return;
   if (isPlaying.value) {
-    audioEl.value.pause()
-    return
+    audioEl.value.pause();
+    return;
   }
-  await playAudio()
-}
+  await playAudio();
+};
 
 const randomIndex = () => {
-  if (tracks.value.length <= 1) return 0
-  let index = currentIndex.value
+  if (tracks.value.length <= 1) return 0;
+  let index = currentIndex.value;
   while (index === currentIndex.value) {
-    index = Math.floor(Math.random() * tracks.value.length)
+    index = Math.floor(Math.random() * tracks.value.length);
   }
-  return index
-}
+  return index;
+};
 
 const switchSong = async (index, shouldPlay = true) => {
-  if (!tracks.value.length) return
-  currentIndex.value = (index + tracks.value.length) % tracks.value.length
-  currentTime.value = 0
-  audioDuration.value = 0
-  await nextTick()
-  audioEl.value?.load()
-  loadLyrics(currentSong.value)
-  if (shouldPlay) await playAudio()
-}
+  if (!tracks.value.length) return;
+  currentIndex.value = (index + tracks.value.length) % tracks.value.length;
+  currentTime.value = 0;
+  audioDuration.value = 0;
+  await nextTick();
+  audioEl.value?.load();
+  loadLyrics(currentSong.value);
+  if (shouldPlay) await playAudio();
+};
 
 const prevSong = () => {
   if (loopMode.value === 2) {
-    switchSong(randomIndex())
-    return
+    switchSong(randomIndex());
+    return;
   }
-  switchSong(currentIndex.value - 1)
-}
+  switchSong(currentIndex.value - 1);
+};
 
 const nextSong = () => {
   if (loopMode.value === 2) {
-    switchSong(randomIndex())
-    return
+    switchSong(randomIndex());
+    return;
   }
-  switchSong(currentIndex.value + 1)
-}
+  switchSong(currentIndex.value + 1);
+};
 
 const handleEnded = () => {
   if (loopMode.value === 1) {
-    audioEl.value.currentTime = 0
-    playAudio()
-    return
+    audioEl.value.currentTime = 0;
+    playAudio();
+    return;
   }
-  nextSong()
-}
+  nextSong();
+};
 
 const handleTimeUpdate = () => {
-  if (!audioEl.value) return
-  currentTime.value = audioEl.value.currentTime || 0
-}
+  if (!audioEl.value) return;
+  currentTime.value = audioEl.value.currentTime || 0;
+};
 
 const handleLoadedMetadata = () => {
-  audioDuration.value = Number(audioEl.value?.duration) || 0
-}
+  audioDuration.value = Number(audioEl.value?.duration) || 0;
+};
 
 const handlePlay = () => {
-  isPlaying.value = true
-}
+  isPlaying.value = true;
+};
 
 const handlePause = () => {
-  isPlaying.value = false
-}
+  isPlaying.value = false;
+};
 
-let errorNoticeLocked = false
+let errorNoticeLocked = false;
 const handleAudioError = () => {
-  if (errorNoticeLocked || !currentSong.value) return
-  errorNoticeLocked = true
-  ElMessage.warning(`《${currentSong.value.name}》播放失败，已尝试切换下一首`)
+  if (errorNoticeLocked || !currentSong.value) return;
+  errorNoticeLocked = true;
+  ElMessage.warning(`《${currentSong.value.name}》播放失败，已尝试切换下一首`);
   window.setTimeout(() => {
-    errorNoticeLocked = false
-  }, 1600)
-  if (tracks.value.length > 1) nextSong()
-}
+    errorNoticeLocked = false;
+  }, 1600);
+  if (tracks.value.length > 1) nextSong();
+};
 
 const seekAudio = (event) => {
-  if (!audioEl.value || !displayDuration.value) return
-  const percent = Number(event.target.value)
-  audioEl.value.currentTime = (percent / 100) * displayDuration.value
-  currentTime.value = audioEl.value.currentTime
-}
+  if (!audioEl.value || !displayDuration.value) return;
+  const percent = Number(event.target.value);
+  audioEl.value.currentTime = (percent / 100) * displayDuration.value;
+  currentTime.value = audioEl.value.currentTime;
+};
 
 const changeVolume = (event) => {
-  volume.value = Number(event.target.value)
-}
+  volume.value = Number(event.target.value);
+};
 
 const toggleMute = () => {
-  volume.value = volume.value > 0 ? 0 : DEFAULT_VOLUME
-}
+  volume.value = volume.value > 0 ? 0 : DEFAULT_VOLUME;
+};
 
 const changeLoopMode = () => {
-  loopMode.value = (loopMode.value + 1) % 3
-}
+  loopMode.value = (loopMode.value + 1) % 3;
+};
 
 const toggleShowPanel = () => {
-  if (!tracks.value.length) return
-  showPanel.value = !showPanel.value
-  if (!showPanel.value) showVolume.value = false
-}
+  if (!tracks.value.length) return;
+  showPanel.value = !showPanel.value;
+  if (!showPanel.value) showVolume.value = false;
+};
 
 const clickOutside = (event) => {
   if (musicContainer.value && !musicContainer.value.contains(event.target)) {
-    showPanel.value = false
-    showVolume.value = false
+    showPanel.value = false;
+    showVolume.value = false;
   }
-}
+};
 
-watch(loopMode, (value) => localStorage.setItem(LOOP_MODE_KEY, String(value)))
+watch(loopMode, (value) => localStorage.setItem(LOOP_MODE_KEY, String(value)));
 watch(volume, (value) => {
-  localStorage.setItem(VOLUME_KEY, String(value))
-  if (audioEl.value) audioEl.value.volume = value / 100
-})
+  localStorage.setItem(VOLUME_KEY, String(value));
+  if (audioEl.value) audioEl.value.volume = value / 100;
+});
 
 const loadTracks = async () => {
   try {
-    const result = await getMusicListApi()
-    if (result.code !== 200 || !Array.isArray(result.data)) return
-    tracks.value = result.data.filter((item) => item?.url)
-    currentIndex.value = 0
+    const result = await getMusicListApi();
+    if (result.code !== 200 || !Array.isArray(result.data)) return;
+    tracks.value = result.data.filter((item) => item?.url);
+    currentIndex.value = 0;
     if (tracks.value.length) {
-      await nextTick()
-      if (audioEl.value) audioEl.value.volume = volume.value / 100
-      loadLyrics(currentSong.value)
+      await nextTick();
+      if (audioEl.value) audioEl.value.volume = volume.value / 100;
+      loadLyrics(currentSong.value);
     }
   } catch (error) {
-    console.warn('获取音乐列表失败：', error)
+    console.warn('获取音乐列表失败：', error);
   }
-}
+};
 
 onMounted(() => {
-  loadTracks()
-  window.addEventListener('click', clickOutside)
-})
+  loadTracks();
+  window.addEventListener('click', clickOutside);
+});
 
 onUnmounted(() => {
-  window.removeEventListener('click', clickOutside)
-  audioEl.value?.pause()
-})
+  window.removeEventListener('click', clickOutside);
+  audioEl.value?.pause();
+});
 </script>
 
 <template>
@@ -420,7 +418,7 @@ onUnmounted(() => {
             <font-awesome-icon :icon="['fas', 'list-ul']" />
             播放列表
           </span>
-          <span>{{ tracks.length }} TRACKS</span>
+          <span style="font-size: 11px">共计{{ tracks.length }}首</span>
         </div>
         <div class="playlist">
           <button
@@ -452,7 +450,6 @@ onUnmounted(() => {
     </transition>
   </div>
 </template>
-
 
 <style scoped>
 .music-container {
@@ -785,9 +782,7 @@ onUnmounted(() => {
   padding: 18px;
   overflow: hidden;
   color: #233047;
-  background:
-    radial-gradient(circle at 100% 0, rgba(157, 213, 255, 0.38), transparent 34%),
-    rgba(244, 250, 255, 0.97);
+  background: radial-gradient(circle at 100% 0, rgba(157, 213, 255, 0.38), transparent 34%), rgba(244, 250, 255, 0.97);
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 20px;
   box-shadow: 0 22px 60px rgba(30, 41, 69, 0.2);
@@ -1124,9 +1119,7 @@ onUnmounted(() => {
   width: 36px;
   height: 36px;
   border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow:
-    0 0 0 3px color-mix(in srgb, #5a9cf0 13%, transparent),
-    0 7px 18px rgba(79, 145, 237, 0.24);
+  box-shadow: 0 0 0 3px color-mix(in srgb, #5a9cf0 13%, transparent), 0 7px 18px rgba(79, 145, 237, 0.24);
 }
 
 .music-right {
@@ -1199,14 +1192,11 @@ onUnmounted(() => {
   max-height: min(78vh, 650px);
   padding: 20px;
   color: var(--text-color);
-  background:
-    linear-gradient(155deg, color-mix(in srgb, #d8edff 34%, transparent), transparent 66%),
+  background: linear-gradient(155deg, color-mix(in srgb, #d8edff 34%, transparent), transparent 66%),
     color-mix(in srgb, var(--card-secound-bg, #fff) 92%, transparent);
   border-color: color-mix(in srgb, var(--border-color) 13%, transparent);
   border-radius: 24px;
-  box-shadow:
-    0 30px 72px rgba(22, 33, 58, 0.24),
-    0 4px 16px rgba(22, 33, 58, 0.08);
+  box-shadow: 0 30px 72px rgba(22, 33, 58, 0.24), 0 4px 16px rgba(22, 33, 58, 0.08);
 }
 
 .panel-backdrop {
@@ -1321,8 +1311,7 @@ onUnmounted(() => {
   height: 126px;
   margin: 16px 0 8px;
   padding: 50px 14px;
-  background:
-    linear-gradient(145deg, rgba(220, 241, 255, 0.2), transparent 62%),
+  background: linear-gradient(145deg, rgba(220, 241, 255, 0.2), transparent 62%),
     color-mix(in srgb, var(--card-bg) 66%, transparent);
   border-color: color-mix(in srgb, var(--border-color) 8%, transparent);
   border-radius: 17px;
@@ -1411,10 +1400,7 @@ onUnmounted(() => {
   overflow: hidden;
   color: color-mix(in srgb, var(--text-color) 78%, transparent);
   border: 1px solid transparent;
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .playlist-item:hover {
