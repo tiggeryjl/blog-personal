@@ -1,17 +1,20 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { User } from '@element-plus/icons-vue';
 import CommentList from '@/components/Comment.vue';
 import Emoji from '@/components/Emoji.vue';
-import { requireLogin } from '@/utils/auth';
+import Captcha from '@/components/Captcha.vue';
+import { getOrCreateDeviceId, requireLogin } from '@/utils/auth';
 import { useUserStore } from '@/store/userloginstatus';
 import { addCommentReplyApi, addMessageCommentApi, getMessageCommentListApi } from '@/api/comment.js';
 import { likeApi, LIKE_TARGET_TYPE } from '@/api/like.js';
-import { emailExistsApi, loginApi, registerByEmailApi } from '@/api/auth.js';
+import { emailExistsApi, loginApi, registerByEmailApi, sendRegisterCodeApi } from '@/api/auth.js';
 import { isGuestLiked, rememberGuestLiked } from '@/utils/guestLike.js';
 
 const userStore = useUserStore();
+const router = useRouter();
 const isLogin = computed(() => !!userStore.user_token);
 const userInfo = computed(() => userStore.userInfo || {});
 
@@ -210,7 +213,120 @@ const authDialogVisible = ref(false);
 const authMode = ref('login'); // login=已注册邮箱登录；register=未注册邮箱注册
 const authPassword = ref('');
 const authConfirmPwd = ref('');
+const authEmailCode = ref('');
+const authCodeBtnDisabled = ref(false);
+const authCodeBtnText = ref('获取验证码');
 const authSubmitting = ref(false);
+let authCodeTimer = null;
+const authCaptchaComponent = ref(null);
+let pendingQuickLoginData = null;
+
+const clearAuthCodeTimer = () => {
+  if (authCodeTimer) {
+    clearInterval(authCodeTimer);
+    authCodeTimer = null;
+  }
+};
+
+const resetQuickAuthCode = () => {
+  clearAuthCodeTimer();
+  authEmailCode.value = '';
+  authCodeBtnDisabled.value = false;
+  authCodeBtnText.value = '获取验证码';
+};
+
+const sendQuickRegisterCode = async () => {
+  const email = authEmail.value.trim();
+  if (!EMAIL_REGEX.test(email)) {
+    ElMessage.warning('请输入正确的邮箱');
+    return;
+  }
+  if (authCodeTimer) return;
+
+  authCodeBtnDisabled.value = true;
+  try {
+    const result = await sendRegisterCodeApi({ email });
+    if (result?.code !== 200) {
+      ElMessage.error(result?.msg || '验证码发送失败');
+      authCodeBtnDisabled.value = false;
+      return;
+    }
+
+    let seconds = 60;
+    authCodeBtnText.value = `重新发送(${seconds}s)`;
+    authCodeTimer = setInterval(() => {
+      seconds -= 1;
+      if (seconds <= 0) {
+        clearAuthCodeTimer();
+        authCodeBtnDisabled.value = false;
+        authCodeBtnText.value = '获取验证码';
+      } else {
+        authCodeBtnText.value = `重新发送(${seconds}s)`;
+      }
+    }, 1000);
+  } catch (error) {
+    authCodeBtnDisabled.value = false;
+    ElMessage.error('验证码发送失败，请稍后重试');
+  }
+};
+
+const clearPendingQuickLogin = () => {
+  pendingQuickLoginData = null;
+  authSubmitting.value = false;
+};
+
+const handleQuickCaptchaFail = () => {
+  if (!pendingQuickLoginData) return;
+  clearPendingQuickLogin();
+  ElMessage.info('安全验证已取消');
+};
+
+const finishQuickLoginSuccess = async (loginData) => {
+  userStore.loginSuccess(loginData);
+  ElMessage.success('登录成功！');
+  authDialogVisible.value = false;
+  authEmail.value = '';
+  authNickname.value = '';
+  authPassword.value = '';
+  authConfirmPwd.value = '';
+  await getMessageList(1);
+};
+
+const handleQuickCaptchaSuccess = async (captchaVerifyParam) => {
+  if (!pendingQuickLoginData) {
+    authSubmitting.value = false;
+    return;
+  }
+
+  const loginPayload = pendingQuickLoginData;
+  pendingQuickLoginData = null;
+  try {
+    const loginResult = await loginApi({
+      loginName: loginPayload.email,
+      password: loginPayload.password,
+      deviceId: loginPayload.deviceId,
+      captchaVerifyParam,
+    });
+
+    if (loginResult?.code !== 200) {
+      ElMessage.error(loginResult?.msg || '登录失败，请检查邮箱或密码');
+      return;
+    }
+
+    if (loginResult.data?.needEmailCode) {
+      authDialogVisible.value = false;
+      ElMessage.warning('当前设备需要完成邮箱安全验证，请前往登录页');
+      router.push({ path: '/login', query: { redirect: '/feedback' } });
+      return;
+    }
+
+    await finishQuickLoginSuccess(loginResult.data);
+  } catch (error) {
+    ElMessage.error('登录失败，请稍后重试');
+  } finally {
+    authSubmitting.value = false;
+  }
+};
 
 // 输入邮箱：已注册走登录，未注册走注册
 const handleQuickAuth = async () => {
@@ -232,6 +348,7 @@ const handleQuickAuth = async () => {
     }
     authPassword.value = '';
     authConfirmPwd.value = '';
+    resetQuickAuthCode();
     authDialogVisible.value = true;
   } catch (error) {
     ElMessage.error('操作失败，请稍后重试');
@@ -258,42 +375,49 @@ const submitQuickAuth = async () => {
       ElMessage.warning('两次密码输入不一致');
       return;
     }
+    if (!/^\d{6}$/.test(authEmailCode.value)) {
+      ElMessage.warning('请输入6位邮箱验证码');
+      return;
+    }
   }
   if (authSubmitting.value) return;
-  authSubmitting.value = true;
-  try {
-    if (authMode.value === 'register') {
+
+  if (authMode.value === 'register') {
+    authSubmitting.value = true;
+    try {
       const registerResult = await registerByEmailApi({
         email,
         nickname: authNickname.value.trim(),
         password,
         confirmPwd: authConfirmPwd.value,
+        emailCode: authEmailCode.value,
+        deviceId: getOrCreateDeviceId(),
       });
       if (registerResult?.code !== 200) {
         ElMessage.error(registerResult?.msg || '注册失败，请稍后重试');
         return;
       }
-    }
 
-    const loginResult = await loginApi({ loginName: email, password });
-    if (loginResult?.code === 200) {
-      userStore.loginSuccess(loginResult.data);
-      ElMessage.success(authMode.value === 'register' ? '注册并登录成功！' : '登录成功！');
-      authDialogVisible.value = false;
-      authEmail.value = '';
-      authNickname.value = '';
-      authPassword.value = '';
-      authConfirmPwd.value = '';
-      await getMessageList(1);
-    } else {
-      ElMessage.error(
-        loginResult?.msg || (authMode.value === 'register' ? '注册成功，请手动登录' : '登录失败，请检查邮箱或密码')
-      );
+      await finishQuickLoginSuccess(registerResult.data);
+    } catch (error) {
+      ElMessage.error('注册失败，请稍后重试');
+    } finally {
+      authSubmitting.value = false;
     }
-  } catch (error) {
-    ElMessage.error(authMode.value === 'register' ? '注册失败，请稍后重试' : '登录失败，请稍后重试');
-  } finally {
-    authSubmitting.value = false;
+    return;
+  }
+
+  pendingQuickLoginData = {
+    email,
+    password,
+    deviceId: getOrCreateDeviceId(),
+  };
+  authSubmitting.value = true;
+  if (authCaptchaComponent.value) {
+    authCaptchaComponent.value.show();
+  } else {
+    clearPendingQuickLogin();
+    ElMessage.error('安全验证组件未加载，请刷新页面重试');
   }
 };
 
@@ -320,6 +444,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   latestListRequestId += 1;
+  clearAuthCodeTimer();
   document.removeEventListener('click', closeEmojiOutside);
 });
 </script>
@@ -440,6 +565,7 @@ onUnmounted(() => {
       width="420px"
       align-center
       :close-on-click-modal="false"
+      @closed="resetQuickAuthCode"
     >
       <template #header>
         <h3 class="auth-dialog-title">{{ authMode === 'register' ? '完成注册' : '登录' }}</h3>
@@ -469,16 +595,33 @@ onUnmounted(() => {
           placeholder="请再次输入密码确认"
           @keyup.enter="submitQuickAuth"
         />
+        <div v-if="authMode === 'register'" class="auth-code-row">
+          <el-input
+            v-model="authEmailCode"
+            maxlength="6"
+            inputmode="numeric"
+            placeholder="请输入邮箱验证码"
+            @keyup.enter="submitQuickAuth"
+          />
+          <button type="button" class="auth-code-btn" :disabled="authCodeBtnDisabled" @click="sendQuickRegisterCode">
+            {{ authCodeBtnText }}
+          </button>
+        </div>
       </div>
       <template #footer>
         <div class="auth-dialog-footer">
           <button type="button" class="auth-cancel-btn" @click="authDialogVisible = false">取消</button>
           <button type="button" class="auth-submit-btn" :disabled="authSubmitting" @click="submitQuickAuth">
-            {{ authSubmitting ? '处理中…' : authMode === 'register' ? '注册并登录' : '登录' }}
+            {{ authSubmitting ? '登录中…' : authMode === 'register' ? '注册并登录' : '登录' }}
           </button>
         </div>
       </template>
     </el-dialog>
+    <Captcha
+      ref="authCaptchaComponent"
+      @captchaSuccess="handleQuickCaptchaSuccess"
+      @captchaFail="handleQuickCaptchaFail"
+    />
   </div>
 </template>
 
@@ -807,6 +950,37 @@ textarea {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.auth-code-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.auth-code-row :deep(.el-input) {
+  flex: 1;
+  min-width: 0;
+}
+
+.auth-code-btn {
+  flex-shrink: 0;
+  min-width: 92px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(64, 158, 255, 0.45);
+  border-radius: 8px;
+  background: rgba(64, 158, 255, 0.1);
+  color: #409eff;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.auth-code-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .auth-cancel-btn {
