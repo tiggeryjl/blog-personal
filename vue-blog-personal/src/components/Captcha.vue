@@ -8,12 +8,14 @@ import { onMounted, onUnmounted, ref } from 'vue';
 
 const emit = defineEmits(['captchaSuccess', 'captchaFail']);
 let captchaInstance = null;
+let verifySucceeded = false;
 const customWidth = 360;
 
 // 验证成功回调
 const onSuccess = (result) => {
   // console.log('阿里云返回结果:', result);
   if (result) {
+    verifySucceeded = true;
     emit('captchaSuccess', result);
   } else {
     console.error('未获取到 CaptchaVerifyParam,请检查场景ID配置');
@@ -23,6 +25,7 @@ const onSuccess = (result) => {
 
 // 验证失败回调
 const onFail = (error) => {
+  if (verifySucceeded) return;
   console.error('滑块验证失败', error);
   emit('captchaFail');
 };
@@ -33,12 +36,14 @@ const onGetInstance = (instance) => {
 };
 
 const onerror = (err) => {
+  if (verifySucceeded) return;
   console.error('验证码错误（包括用户关闭）', err);
   emit('captchaFail');
 };
 
 const onClose = () => {
   // console.log('用户关闭验证码弹窗');
+  if (verifySucceeded) return;
   emit('captchaFail');
 };
 
@@ -72,6 +77,7 @@ const initCaptcha = (rem) => {
 // 暴露给父组件的方法：主动弹出验证码
 const show = () => {
   if (captchaInstance && typeof captchaInstance.show === 'function') {
+    verifySucceeded = false;
     captchaInstance.show();
   } else {
     console.warn('验证码实例未就绪');

@@ -1,6 +1,7 @@
 package com.blog.pojo.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -41,4 +42,18 @@ public class EmailRegisterDTO implements Serializable {
      */
     @NotBlank(message = "确认密码不能为空")
     private String confirmPwd;
+
+    /**
+     * 邮箱验证码
+     */
+    @NotBlank(message = "邮箱验证码不能为空")
+    @Pattern(regexp = "\\d{6}", message = "邮箱验证码应为6位数字")
+    private String emailCode;
+
+    /**
+     * 注册设备标识
+     */
+    @NotBlank(message = "设备标识不能为空")
+    @Size(max = 128, message = "设备标识格式错误")
+    private String deviceId;
 }

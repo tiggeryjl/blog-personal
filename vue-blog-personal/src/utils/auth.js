@@ -16,6 +16,7 @@ export const requireLogin = (tip = '请先登录后再进行该操作') => {
 };
 
 const REMEMBERED_ACCOUNT_KEY = 'rememberedAccount';
+const DEVICE_ID_KEY = 'blog_device_id';
 
 /**
  * 读取上次勾选"记住我"时保存的账号
@@ -36,4 +37,29 @@ export const saveRememberedAccount = (account) => {
   }
 };
 
-export default { isLoggedIn, requireLogin, getRememberedAccount, saveRememberedAccount };
+/**
+ * 获取当前浏览器稳定设备标识，不存在时自动生成
+ *
+ * @returns {string} 设备标识
+ */
+export const getOrCreateDeviceId = () => {
+  let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+  if (deviceId) return deviceId;
+
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    deviceId = crypto.randomUUID();
+  } else {
+    const randomPart = Math.random().toString(36).slice(2);
+    deviceId = `${Date.now().toString(36)}-${randomPart}`;
+  }
+  localStorage.setItem(DEVICE_ID_KEY, deviceId);
+  return deviceId;
+};
+
+export default {
+  isLoggedIn,
+  requireLogin,
+  getRememberedAccount,
+  saveRememberedAccount,
+  getOrCreateDeviceId,
+};

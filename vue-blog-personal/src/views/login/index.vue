@@ -4,13 +4,27 @@ import LoginPage from '@/components/login/LoginPage.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/userloginstatus'
 import { ElMessage } from 'element-plus';
-import { loginApi, registerApi } from '@/api/auth'
+import { loginApi, registerApi, verifyLoginCodeApi } from '@/api/auth'
 import { saveRememberedAccount } from '@/utils/auth'
 
 const router = useRouter()
 const route = useRoute()
 const loginRef = ref();
 const userStore = useUserStore()
+let pendingLogin = null
+
+const finishLogin = (data, payload) => {
+  if (!data?.token) {
+    loginRef.value?.setError('登录凭证异常，请重新登录')
+    return
+  }
+
+  saveRememberedAccount(payload.remember ? payload.account : '')
+  ElMessage.success('登录成功!')
+  userStore.loginSuccess(data)
+  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/index'
+  router.replace(redirect)
+}
 
 const handleLogin = async (payload) => {
 
@@ -21,24 +35,54 @@ const handleLogin = async (payload) => {
       loginName: payload.account,
       password: payload.password,
       remember: payload.remember,
-      emailCode: payload.emailCode,
-      captchaVerifyParam: payload.captchaVerifyParam
+      deviceId: payload.deviceId,
+      captchaVerifyParam: payload.captchaVerifyParam,
     })
 
-    if (result.code == 200) {
-      // 勾选"记住我"则记住账号，未勾选则清掉之前记住的账号
-      saveRememberedAccount(payload.remember ? payload.account : '')
-      ElMessage.success("登录成功!");
-      userStore.loginSuccess(result.data)
-      // 从受保护页面跳过来的，登录后回到原页面，否则回首页
-      const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/index'
-      router.replace(redirect)
+    if (result.code === 200) {
+      if (result.data?.needEmailCode) {
+        pendingLogin = payload
+        loginRef.value?.requireLoginEmailCode(result.data)
+        return
+      }
+      pendingLogin = null
+      finishLogin(result.data, payload)
     } else {
       loginRef.value?.setError(result.msg)
     }
   } catch (error) {
     console.error('登录异常：', error);
+    loginRef.value?.setError(error?.response?.data?.msg || '登录失败，请稍后重试')
+  } finally {
+    loginRef.value?.setLoading(false)
+  }
+}
 
+const handleLoginVerify = async (payload) => {
+  if (!pendingLogin) {
+    loginRef.value?.setError('登录验证已失效，请重新输入账号密码')
+    return
+  }
+
+  try {
+    loginRef.value?.setLoading(true)
+    const result = await verifyLoginCodeApi({
+      riskTicket: payload.riskTicket,
+      emailCode: payload.emailCode,
+      deviceId: payload.deviceId,
+      remember: payload.remember,
+    })
+
+    if (result.code === 200) {
+      const loginPayload = pendingLogin
+      pendingLogin = null
+      finishLogin(result.data, loginPayload)
+    } else {
+      loginRef.value?.setError(result.msg)
+    }
+  } catch (error) {
+    console.error('登录验证码校验异常：', error)
+    loginRef.value?.setError(error?.response?.data?.msg || '邮箱验证失败，请稍后重试')
   } finally {
     loginRef.value?.setLoading(false)
   }
@@ -55,7 +99,8 @@ const handleRegister = async (payload) => {
       email: payload.email,
       password: payload.password,
       confirmPwd: payload.confirmPwd,
-      emailCode: payload.emailCode
+      emailCode: payload.emailCode,
+      deviceId: payload.deviceId
     })
 
     if (result.code === 200) {
@@ -76,7 +121,7 @@ const handleRegister = async (payload) => {
 <template>
   <div class="login-wrapper">
     <LoginPage ref="loginRef" brand-name="您好，欢迎您的到来!" title="您好，欢迎你!" subtitle="请输入您的信息" primary-color="#4f46e5"
-      @login-submit="handleLogin" @register-submit="handleRegister" />
+      @login-submit="handleLogin" @login-verify-submit="handleLoginVerify" @register-submit="handleRegister" />
   </div>
 </template>
 

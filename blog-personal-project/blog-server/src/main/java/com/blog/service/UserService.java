@@ -41,7 +41,7 @@ public interface UserService {
      *
      * @param emailRegisterDTO 邮箱、密码与确认密码
      */
-    void registerByEmail(EmailRegisterDTO emailRegisterDTO);
+    SysUser registerByEmail(EmailRegisterDTO emailRegisterDTO);
 
     /**
      * 用户登录

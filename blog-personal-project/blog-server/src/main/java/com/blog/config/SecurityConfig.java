@@ -64,6 +64,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 登录注册、刷新token、退出等无需认证
                         .requestMatchers("/user/user/login",
+                                "/user/user/login/code",
+                                "/user/user/login/verify",
                                 "/user/user/register",
                                 "/user/user/register/code",
                                 "/user/user/registerByEmail",

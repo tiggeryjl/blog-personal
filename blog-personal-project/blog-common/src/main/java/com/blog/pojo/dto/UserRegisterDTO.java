@@ -58,4 +58,8 @@ public class UserRegisterDTO implements Serializable {
     @Size(min = 6, max = 6, message = "邮箱验证码应为6位")
     private String emailCode;
 
+    // 注册浏览器设备标识，注册成功后直接作为可信设备
+    @Size(max = 128, message = "设备标识格式错误")
+    private String deviceId;
+
 }

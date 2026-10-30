@@ -3,6 +3,12 @@ import request from '@/utils/request';
 // 用户登录
 export const loginApi = (user) => request.post('/user/user/login', user);
 
+// 风险登录：发送邮箱验证码
+export const sendLoginCodeApi = (data) => request.post('/user/user/login/code', data);
+
+// 风险登录：验证邮箱验证码并签发登录凭证
+export const verifyLoginCodeApi = (data) => request.post('/user/user/login/verify', data);
+
 //用户注册
 export const registerApi = (user) => request.post('/user/user/register', user);
 

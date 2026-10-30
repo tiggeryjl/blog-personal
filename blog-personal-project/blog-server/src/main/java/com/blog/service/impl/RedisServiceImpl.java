@@ -23,6 +23,12 @@ public class RedisServiceImpl implements RedisService {
             Long.class
     );
 
+    private static final DefaultRedisScript<Long> GET_COUNTER_SCRIPT = new DefaultRedisScript<>(
+            "local value = redis.call('GET', KEYS[1]); "
+                    + "if not value then return 0 end; return tonumber(value);",
+            Long.class
+    );
+
     @Autowired
     RedisTemplate<String,Object> redisTemplate;
 
@@ -61,6 +67,12 @@ public class RedisServiceImpl implements RedisService {
                 INCREMENT_SCRIPT,
                 List.of(key),
                 delta,timeout);
+    }
+
+    @Override
+    public long getCounter(String key) {
+        Long result = redisTemplate.execute(GET_COUNTER_SCRIPT, List.of(key));
+        return result == null ? 0L : result;
     }
 
     /**

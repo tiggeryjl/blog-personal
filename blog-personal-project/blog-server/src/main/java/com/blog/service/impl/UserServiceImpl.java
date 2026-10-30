@@ -16,6 +16,7 @@ import com.blog.pojo.entity.SysUser;
 import com.blog.pojo.vo.UserPersonalInfoVO;
 import com.blog.pojo.vo.UserSimpleVO;
 import com.blog.service.MailService;
+import com.blog.service.LoginVerificationService;
 import com.blog.service.RedisService;
 import com.blog.service.UserService;
 import com.blog.utils.PasswordSaltUtil;
@@ -47,6 +48,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private MailService mailService;
+
+    @Autowired
+    private LoginVerificationService loginVerificationService;
 
     /**
      * 用户注册
@@ -195,8 +199,8 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void registerByEmail(EmailRegisterDTO emailRegisterDTO) {
-        String email = emailRegisterDTO.getEmail() == null ? "" : emailRegisterDTO.getEmail().trim();
+    public SysUser registerByEmail(EmailRegisterDTO emailRegisterDTO) {
+        String email = normalizeEmail(emailRegisterDTO.getEmail());
         String nickname = emailRegisterDTO.getNickname() == null ? "" : emailRegisterDTO.getNickname().trim();
         String pwd = emailRegisterDTO.getPassword() == null ? "" : emailRegisterDTO.getPassword().trim();
         String confirmPwd = emailRegisterDTO.getConfirmPwd() == null
@@ -217,6 +221,9 @@ public class UserServiceImpl implements UserService {
         if (!pwd.equals(confirmPwd)) {
             throw new RegisterFailedException(MessageConstant.PASSWORD_TWO_NOT_EQUAL);
         }
+
+        // 快捷注册与普通注册共用同一套邮箱验证码
+        verifyRegisterCode(email, emailRegisterDTO.getEmailCode());
 
         String salt = PasswordSaltUtil.generateSalt();
         String nickPrefix = email.substring(0, email.indexOf('@'));
@@ -241,6 +248,7 @@ public class UserServiceImpl implements UserService {
         user.setCreateTime(LocalDateTime.now());
         user.setUpdateTime(LocalDateTime.now());
         userMapper.register(user);
+        return userMapper.selectByEmail(email);
     }
 
     /**
@@ -317,6 +325,7 @@ public class UserServiceImpl implements UserService {
         // 6. 密码校验
         String encrypt = PasswordSaltUtil.encryptPwd(pwd, user.getSalt());
         if (!encrypt.equals(user.getPassword())) {
+            loginVerificationService.recordPasswordFailure(user.getId());
             throw new LoginFailedException(MessageConstant.PASSWORD_ERROR);
         }
 

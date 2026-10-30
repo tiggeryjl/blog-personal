@@ -9,11 +9,11 @@ Copyright (c) 2026 niumg9527
 -->
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { Eye, EyeOff, Mail, Sparkles } from 'lucide-vue-next';
+import { Eye, EyeOff, Sparkles } from 'lucide-vue-next';
 import AnimatedCharacters from './AnimatedCharacters.vue';
 import Captcha from '@/components/Captcha.vue';
-import { getRememberedAccount } from '@/utils/auth';
-import { sendRegisterCodeApi } from '@/api/auth';
+import { getOrCreateDeviceId, getRememberedAccount } from '@/utils/auth';
+import { sendLoginCodeApi, sendRegisterCodeApi } from '@/api/auth';
 
 const props = defineProps({
   brandName: {
@@ -42,7 +42,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['login-submit', 'register-submit']);
+const emit = defineEmits(['login-submit', 'login-verify-submit', 'register-submit']);
 
 const isLogin = ref(true);
 
@@ -62,10 +62,13 @@ const regConfirmPwd = ref('');
 const regAgree = ref(false);
 
 // 登录验证码
-const needLoginCaptcha = ref(false);
+const needLoginEmailCode = ref(false);
 const loginEmailCode = ref('');
 const loginCodeBtnDisabled = ref(false);
 const loginCodeBtnText = ref('获取验证码');
+const loginRiskTicket = ref('');
+const loginMaskedEmail = ref('');
+let loginCodeTimer = null;
 // 注册验证码
 const codeBtnDisabled = ref(false);
 const codeBtnText = ref('获取验证码');
@@ -93,6 +96,14 @@ defineExpose({
     isLogin.value = true;
     errorMsg.value = '';
   },
+  requireLoginEmailCode: (riskInfo) => {
+    needLoginEmailCode.value = true;
+    loginRiskTicket.value = riskInfo?.riskTicket || '';
+    loginMaskedEmail.value = riskInfo?.maskedEmail || '';
+    loginEmailCode.value = '';
+    loading.value = false;
+    errorMsg.value = `当前为${riskInfo?.riskReason || '风险登录'}，请完成邮箱验证`;
+  },
 });
 
 const currentPassword = computed(() => {
@@ -102,142 +113,103 @@ const showPassword = computed(() => {
   return isLogin.value ? showLoginPwd.value : showRegPwd.value;
 });
 
-//滑块验证码校验逻辑
+// 滑块验证：通过后才允许把账号密码提交给后端
 const captchaComponent = ref(null);
 let pendingLoginData = null;
 
-//回调失败恢复状态
 const handleCaptchaFail = () => {
-  loading.value = false;
-  errorMsg.value = '';
+  // 阿里云 SDK 可能在成功回调之后继续触发 onClose，此时不能覆盖登录状态
+  if (!pendingLoginData) return;
   pendingLoginData = null;
+  loading.value = false;
+  errorMsg.value = '安全验证已取消，请重新登录';
 };
 
-const handleCaptchaSuccess = (verifyParam) => {
+const handleCaptchaSuccess = (captchaVerifyParam) => {
   if (!pendingLoginData) {
     loading.value = false;
     return;
   }
-
-  if (!verifyParam) {
-    errorMsg.value = '验证参数无效，请重试';
-    loading.value = false;
-    pendingLoginData = null;
+  if (!captchaVerifyParam) {
+    handleCaptchaFail();
     return;
   }
+
+  emit('login-submit', {
+    ...pendingLoginData,
+    captchaVerifyParam,
+  });
+  pendingLoginData = null;
+};
+
+// 登录
+const onSubmit = async () => {
+  const valid = await validate(needLoginEmailCode.value ? 'loginVerify' : 'login');
+  if (!valid) return;
 
   loading.value = true;
   errorMsg.value = '';
 
-  emit('login-submit', {
-    ...pendingLoginData,
-    captchaVerifyParam: verifyParam,
-  });
-
-  pendingLoginData = null;
-};
-
-// 登录提交
-const onSubmit1 = async () => {
-  // 统一校验
-  const valid = await validate('login');
-  if (!valid) return;
+  if (needLoginEmailCode.value) {
+    emit('login-verify-submit', {
+      riskTicket: loginRiskTicket.value,
+      emailCode: loginEmailCode.value,
+      deviceId: getOrCreateDeviceId(),
+      remember: remember.value,
+    });
+    return;
+  }
 
   pendingLoginData = {
     account: account.value,
     password: password.value,
     remember: remember.value,
-    emailCode: loginEmailCode.value,
+    deviceId: getOrCreateDeviceId(),
   };
 
-  loading.value = true;
-  errorMsg.value = '';
-
   if (captchaComponent.value) {
-    captchaComponent.value.show(); // 弹出滑块
+    captchaComponent.value.show();
   } else {
-    errorMsg.value = '验证码组件未加载';
-    loading.value = false;
-    pendingLoginData = null;
-  }
-
-  // if (needLoginCaptcha.value) {
-  //   emit('login-submit', {
-  //     account: account.value,
-  //     password: password.value,
-  //     remember: remember.value,
-  //     emailCode: loginEmailCode.value,
-  //     ticket: localStorage.getItem('lastTicket'),
-  //     randstr: localStorage.getItem('lastRandstr'),
-  //   })
-  //   return
-  // }
-};
-
-//临时跳过验证用的
-const onSubmit = async () => {
-  // 统一校验
-  const valid = await validate('login');
-  if (!valid) return;
-
-  loading.value = true;
-  errorMsg.value = '';
-
-  emit('login-submit', {
-    account: account.value,
-    password: password.value,
-    remember: remember.value,
-    emailCode: loginEmailCode.value,
-    ticket: localStorage.getItem('lastTicket'),
-    randstr: localStorage.getItem('lastRandstr'),
-  });
-
-  return;
-};
-
-// 登录滑块验证回调
-const loginCaptchaBack = async (res) => {
-  if (res.ret !== 0) {
-    errorMsg.value = '验证失败';
-    loading.value = false;
-    return;
-  }
-
-  localStorage.setItem('lastTicket', res.ticket);
-  localStorage.setItem('lastRandstr', res.randstr);
-
-  // 发给后端判断是否风险登录
-  const { data } = await axios.post('/api/login/check', {
-    account: account.value,
-    password: password.value,
-    ticket: res.ticket,
-    randstr: res.randstr,
-  });
-
-  loading.value = false;
-
-  if (data.needEmailCode) {
-    needLoginCaptcha.value = true;
-    errorMsg.value = '当前为风险登录，请完成邮箱验证';
-  } else {
-    // 无风险 → 直接登录成功
-    emit('login-submit', {
-      account: account.value,
-      password: password.value,
-      remember: remember.value,
-    });
+    handleCaptchaFail();
+    errorMsg.value = '安全验证组件未加载，请刷新页面重试';
   }
 };
 
 // 登录发送邮箱验证码
 const sendLoginEmailCode = async () => {
-  await axios.post('/api/login/sendCode', { account: account.value });
+  if (!loginRiskTicket.value) {
+    errorMsg.value = '登录验证凭证已失效，请重新登录';
+    return;
+  }
+  if (loginCodeTimer) return;
+
   loginCodeBtnDisabled.value = true;
-  loginCodeBtnText.value = '重新发送(60s)';
-  setTimeout(() => {
+  errorMsg.value = '';
+  try {
+    const result = await sendLoginCodeApi({ riskTicket: loginRiskTicket.value });
+    if (result.code !== 200) {
+      errorMsg.value = result.msg || '验证码发送失败';
+      loginCodeBtnDisabled.value = false;
+      return;
+    }
+
+    let seconds = 60;
+    loginCodeBtnText.value = `重新发送(${seconds}s)`;
+    loginCodeTimer = setInterval(() => {
+      seconds -= 1;
+      if (seconds <= 0) {
+        clearInterval(loginCodeTimer);
+        loginCodeTimer = null;
+        loginCodeBtnDisabled.value = false;
+        loginCodeBtnText.value = '获取验证码';
+      } else {
+        loginCodeBtnText.value = `重新发送(${seconds}s)`;
+      }
+    }, 1000);
+  } catch (error) {
+    errorMsg.value = error?.response?.data?.msg || '验证码发送失败，请稍后重试';
     loginCodeBtnDisabled.value = false;
-    loginCodeBtnText.value = '获取验证码';
-  }, 60000);
+  }
 };
 
 // 注册提交
@@ -257,6 +229,7 @@ const onRegister = async () => {
     password: regPassword.value,
     confirmPwd: regConfirmPwd.value,
     emailCode: emailCode.value,
+    deviceId: getOrCreateDeviceId(),
   });
 };
 
@@ -304,12 +277,30 @@ const sendEmailCode = async () => {
   }
 };
 
+// 清除风险登录状态
+const resetLoginVerification = () => {
+  pendingLoginData = null;
+  if (loginCodeTimer) {
+    clearInterval(loginCodeTimer);
+    loginCodeTimer = null;
+  }
+  needLoginEmailCode.value = false;
+  loginRiskTicket.value = '';
+  loginMaskedEmail.value = '';
+  loginEmailCode.value = '';
+  loginCodeBtnDisabled.value = false;
+  loginCodeBtnText.value = '获取验证码';
+  errorMsg.value = '';
+  loading.value = false;
+};
+
 // 重置表单（切换登录/注册时调用）
 const resetForm = () => {
   if (registerCodeTimer) {
     clearInterval(registerCodeTimer);
     registerCodeTimer = null;
   }
+  resetLoginVerification();
   // 清空输入
   // 账号恢复成"记住我"保存的值，切换登录/注册回来时不用重新输入
   account.value = rememberedAccount;
@@ -323,12 +314,7 @@ const resetForm = () => {
   regPassword.value = '';
   regConfirmPwd.value = '';
   emailCode.value = '';
-  loginEmailCode.value = '';
-
   // 清空验证状态
-  needLoginCaptcha.value = false;
-  loginCodeBtnDisabled.value = false;
-  loginCodeBtnText.value = '获取验证码';
   codeBtnDisabled.value = false;
   codeBtnText.value = '获取验证码';
 
@@ -338,6 +324,10 @@ const resetForm = () => {
 };
 
 onUnmounted(() => {
+  if (loginCodeTimer) {
+    clearInterval(loginCodeTimer);
+    loginCodeTimer = null;
+  }
   if (registerCodeTimer) {
     clearInterval(registerCodeTimer);
     registerCodeTimer = null;
@@ -348,6 +338,13 @@ onUnmounted(() => {
 const loginRules = {
   account: [{ required: true, message: '请输入账号' }],
   password: [{ required: true, message: '请输入密码' }],
+};
+
+const loginVerifyRules = {
+  emailCode: [
+    { required: true, message: '请输入邮箱验证码' },
+    { pattern: /^\d{6}$/, message: '邮箱验证码应为6位数字' },
+  ],
 };
 
 const registerRules = {
@@ -377,6 +374,9 @@ const validate = (formType) => {
     if (formType === 'login') {
       data = { account: account.value, password: password.value };
       rules = loginRules;
+    } else if (formType === 'loginVerify') {
+      data = { emailCode: loginEmailCode.value };
+      rules = loginVerifyRules;
     } else {
       data = {
         username: username.value,
@@ -507,6 +507,7 @@ const validate = (formType) => {
                 type="text"
                 :placeholder="accountPlaceholder"
                 v-model="account"
+                :disabled="needLoginEmailCode"
                 autocomplete="off"
                 @focus="isTyping = true"
                 @blur="isTyping = false"
@@ -520,6 +521,7 @@ const validate = (formType) => {
                   :type="showLoginPwd ? 'text' : 'password'"
                   placeholder="请输入密码"
                   v-model="password"
+                  :disabled="needLoginEmailCode"
                 />
                 <button type="button" class="eye-btn" @click="showLoginPwd = !showLoginPwd">
                   <EyeOff v-if="showLoginPwd" :size="20" />
@@ -529,22 +531,36 @@ const validate = (formType) => {
             </div>
 
             <Captcha ref="captchaComponent" @captchaSuccess="handleCaptchaSuccess" @captchaFail="handleCaptchaFail" />
-            <div class="field" v-if="needLoginCaptcha">
-              <label>验证码</label>
-              <div class="captcha-wrap">
-                <input v-model="loginEmailCode" placeholder="请输入邮箱验证码" />
-                <button type="button" class="captcha-btn" :disabled="loginCodeBtnDisabled" @click="sendLoginEmailCode">
-                  {{ loginCodeBtnText }}
-                </button>
+            <div class="field login-code-field" v-if="needLoginEmailCode">
+              <label for="login-email-code">验证码</label>
+              <div class="login-code-control">
+                <div class="captcha-wrap">
+                  <input
+                    id="login-email-code"
+                    v-model="loginEmailCode"
+                    placeholder="请输入6位验证码"
+                    maxlength="6"
+                    inputmode="numeric"
+                  />
+                  <button type="button" class="captcha-btn" :disabled="loginCodeBtnDisabled" @click="sendLoginEmailCode">
+                    {{ loginCodeBtnText }}
+                  </button>
+                </div>
+                <p class="login-code-hint">验证码将发送至 {{ loginMaskedEmail }}</p>
               </div>
             </div>
             <div class="options">
-              <label class="remember"><input type="checkbox" v-model="remember" /> 记住我</label>
-              <a href="/forgotpwd" class="forgot">忘记密码？</a>
+              <label class="remember"
+                ><input type="checkbox" v-model="remember" :disabled="needLoginEmailCode" /> 记住我</label
+              >
+              <a v-if="!needLoginEmailCode" href="/forgotpwd" class="forgot">忘记密码？</a>
+              <a v-else href="#" class="forgot" @click.prevent="resetLoginVerification">更换账号</a>
             </div>
             <div v-if="errorMsg" class="error-msg">{{ errorMsg }}</div>
             <button type="submit" class="btn-primary" :disabled="loading" :style="{ background: primaryColor }">
-              {{ loading ? '登录中...' : '登录' }}
+              {{
+                loading ? (needLoginEmailCode ? '验证中...' : '登录中...') : needLoginEmailCode ? '验证并登录' : '登录'
+              }}
             </button>
           </form>
           <!-- <button v-if="showGoogleLogin" type="button" class="btn-google">
@@ -814,6 +830,23 @@ const validate = (formType) => {
 }
 
 /** 验证码样式 */
+.login-code-control {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login-code-hint {
+  margin: 0;
+  color: #71717a;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
 .captcha-wrap {
   flex: 1;
   width: 100%;
@@ -826,7 +859,7 @@ const validate = (formType) => {
 .captcha-wrap input {
   height: 48px;
   width: 100%;
-  padding: 0 100px 0 12px;
+  padding: 0 126px 0 12px;
   border-radius: 6px;
   border: 1px solid #d4d4d8;
   font-size: 15px;
@@ -845,6 +878,7 @@ const validate = (formType) => {
   right: 8px;
   top: 50%;
   transform: translateY(-50%);
+  max-width: 112px;
   padding: 0 12px;
   height: 34px;
   background: #4f46e5;
@@ -854,6 +888,8 @@ const validate = (formType) => {
   font-size: 13px;
   cursor: pointer;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .captcha-btn:disabled {
@@ -1060,6 +1096,11 @@ const validate = (formType) => {
   }
 
   /**验证码样式 */
+  .login-code-control {
+    flex: none;
+    width: 100%;
+  }
+
   .captcha-wrap {
     flex: none;
     width: 100%;

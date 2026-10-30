@@ -1,5 +1,6 @@
 package com.blog.controller.user;
 
+import com.blog.constant.MessageConstant;
 import com.blog.context.BaseContext;
 import com.blog.pojo.dto.EmailRegisterDTO;
 import com.blog.pojo.dto.PasswordEditDTO;
@@ -7,17 +8,23 @@ import com.blog.pojo.dto.ResetPasswordCodeDTO;
 import com.blog.pojo.dto.ResetPasswordDTO;
 import com.blog.pojo.dto.ResetPasswordVerifyDTO;
 import com.blog.pojo.dto.RegisterCodeDTO;
+import com.blog.pojo.dto.LoginCodeDTO;
+import com.blog.pojo.dto.LoginVerifyDTO;
 import com.blog.pojo.dto.UserDTO;
 import com.blog.pojo.dto.UserLoginDTO;
 import com.blog.pojo.dto.UserRegisterDTO;
 import com.blog.pojo.entity.SysUser;
+import com.blog.pojo.vo.DeviceInfoVO;
 import com.blog.pojo.vo.LoginVO;
+import com.blog.pojo.vo.LoginRiskInfoVO;
 import com.blog.pojo.vo.UserPersonalInfoVO;
 import com.blog.pojo.vo.UserSimpleVO;
 import com.blog.result.Result;
 import com.blog.service.JwtService;
+import com.blog.service.LoginVerificationService;
 import com.blog.service.UserService;
 import com.blog.utils.AliyunAcsClient;
+import com.blog.utils.DeviceInfoUtil;
 import com.blog.utils.IpUtil;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.Cookie;
@@ -26,6 +33,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -42,16 +50,30 @@ public class UserController {
     @Autowired
     private JwtService jwtService;
     @Autowired
+    private LoginVerificationService loginVerificationService;
+    @Autowired
     private AliyunAcsClient aliyunAcsClient;
 
     /**
      * 用户注册
      * @return
-     */
+    */
     @PostMapping("/register")
-    public Result register(@Valid @RequestBody UserRegisterDTO userRegisterDTO) {
-        log.info("用户注册信息:{}", userRegisterDTO);
+    public Result register(@Valid @RequestBody UserRegisterDTO userRegisterDTO,
+                           HttpServletRequest request) {
+        log.info("用户注册，邮箱：{}", userRegisterDTO.getEmail());
         userService.register(userRegisterDTO);
+        try {
+            loginVerificationService.trustRegistrationDevice(
+                    userRegisterDTO.getEmail(),
+                    userRegisterDTO.getDeviceId(),
+                    buildDeviceInfo(request),
+                    request.getHeader("User-Agent")
+            );
+        } catch (Exception e) {
+            // 注册已经成功，设备绑定失败不能让用户误以为账号没有创建
+            log.warn("注册设备绑定失败，邮箱：{}", userRegisterDTO.getEmail(), e);
+        }
         return Result.success();
     }
 
@@ -85,12 +107,24 @@ public class UserController {
      *
      * @param emailRegisterDTO 邮箱、密码与确认密码
      * @return 统一结果
-     */
+    */
     @PostMapping("/registerByEmail")
-    public Result registerByEmail(@Valid @RequestBody EmailRegisterDTO emailRegisterDTO) {
+    public Result<LoginVO> registerByEmail(@Valid @RequestBody EmailRegisterDTO emailRegisterDTO,
+                                           HttpServletRequest request,
+                                           HttpServletResponse response) {
         log.info("邮箱快捷注册:{}", emailRegisterDTO.getEmail());
-        userService.registerByEmail(emailRegisterDTO);
-        return Result.success();
+        SysUser user = userService.registerByEmail(emailRegisterDTO);
+        try {
+            loginVerificationService.markDeviceTrusted(
+                    user,
+                    emailRegisterDTO.getDeviceId(),
+                    buildDeviceInfo(request),
+                    request.getHeader("User-Agent")
+            );
+        } catch (Exception e) {
+            log.warn("快捷注册设备绑定失败，邮箱：{}", emailRegisterDTO.getEmail(), e);
+        }
+        return Result.success(buildLoginVO(user, false, response));
     }
 
     /**
@@ -136,31 +170,65 @@ public class UserController {
      * @return
      */
     @PostMapping("/login")
-    public Result<LoginVO> login(@Valid @RequestBody UserLoginDTO userLoginDTO, HttpServletResponse resp) {
-        log.info("用户登录信息:{}", userLoginDTO.getNickname());
-
-        //TODO 等待上线放开注释
-//        String captchaVerifyParam = userLoginDTO.getCaptchaVerifyParam();
-//        log.info("滑块验证码校验信息:{}", captchaVerifyParam);
-//        // 1. 校验验证码
-//        if (captchaVerifyParam == null || !aliyunAcsClient.verifyCaptcha(captchaVerifyParam)) {
-//            return Result.error(MessageConstant.CODE_VERIFICATION_FAILED);
-//        }
-
+    public Result<LoginVO> login(@Valid @RequestBody UserLoginDTO userLoginDTO,
+                                 HttpServletRequest request,
+                                 HttpServletResponse resp) {
+        log.info("用户登录");
+        String captchaVerifyParam = userLoginDTO.getCaptchaVerifyParam();
+        if (!StringUtils.hasText(captchaVerifyParam)
+                || !aliyunAcsClient.verifyCaptcha(captchaVerifyParam)) {
+            return Result.error(400, MessageConstant.CODE_VERIFICATION_FAILED);
+        }
         SysUser user = userService.login(userLoginDTO);
-        //生成token并返回
+        String ip = IpUtil.getClientIp(request);
+        String riskReason = loginVerificationService.getRiskReason(
+                user.getId(), user.getEmail(), userLoginDTO.getDeviceId());
+        if (riskReason != null) {
+            LoginRiskInfoVO riskInfo = loginVerificationService.createRiskTicket(
+                    user, userLoginDTO.getDeviceId(), ip, riskReason);
+            LoginVO loginVO = LoginVO.builder()
+                    .needEmailCode(true)
+                    .riskTicket(riskInfo.getRiskTicket())
+                    .maskedEmail(riskInfo.getMaskedEmail())
+                    .expiresIn(riskInfo.getExpiresIn())
+                    .riskReason(riskInfo.getRiskReason())
+                    .build();
+            return Result.success(loginVO);
+        }
+
+        loginVerificationService.clearPasswordFailures(user.getId());
         boolean remember = Boolean.TRUE.equals(userLoginDTO.getRemember());
-        String token = jwtService.createToken(user.getId(),user.getUsername());
-        String refreshToken  = jwtService.createRefreshToken(user.getId(), remember);
-        jwtService.setUserRefreshCookie(refreshToken, remember, resp);
+        return Result.success(buildLoginVO(user, remember, resp));
+    }
 
-        UserSimpleVO simpleVO = new UserSimpleVO();
-        BeanUtils.copyProperties(user, simpleVO);
-        LoginVO loginVO = new LoginVO();
-        loginVO.setUser(simpleVO);
-        loginVO.setToken(token);
+    /**
+     * 风险登录：发送邮箱验证码
+     */
+    @PostMapping("/login/code")
+    public Result sendLoginCode(@Valid @RequestBody LoginCodeDTO loginCodeDTO,
+                                HttpServletRequest request) {
+        loginVerificationService.sendLoginCode(
+                loginCodeDTO.getRiskTicket(), IpUtil.getClientIp(request));
+        return Result.success("验证码已发送");
+    }
 
-        return Result.success(loginVO);
+    /**
+     * 风险登录：验证邮箱验证码并签发登录凭证
+     */
+    @PostMapping("/login/verify")
+    public Result<LoginVO> verifyLoginCode(@Valid @RequestBody LoginVerifyDTO loginVerifyDTO,
+                                           HttpServletRequest request,
+                                           HttpServletResponse response) {
+        SysUser user = loginVerificationService.verifyLoginCode(loginVerifyDTO);
+        loginVerificationService.clearPasswordFailures(user.getId());
+        loginVerificationService.markDeviceTrusted(
+                user,
+                loginVerifyDTO.getDeviceId(),
+                buildDeviceInfo(request),
+                request.getHeader("User-Agent")
+        );
+        boolean remember = Boolean.TRUE.equals(loginVerifyDTO.getRemember());
+        return Result.success(buildLoginVO(user, remember, response));
     }
 
     /**
@@ -257,6 +325,35 @@ public class UserController {
         log.info("获取个人信息");
         UserPersonalInfoVO userVo=userService.getPersonalInfo();
         return Result.success(userVo);
+    }
+
+    /**
+     * 签发用户登录凭证
+     */
+    private LoginVO buildLoginVO(SysUser user, boolean remember, HttpServletResponse response) {
+        String token = jwtService.createToken(user.getId(), user.getUsername());
+        String refreshToken = jwtService.createRefreshToken(user.getId(), remember);
+        jwtService.setUserRefreshCookie(refreshToken, remember, response);
+
+        UserSimpleVO simpleVO = new UserSimpleVO();
+        BeanUtils.copyProperties(user, simpleVO);
+        return LoginVO.builder()
+                .needEmailCode(false)
+                .user(simpleVO)
+                .token(token)
+                .build();
+    }
+
+    /**
+     * 获取当前登录设备信息
+     */
+    private DeviceInfoVO buildDeviceInfo(HttpServletRequest request) {
+        return DeviceInfoVO.builder()
+                .ip(IpUtil.getClientIp(request))
+                .browser(DeviceInfoUtil.getBrowserInfo(request))
+                .os(DeviceInfoUtil.getOsInfo(request))
+                .deviceType(DeviceInfoUtil.getDeviceType(request))
+                .build();
     }
 
 }

@@ -40,6 +40,14 @@ public interface RedisService {
     long incrementAndExpire(String key, long delta, long timeout);
 
     /**
+     * 读取 Lua 原子计数器生成的原始数字值
+     *
+     * @param key 键
+     * @return 当前计数，不存在时返回 0
+     */
+    long getCounter(String key);
+
+    /**
      * 获取缓存
      */
     <T> T get(String key,Class<T> clazz);

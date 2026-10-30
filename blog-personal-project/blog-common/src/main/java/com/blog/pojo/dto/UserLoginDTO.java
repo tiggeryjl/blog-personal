@@ -32,11 +32,16 @@ public class UserLoginDTO implements Serializable {
     //记住我
     private Boolean remember;
 
+    // 浏览器生成并持久化的设备标识
+    @Size(max = 128, message = "设备标识格式错误")
+    private String deviceId;
+
     //邮箱验证码
     @Size(max = 20, message = "邮箱验证码格式错误")
     private String emailCode;
 
     //滑块验证码
+    @NotBlank(message = "请完成安全验证")
     private String captchaVerifyParam;
 
 }

@@ -18,7 +18,7 @@ public class AcsConfiguration {
     @Bean
     @ConditionalOnMissingBean//保证容器内只有员工改对象
     public AliyunAcsClient aliyunAcsClient(AliOssProperties aliOssProperties){
-        log.info("开始创建阿里云滑块验证工具类对象:{}",aliOssProperties);
+        // log.info("开始创建阿里云滑块验证工具类对象:{}",aliOssProperties);
         return new AliyunAcsClient(aliOssProperties.getAccessKeyId(),
                 aliOssProperties.getAccessKeySecret(),
                 aliOssProperties.getRegion(),
