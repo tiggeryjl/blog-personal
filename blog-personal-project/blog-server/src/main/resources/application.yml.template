@@ -2,6 +2,7 @@ spring:
   application:
     name: blog-server
   profiles:
+    #环境配置dev/prod
     active: ${SPRING_PROFILES_ACTIVE:dev}
   main:
     allow-circular-references: true
@@ -30,17 +31,17 @@ blog:
   alioss:
     access-key-id: ${OSS_ACCESS_KEY_ID}
     access-key-secret: ${OSS_ACCESS_KEY_SECRET}
-    bucket-name: blog-personal-yjl
-    endpoint: oss-cn-beijing.aliyuncs.com
-    region: cn-beijing
-    scene-id: jvdry8hq
+    bucket-name: your-bucket-name
+    endpoint: your-endpoint
+    region: your-region
+    scene-id: your-scene-id
   jwt:
-    user-secret-key: hello19990124xiaoyetongxuedegerenbokewangzhan
+    user-secret-key: your-jwt-secret-key-here
     user-token-name: Authorization
     user-ttl: 1200000
     user-refresh-Ttl: 604800000
   ai:
-    api-key: ${DEEPSEEK_API_KEY}
+    api-key: ${DEEPSEEK_API_KEY}    # 你的DeepSeek的API-KEY
     base-url: https://api.deepseek.com
     flash:
       model: deepseek-flash           # DeepSeek官方Flash模型名
@@ -51,8 +52,8 @@ blog:
   rss:
     #站点地址/域名
     site-url: ${RSS_SITE_URL:http://localhost:5173}
-    title: 小叶同学的博客
-  ranking:
+    title:  # 网站标题或者昵称
+  ranking:     #用于文章热度排序的权重
     article:
       view-weight: 1.0
       like-weight: 4.0
@@ -69,4 +70,4 @@ blog:
     username: ${MAIL_USERNAME:}
     #发件邮箱的SMTP授权码
     password: ${MAIL_PASSWORD:}
-    from-name: 小叶同学的博客
+    from-name:  # 网站标题或者昵称

@@ -7,6 +7,7 @@ import com.aliyun.oss.common.auth.CredentialsProviderFactory;
 import com.aliyun.oss.common.auth.DefaultCredentialProvider;
 import com.aliyun.oss.common.auth.EnvironmentVariableCredentialsProvider;
 import com.aliyun.oss.common.comm.SignVersion;
+import com.aliyun.oss.model.ObjectMetadata;
 import com.blog.context.BaseContext;
 import com.blog.properties.AliOssProperties;
 import lombok.AllArgsConstructor;
@@ -53,7 +54,15 @@ public class AliyunOSSOperator {
                 .build();
 
         try {
-            ossClient.putObject(bucketName, objectName, new ByteArrayInputStream(content));
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentType(FileTypeUtils.getContentType(originalFilename));
+            metadata.setCacheControl("public,max-age=31536000");
+            ossClient.putObject(
+                    bucketName,
+                    objectName,
+                    new ByteArrayInputStream(content),
+                    metadata
+            );
         } finally {
             ossClient.shutdown();
         }

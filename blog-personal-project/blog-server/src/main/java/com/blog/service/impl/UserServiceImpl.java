@@ -4,6 +4,7 @@ import com.blog.constant.*;
 import com.blog.exception.LoginFailedException;
 import com.blog.exception.PasswordEditFailedException;
 import com.blog.exception.RegisterFailedException;
+import com.blog.exception.CustomException;
 import com.blog.mapper.SysUserMapper;
 import com.blog.pojo.dto.EmailRegisterDTO;
 import com.blog.pojo.dto.PasswordEditDTO;
@@ -15,6 +16,7 @@ import com.blog.pojo.dto.UserRegisterDTO;
 import com.blog.pojo.entity.SysUser;
 import com.blog.pojo.vo.UserPersonalInfoVO;
 import com.blog.pojo.vo.UserSimpleVO;
+import com.blog.properties.AliOssProperties;
 import com.blog.service.MailService;
 import com.blog.service.LoginVerificationService;
 import com.blog.service.RedisService;
@@ -51,6 +53,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private LoginVerificationService loginVerificationService;
+
+    @Autowired
+    private AliOssProperties aliOssProperties;
 
     /**
      * 用户注册
@@ -588,6 +593,12 @@ public class UserServiceImpl implements UserService {
         String username = userDTO.getUsername();
         String phone = userDTO.getPhone();
         String email = userDTO.getEmail();
+        String avatar = userDTO.getAvatar();
+
+        if (StringUtils.hasText(avatar)) {
+            validateAvatarUrl(avatar.trim(), userDTO.getId());
+            userDTO.setAvatar(avatar.trim());
+        }
 
         //校验
         Verification(username, phone, email,false);
@@ -595,6 +606,20 @@ public class UserServiceImpl implements UserService {
         SysUser user = new SysUser();
         BeanUtils.copyProperties(userDTO, user);
         userMapper.update(user);
+    }
+
+    /**
+     * 用户只能把头像设置为自己通过本站上传接口生成的 OSS 地址
+     */
+    private void validateAvatarUrl(String avatar, Long userId) {
+        if (userId == null) {
+            throw new CustomException("用户ID不能为空");
+        }
+        String prefix = "https://" + aliOssProperties.getBucketName()
+                + "." + aliOssProperties.getEndpoint() + "/";
+        if (!avatar.startsWith(prefix) || !avatar.contains("/userId-" + userId + "/")) {
+            throw new CustomException("头像地址不合法，请重新上传头像");
+        }
     }
 
     /**

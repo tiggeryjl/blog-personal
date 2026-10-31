@@ -4,7 +4,7 @@ import { ElMessage } from 'element-plus';
 import { useUserStore } from '@/store/userloginstatus';
 import { Edit } from '@element-plus/icons-vue';
 import { queryUserInfoApi, updateApi } from '@/api/auth';
-import { uploadApi } from '@/api/upload';
+import { uploadAvatarApi } from '@/api/upload';
 
 const originalUserInfo = ref({ avatar: '', username: '', nickname: '', email: '', sex: '', phone: '', createTime: '' });
 
@@ -98,18 +98,26 @@ const handleConfirm = async () => {
 const handleAvatarClick = () => {
   const input = document.createElement('input');
   input.type = 'file';
-  input.accept = 'image/*';
+  input.accept = '.jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif';
 
   input.onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (file.type && !allowedTypes.includes(file.type)) {
+      ElMessage.warning('头像仅支持 JPG、PNG、GIF 格式');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      ElMessage.warning('头像大小不能超过2MB');
+      return;
+    }
 
     try {
       const formData = new FormData();
       formData.append('file', file);
 
-      // 第一步：把图片传给后端 → 后端上传到阿里云OSS
-      const result = await uploadApi(formData);
+      const result = await uploadAvatarApi(formData);
       if (result && result.code == 200) {
         const avatarUrl = result.data;
 
@@ -129,10 +137,10 @@ const handleAvatarClick = () => {
           ElMessage.error('头像更换失败');
         }
       } else {
-        ElMessage.error('上传失败');
+        ElMessage.error(result?.msg || '上传失败');
       }
     } catch (err) {
-      ElMessage.error('上传异常');
+      ElMessage.error(err?.response?.data?.msg || '上传异常');
     }
   };
   input.click();

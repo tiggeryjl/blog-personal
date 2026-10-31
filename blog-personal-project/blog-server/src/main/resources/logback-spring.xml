@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- 日志目录优先读取 BLOG_LOG_PATH，未配置时使用服务器默认目录 -->
+    <property name="LOG_PATH" value="${BLOG_LOG_PATH:-/opt/app/logs}" />
+    <property name="DOCKER_LOG_PATH" value="${BLOG_LOG_PATH:-/app/logs}" />
+    <property name="APP_NAME" value="blog-server" />
+    <property name="MAX_HISTORY" value="30" />
+    <property name="MAX_FILE_SIZE" value="50MB" />
+    <property name="TOTAL_SIZE_CAP" value="3GB" />
+    <property name="LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n" />
+
+    <!-- 控制台输出 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 生产环境：应用日志 + 错误日志 -->
+    <springProfile name="prod">
+        <appender name="APPLICATION_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_PATH}/${APP_NAME}-application.log</file>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${LOG_PATH}/${APP_NAME}-application-%d{yyyy-MM-dd}-%i.log.gz</fileNamePattern>
+                <maxHistory>${MAX_HISTORY}</maxHistory>
+                <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+                <totalSizeCap>${TOTAL_SIZE_CAP}</totalSizeCap>
+                <cleanHistoryOnStart>true</cleanHistoryOnStart>
+            </rollingPolicy>
+            <encoder>
+                <pattern>${LOG_PATTERN}</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+
+        <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_PATH}/${APP_NAME}-error.log</file>
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>ERROR</level>
+            </filter>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>${LOG_PATH}/${APP_NAME}-error-%d{yyyy-MM-dd}-%i.log.gz</fileNamePattern>
+                <maxHistory>${MAX_HISTORY}</maxHistory>
+                <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>
+                <totalSizeCap>1GB</totalSizeCap>
+                <cleanHistoryOnStart>true</cleanHistoryOnStart>
+            </rollingPolicy>
+            <encoder>
+                <pattern>${LOG_PATTERN}</pattern>
+                <charset>UTF-8</charset>
+            </encoder>
+        </appender>
+
+        <logger name="com.blog.mapper" level="INFO" />
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE" />
+            <appender-ref ref="APPLICATION_FILE" />
+            <appender-ref ref="ERROR_FILE" />
+        </root>
+    </springProfile>
+
+    <!-- 开发环境：仅控制台 -->
+    <springProfile name="dev">
+        <logger name="com.blog.mapper" level="DEBUG" />
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE" />
+        </root>
+    </springProfile>
+
+    <!-- Docker 环境：控制台 + 文件 -->
+<!--    <springProfile name="docker">-->
+<!--        <appender name="DOCKER_APPLICATION_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
+<!--            <file>${DOCKER_LOG_PATH}/${APP_NAME}-application.log</file>-->
+<!--            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">-->
+<!--                <fileNamePattern>${DOCKER_LOG_PATH}/${APP_NAME}-application-%d{yyyy-MM-dd}-%i.log.gz</fileNamePattern>-->
+<!--                <maxHistory>${MAX_HISTORY}</maxHistory>-->
+<!--                <maxFileSize>${MAX_FILE_SIZE}</maxFileSize>-->
+<!--                <totalSizeCap>${TOTAL_SIZE_CAP}</totalSizeCap>-->
+<!--                <cleanHistoryOnStart>true</cleanHistoryOnStart>-->
+<!--            </rollingPolicy>-->
+<!--            <encoder>-->
+<!--                <pattern>${LOG_PATTERN}</pattern>-->
+<!--                <charset>UTF-8</charset>-->
+<!--            </encoder>-->
+<!--        </appender>-->
+
+<!--        <logger name="com.blog.mapper" level="INFO" />-->
+
+<!--        <root level="INFO">-->
+<!--            <appender-ref ref="CONSOLE" />-->
+<!--            <appender-ref ref="DOCKER_APPLICATION_FILE" />-->
+<!--        </root>-->
+<!--    </springProfile>-->
+
+    <logger name="org.apache.tomcat" level="ERROR" />
+    <logger name="org.apache.coyote" level="ERROR" />
+    <logger name="org.apache.catalina" level="ERROR" />
+
+</configuration>

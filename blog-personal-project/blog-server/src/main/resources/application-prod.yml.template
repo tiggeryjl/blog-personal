@@ -6,14 +6,14 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     #你的服务器IP:3306
-    url: jdbc:mysql://localhost:3306/blog?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=true&allowPublicKeyRetrieval=true
-    username: root
-    password: 123456
+    url: jdbc:mysql://xxx.xxx.xxx.xxx:3306/blog?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=true&allowPublicKeyRetrieval=true
+    username: your_database_username
+    password: your_database_password
   data:
     redis:
-      host: 127.0.0.1
+      host: your_production_redis_host
       port: 6379
-      password: 123456
+      password: your_redis_password
       database: 2
       lettuce:
         pool:

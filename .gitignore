@@ -62,6 +62,11 @@ buildNumber.properties
 hs_err_pid*
 **/resources/database/sql
 
+**/application.yml
+**/application-*.yml
+!**/application.yml.template
+!**/application-*.yml.template
+
 Thumbs.db
 
 .codex/
