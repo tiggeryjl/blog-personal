@@ -115,6 +115,7 @@ const showPassword = computed(() => {
 
 // 滑块验证：通过后才允许把账号密码提交给后端
 const captchaComponent = ref(null);
+const passwordInput = ref(null);
 let pendingLoginData = null;
 
 const handleCaptchaFail = () => {
@@ -173,6 +174,18 @@ const onSubmit = async () => {
     handleCaptchaFail();
     errorMsg.value = '安全验证组件未加载，请刷新页面重试';
   }
+};
+
+// 回车提交前先检查密码，避免空密码直接触发滑块
+const submitLoginFromKeyboard = (event) => {
+  if (event?.isComposing) return;
+  if (!needLoginEmailCode.value && !password.value.trim()) {
+    errorMsg.value = '请输入密码';
+    loading.value = false;
+    passwordInput.value?.focus();
+    return;
+  }
+  onSubmit();
 };
 
 // 登录发送邮箱验证码
@@ -511,6 +524,7 @@ const validate = (formType) => {
                 autocomplete="off"
                 @focus="isTyping = true"
                 @blur="isTyping = false"
+                @keydown.enter.prevent="submitLoginFromKeyboard"
               />
             </div>
             <div class="field">
@@ -518,10 +532,13 @@ const validate = (formType) => {
               <div class="password-wrap">
                 <input
                   id="login-password"
+                  ref="passwordInput"
                   :type="showLoginPwd ? 'text' : 'password'"
                   placeholder="请输入密码"
                   v-model="password"
                   :disabled="needLoginEmailCode"
+                  autocomplete="current-password"
+                  @keydown.enter.prevent="submitLoginFromKeyboard"
                 />
                 <button type="button" class="eye-btn" @click="showLoginPwd = !showLoginPwd">
                   <EyeOff v-if="showLoginPwd" :size="20" />
@@ -541,6 +558,7 @@ const validate = (formType) => {
                     placeholder="请输入6位验证码"
                     maxlength="6"
                     inputmode="numeric"
+                    @keydown.enter.prevent="onSubmit"
                   />
                   <button type="button" class="captcha-btn" :disabled="loginCodeBtnDisabled" @click="sendLoginEmailCode">
                     {{ loginCodeBtnText }}

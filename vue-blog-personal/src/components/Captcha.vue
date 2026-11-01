@@ -1,6 +1,6 @@
 <template>
   <div id="captcha-container" style="display: none"></div>
-  <button id="captcha-trigger" style="display: none">触发验证</button>
+  <button id="captcha-trigger" type="button" style="display: none">触发验证</button>
 </template>
 
 <script setup>

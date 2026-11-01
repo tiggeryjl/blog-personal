@@ -29,7 +29,8 @@ export const constantRoutes = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory('/admin/'),
+  // history: createWebHistory(import.meta.env.BASE_URL),
   routes: constantRoutes,
 });
 

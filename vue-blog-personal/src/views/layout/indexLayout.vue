@@ -527,6 +527,7 @@ onUnmounted(() => {
 
         <!--分类排列 -->
         <div v-if="viewMode === 'category'" class="category-mode-list">
+          <div v-if="categoryList.length === 0" class="category-empty category-tag-empty">暂无分类</div>
           <div
             v-for="category in categoryList"
             :key="category.id"
@@ -543,6 +544,7 @@ onUnmounted(() => {
         <!-- 标签排列 -->
         <template v-else>
           <div ref="tagAreaRef" class="tag-area">
+            <span v-if="tagList.length === 0" class="category-tag-empty">暂无标签</span>
             <span
               v-for="tag in displayTags"
               :key="tag.id"
@@ -1025,6 +1027,19 @@ onUnmounted(() => {
 .category-row-count {
   margin-right: 6px;
   font-size: 12px;
+  color: var(--text-prompt-color);
+}
+
+.category-empty {
+  margin-top: -15px;
+}
+
+.category-tag-empty {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 13px;
   color: var(--text-prompt-color);
 }
 

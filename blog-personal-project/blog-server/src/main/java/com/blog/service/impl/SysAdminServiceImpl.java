@@ -508,7 +508,7 @@ public class SysAdminServiceImpl implements SysAdminService {
                 throw new RegisterFailedException(MessageConstant.USERNAME_NOT_EMAIL);
             }
             // 用户名是否已注册
-            if (userMapper.selectByUsername(username) != null) {
+            if (userMapper.selectByUsername(username) != null && isRegister) {
                 throw new RegisterFailedException(MessageConstant.USERNAME_EXISTS);
             }
         }
@@ -518,7 +518,7 @@ public class SysAdminServiceImpl implements SysAdminService {
             if (!phone.matches(UserUtil.PHONE_REGEX)) {
                 throw new RegisterFailedException(MessageConstant.PHONE_FORMAT_ERROR);
             }
-            if (userMapper.selectByPhone(phone) != null) {
+            if (userMapper.selectByPhone(phone) != null && isRegister) {
                 throw new RegisterFailedException(MessageConstant.PHONE_EXISTS);
             }
         }
@@ -528,7 +528,7 @@ public class SysAdminServiceImpl implements SysAdminService {
             if (!email.matches(UserUtil.EMAIL_REGEX)) {
                 throw new RegisterFailedException(MessageConstant.EMAIL_FORMAT_ERROR);
             }
-            if (userMapper.selectByEmail(email) != null) {
+            if (userMapper.selectByEmail(email) != null && isRegister) {
                 throw new RegisterFailedException(MessageConstant.EMAIL_EXISTS);
             }
         }

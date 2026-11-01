@@ -86,7 +86,7 @@ public class SysAdminController {
      */
     @PostMapping("/login")
     public Result<LoginVO> login(@Valid @RequestBody UserLoginDTO userLoginDTO, HttpServletResponse resp) {
-        log.info("管理员登录信息:{}", userLoginDTO.getNickname());
+        log.info("管理员登录信息:{}", userLoginDTO);
 
         SysUser user = adminService.login(userLoginDTO);
 

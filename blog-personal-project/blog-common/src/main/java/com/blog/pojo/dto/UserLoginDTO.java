@@ -41,7 +41,6 @@ public class UserLoginDTO implements Serializable {
     private String emailCode;
 
     //滑块验证码
-    @NotBlank(message = "请完成安全验证")
     private String captchaVerifyParam;
 
 }
