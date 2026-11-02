@@ -4,13 +4,14 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import Emoji from '@/components/Emoji.vue';
 import CommentList from '@/components/Comment.vue';
-import { ZoomIn, ZoomOut, ChatDotRound, DArrowLeft, Document, View } from '@element-plus/icons-vue';
+import { ZoomIn, ZoomOut, ChatDotRound, DArrowLeft, View } from '@element-plus/icons-vue';
 import { addDailyViewApi, getDailyDetailApi } from '@/api/daily';
 import { addCommentReplyApi, addDailyCommentApi, getDailyCommentListApi } from '@/api/comment.js';
 import { likeApi, LIKE_TARGET_TYPE } from '@/api/like.js';
 import { requireLogin } from '@/utils/auth';
 import { isGuestLiked, rememberGuestLiked } from '@/utils/guestLike.js';
 import { useUserStore } from '@/store/userloginstatus';
+import DailyFileList from '@/views/daily/DailyFileList.vue';
 
 const route = useRoute();
 const userStore = useUserStore();
@@ -494,21 +495,7 @@ onUnmounted(() => {
           />
         </div>
 
-        <div v-if="dailyItem.files.length" class="card-files">
-          <el-link
-            v-for="(file, idx) in dailyItem.files"
-            :key="`${dailyItem.id}-file-${idx}`"
-            :href="file.url"
-            target="_blank"
-            rel="noopener noreferrer"
-            type="primary"
-            class="file-link"
-            :underline="false"
-          >
-            <el-icon class="file-icon"><Document /></el-icon>
-            <span class="file-name">{{ file.name }}</span>
-          </el-link>
-        </div>
+        <DailyFileList :files="dailyItem.files" />
 
         <div class="card-actions">
           <span

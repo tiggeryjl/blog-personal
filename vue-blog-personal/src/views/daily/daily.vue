@@ -2,11 +2,12 @@
 import { useRouter } from 'vue-router';
 import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { ElMessage } from 'element-plus';
-import { ZoomIn, ZoomOut, ChatDotRound, Document, View } from '@element-plus/icons-vue';
+import { ZoomIn, ZoomOut, ChatDotRound, View } from '@element-plus/icons-vue';
 import { getDailyListApi } from '@/api/daily.js';
 import { likeApi, LIKE_TARGET_TYPE } from '@/api/like.js';
 import { isLoggedIn } from '@/utils/auth.js';
 import { isGuestLiked, rememberGuestLiked } from '@/utils/guestLike.js';
+import DailyFileList from '@/views/daily/DailyFileList.vue';
 
 const router = useRouter();
 
@@ -350,21 +351,7 @@ const closeModal = () => {
           </div>
 
           <!-- 附件 -->
-          <div v-if="item.files.length" class="card-files">
-            <el-link
-              v-for="(file, idx) in item.files"
-              :key="`${item.id}-file-${idx}`"
-              :href="file.url"
-              target="_blank"
-              rel="noopener noreferrer"
-              type="primary"
-              class="file-link"
-              :underline="false"
-            >
-              <el-icon class="file-icon"><Document /></el-icon>
-              <span class="file-name">{{ file.name }}</span>
-            </el-link>
-          </div>
+          <DailyFileList :files="item.files" />
         </div>
 
         <!-- 点赞 + 评论 -->
@@ -577,7 +564,7 @@ const closeModal = () => {
   width: 100%;
   min-width: 0;
   padding-top: 12px;
-  border-top: 1px solid rgba(127, 127, 127, 0.24);
+  /* border-top: 1px solid rgba(127, 127, 127, 0.24); */
 }
 
 .file-link {

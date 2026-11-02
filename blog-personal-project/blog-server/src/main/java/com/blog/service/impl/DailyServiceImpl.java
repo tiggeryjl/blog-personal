@@ -163,15 +163,20 @@ public class DailyServiceImpl implements DailyService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void add(DailyDTO dailyDTO) {
-        if (dailyDTO.getContent() == null || dailyDTO.getContent().trim().isEmpty()) {
-            throw new CustomException("日常内容不能为空");
+        String content = dailyDTO.getContent() == null ? "" : dailyDTO.getContent().trim();
+        String images = joinUrls(dailyDTO.getImages());
+        String files = joinUrls(dailyDTO.getFiles());
+        if (!StringUtils.hasText(content)
+                && !StringUtils.hasText(images)
+                && !StringUtils.hasText(files)) {
+            throw new CustomException("文字、图片或附件至少填写一项");
         }
 
         Daily daily = new Daily();
         BeanUtils.copyProperties(dailyDTO, daily);
-        daily.setContent(dailyDTO.getContent().trim());
-        daily.setImages(joinUrls(dailyDTO.getImages()));
-        daily.setFiles(joinUrls(dailyDTO.getFiles()));
+        daily.setContent(content);
+        daily.setImages(images);
+        daily.setFiles(files);
         daily.setType(resolveType(dailyDTO.getType(), daily.getImages(), daily.getFiles()));
         daily.setIsTop(dailyDTO.getIsTop() == null ? StatusConstant.DISABLE : dailyDTO.getIsTop());
         daily.setStatus(dailyDTO.getStatus() == null ? DailyStatusConstant.DRAFT : dailyDTO.getStatus());
@@ -226,15 +231,20 @@ public class DailyServiceImpl implements DailyService {
         if (oldDaily == null) {
             throw new CustomException("日常不存在或已被删除");
         }
-        if (dailyDTO.getContent() == null || dailyDTO.getContent().trim().isEmpty()) {
-            throw new CustomException("日常内容不能为空");
+        String content = dailyDTO.getContent() == null ? "" : dailyDTO.getContent().trim();
+        String images = joinUrls(dailyDTO.getImages());
+        String files = joinUrls(dailyDTO.getFiles());
+        if (!StringUtils.hasText(content)
+                && !StringUtils.hasText(images)
+                && !StringUtils.hasText(files)) {
+            throw new CustomException("文字、图片或附件至少填写一项");
         }
 
         Daily daily = new Daily();
         daily.setId(dailyDTO.getId());
-        daily.setContent(dailyDTO.getContent().trim());
-        daily.setImages(joinUrls(dailyDTO.getImages()));
-        daily.setFiles(joinUrls(dailyDTO.getFiles()));
+        daily.setContent(content);
+        daily.setImages(images);
+        daily.setFiles(files);
         daily.setType(resolveType(dailyDTO.getType(), daily.getImages(), daily.getFiles()));
         daily.setSort(dailyDTO.getSort());
         daily.setUpdateTime(LocalDateTime.now());

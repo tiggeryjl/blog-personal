@@ -52,7 +52,7 @@ public class MenuDTO implements Serializable {
     private Integer sort;
 
     //状态 0=正常 1=禁用 2=注销
-    @NotBlank(message = "菜单状态不合法")
+    @NotNull(message = "菜单状态不能为空")
     private Integer status;
 
     // 隐藏 0=正常 1=删除

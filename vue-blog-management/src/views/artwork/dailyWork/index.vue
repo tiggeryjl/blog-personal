@@ -3,6 +3,7 @@ import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import MyPagination from '@/components/MyPagination.vue';
 import PermissionViewTip from '@/components/PermissionViewTip.vue';
+import DailyAttachmentPreview from '@/components/DailyAttachmentPreview.vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   Plus,
@@ -269,14 +270,11 @@ const closeDialog = () => {
 
 // 提交
 const submitForm = async (targetStatus) => {
-  if (!contentForm.content || !contentForm.content.trim()) {
-    ElMessage.warning('请输入日常内容');
-    return;
-  }
   const imageUrls = imageFileList.value.map((f) => f.url).filter(Boolean);
   const fileUrls = fileFileList.value.map((f) => f.url).filter(Boolean);
-  if (imageUrls.length === 0 && fileUrls.length === 0) {
-    ElMessage.warning('请至少上传一张图片或一个附件');
+  const content = (contentForm.content || '').trim();
+  if (!content && imageUrls.length === 0 && fileUrls.length === 0) {
+    ElMessage.warning('文字、图片或附件至少填写一项');
     return;
   }
 
@@ -286,13 +284,13 @@ const submitForm = async (targetStatus) => {
     if (isEdit.value) {
       result = await updateDailyApi({
         id: editId.value,
-        content: contentForm.content.trim(),
+        content,
         images: imageUrls,
         files: fileUrls,
       });
     } else {
       result = await addDailyApi({
-        content: contentForm.content.trim(),
+        content,
         images: imageUrls,
         files: fileUrls,
         status: targetStatus,
@@ -796,21 +794,7 @@ onMounted(() => {
 
         <el-table-column label="附件" width="160" align="center">
           <template #default="{ row }">
-            <div v-if="row.files && row.files.split(',').filter(Boolean).length" class="file-list">
-              <el-link
-                v-for="(file, idx) in row.files.split(',').filter(Boolean).slice(0, 2)"
-                :key="idx"
-                type="primary"
-                :href="file"
-                target="_blank"
-                class="file-link"
-              >
-                {{ file.split('/').pop() }}
-              </el-link>
-              <span v-if="row.files.split(',').filter(Boolean).length > 2" class="file-more">
-                +{{ row.files.split(',').filter(Boolean).length - 2 }}
-              </span>
-            </div>
+            <DailyAttachmentPreview v-if="row.files" :files="row.files" compact />
             <span v-else>—</span>
           </template>
         </el-table-column>
@@ -972,14 +956,14 @@ onMounted(() => {
       @close="submitLoading = false"
     >
       <el-form :model="contentForm" label-width="80px">
-        <el-form-item label="内容描述" required>
+        <el-form-item label="内容描述">
           <el-input
             v-model="contentForm.content"
             type="textarea"
             :rows="4"
             maxlength="2000"
             show-word-limit
-            placeholder="请输入日常内容（必填）"
+            placeholder="请输入日常内容（选填）"
           />
         </el-form-item>
 
@@ -1082,16 +1066,7 @@ onMounted(() => {
           <div class="preview-files-title">
             <el-icon><Document /></el-icon> 附件
           </div>
-          <el-link
-            v-for="(file, idx) in previewFiles"
-            :key="idx"
-            type="primary"
-            :href="file.url"
-            target="_blank"
-            class="preview-file-link"
-          >
-            {{ file.name }}
-          </el-link>
+          <DailyAttachmentPreview :files="previewRow.files" />
         </div>
       </div>
     </el-dialog>

@@ -3,7 +3,6 @@ package com.blog.pojo.dto;
 import com.blog.validation.ValidationGroups;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,9 +35,8 @@ public class DailyDTO implements Serializable {
     private Long id;
 
     /**
-     * 日常内容
+     * 日常内容，纯图片或纯附件时可为空
      */
-    @NotBlank(message = "日常内容不能为空")
     private String content;
 
     /**
@@ -59,7 +57,6 @@ public class DailyDTO implements Serializable {
     /**
      * 是否置顶 0否 1是
      */
-    @NotBlank(message = "置顶状态不合法")
     private Integer isTop;
 
     /**
