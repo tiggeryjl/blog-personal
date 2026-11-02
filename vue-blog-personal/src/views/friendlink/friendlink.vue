@@ -72,11 +72,45 @@ const loadSiteProfile = async () => {
 };
 
 const copyText = async (text, successTip) => {
-  if (!text) return;
+  const content = String(text || '').trim();
+  if (!content) {
+    ElMessage.warning('当前没有可复制的内容');
+    return;
+  }
+
+  // HTTPS/localhost 优先使用 Clipboard API
+  if (window.isSecureContext && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(content);
+      ElMessage.success(successTip);
+      return;
+    } catch (err) {
+      // 权限被拒绝时继续使用兼容复制方案
+    }
+  }
+
+  // HTTP 服务器或旧浏览器回退方案
+  const textarea = document.createElement('textarea');
+  textarea.value = content;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-9999px';
+  textarea.style.top = '0';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+
+  let copied = false;
   try {
-    await navigator.clipboard.writeText(text);
+    textarea.select();
+    textarea.setSelectionRange(0, textarea.value.length);
+    copied = document.execCommand('copy');
+  } finally {
+    textarea.remove();
+  }
+
+  if (copied) {
     ElMessage.success(successTip);
-  } catch (err) {
+  } else {
     ElMessage.error('复制失败，请手动选中复制');
   }
 };

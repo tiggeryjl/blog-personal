@@ -1,14 +1,9 @@
-/* ==============================================
-   全站响应式布局 — 手机端自动生效
-   电脑端无任何变化
-============================================== */
 /* 电脑端隐藏菜单按钮 */
 .mobile-menu-btn {
   display: none !important;
 }
 
 @media (max-width: 930px) {
-
   /* 1. 导航栏手机样式 */
   .header {
     width: 95% !important;
@@ -173,7 +168,6 @@
 }
 
 @media (min-width: 1024px) and (max-width: 1280px) {
-
   /* 1. 导航栏调整 - 适当缩小间距 */
   .header {
     width: 90% !important;
@@ -291,7 +285,6 @@
    介于手机和平板之间的过渡尺寸
 ============================================== */
 @media (min-width: 930px) and (max-width: 1023px) {
-
   /* 1. 导航栏 */
   .header {
     width: 96% !important;
@@ -334,7 +327,6 @@
    优化显示效果
 ============================================== */
 @media (min-width: 1281px) and (max-width: 1440px) {
-
   /* 1. 导航栏稍微加宽 */
   .header {
     width: 85% !important;
@@ -354,5 +346,110 @@
 
   .article-img {
     height: 180px !important;
+  }
+}
+
+/* ==============================================
+   用户端弹窗统一响应式
+   Element Plus 弹窗会 Teleport 到 body，必须使用全局样式
+============================================== */
+@media (max-width: 768px) {
+  .el-overlay-dialog > .el-dialog {
+    width: min(88vw, 420px) !important;
+    max-width: 88vw !important;
+    max-height: min(82dvh, 680px);
+    margin: auto !important;
+  }
+
+  .el-dialog.more-tags-dialog,
+  .el-dialog.subscribe-dialog,
+  .el-dialog.auth-dialog-el,
+  .el-dialog.apply-dialog,
+  .el-dialog.notice-dialog {
+    width: min(88vw, 420px) !important;
+    max-width: 88vw !important;
+    max-height: min(82dvh, 680px);
+    margin: auto !important;
+    padding: 16px !important;
+    border-radius: 16px !important;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  .more-tags-dialog .el-dialog__header,
+  .subscribe-dialog .el-dialog__header,
+  .auth-dialog-el .el-dialog__header,
+  .apply-dialog .el-dialog__header,
+  .notice-dialog .el-dialog__header {
+    margin-bottom: 12px !important;
+    padding: 0 !important;
+  }
+
+  .more-tags-dialog .el-dialog__body,
+  .subscribe-dialog .el-dialog__body,
+  .auth-dialog-el .el-dialog__body,
+  .apply-dialog .el-dialog__body,
+  .notice-dialog .el-dialog__body {
+    max-height: calc(82dvh - 140px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 2px !important;
+  }
+
+  .more-tags-dialog .el-dialog__footer,
+  .subscribe-dialog .el-dialog__footer,
+  .auth-dialog-el .el-dialog__footer,
+  .apply-dialog .el-dialog__footer,
+  .notice-dialog .el-dialog__footer {
+    margin-top: 14px !important;
+    padding: 0 !important;
+  }
+
+  .subscribe-dialog-footer,
+  .auth-dialog-footer,
+  .apply-dialog-footer {
+    flex-wrap: wrap;
+  }
+
+  .subscribe-dialog-footer > button,
+  .auth-dialog-footer > button,
+  .apply-dialog-footer > button {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .dialog-tag-cloud {
+    max-height: calc(100dvh - 190px);
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .el-dialog.more-tags-dialog,
+  .el-dialog.subscribe-dialog,
+  .el-dialog.auth-dialog-el,
+  .el-dialog.apply-dialog,
+  .el-dialog.notice-dialog {
+    width: min(90vw, 400px) !important;
+    max-width: 90vw !important;
+    max-height: min(84dvh, 620px);
+    margin: auto !important;
+    padding: 14px !important;
+  }
+
+  .auth-code-row {
+    gap: 6px;
+  }
+
+  .auth-code-btn {
+    min-width: 82px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  .subscribe-dialog-footer > button,
+  .auth-dialog-footer > button,
+  .apply-dialog-footer > button {
+    min-height: 38px;
   }
 }

@@ -19,6 +19,7 @@ const currentIndex = ref(0);
 const isPlaying = ref(false);
 const showPanel = ref(false);
 const showVolume = ref(false);
+const isMobile = ref(typeof window !== 'undefined' && window.innerWidth <= 768);
 const currentTime = ref(0);
 const audioDuration = ref(0);
 const volume = ref(getStoredNumber(VOLUME_KEY, DEFAULT_VOLUME, 0, 100));
@@ -230,6 +231,10 @@ const clickOutside = (event) => {
   }
 };
 
+const updateMobileState = () => {
+  isMobile.value = window.innerWidth <= 768;
+};
+
 watch(loopMode, (value) => localStorage.setItem(LOOP_MODE_KEY, String(value)));
 watch(volume, (value) => {
   localStorage.setItem(VOLUME_KEY, String(value));
@@ -255,10 +260,13 @@ const loadTracks = async () => {
 onMounted(() => {
   loadTracks();
   window.addEventListener('click', clickOutside);
+  window.addEventListener('resize', updateMobileState);
+  updateMobileState();
 });
 
 onUnmounted(() => {
   window.removeEventListener('click', clickOutside);
+  window.removeEventListener('resize', updateMobileState);
   audioEl.value?.pause();
 });
 </script>
@@ -317,8 +325,9 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <transition name="music-pop">
-      <div v-show="showPanel" class="music-panel" @click.stop>
+    <Teleport to="body" :disabled="!isMobile">
+      <transition name="music-pop">
+        <div v-show="showPanel" class="music-panel" @click.stop>
         <div
           v-if="currentSong?.cover"
           class="panel-backdrop"
@@ -446,8 +455,9 @@ onUnmounted(() => {
             <span class="item-duration">{{ formatTime(item.duration) }}</span>
           </button>
         </div>
-      </div>
-    </transition>
+        </div>
+      </transition>
+    </Teleport>
   </div>
 </template>
 
@@ -943,7 +953,10 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   padding: 0;
+  border: 0;
+  border-radius: 50%;
   background: transparent;
+  appearance: none;
   cursor: pointer;
 }
 
@@ -981,9 +994,15 @@ onUnmounted(() => {
 }
 
 .volume-popover button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0;
+  border: 0;
+  border-radius: 50%;
   color: #677287;
   background: transparent;
+  appearance: none;
   cursor: pointer;
 }
 
@@ -1500,15 +1519,55 @@ onUnmounted(() => {
   }
 }
 
+@media (max-width: 768px) {
+  .music-mini {
+    gap: 7px;
+    padding: 0 4px;
+  }
+
+  .music-right {
+    width: min(118px, 32vw);
+  }
+
+  .music-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: min(88vw, 420px);
+    max-height: min(82dvh, 680px);
+    padding: 16px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 20px;
+    transform: translate(-50%, -50%);
+  }
+
+  .playlist {
+    max-height: min(32dvh, 220px);
+    overflow-y: auto;
+  }
+
+  .playlist-item {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .item-duration {
+    display: none;
+  }
+}
+
 @media (max-width: 520px) {
   .music-panel {
     position: fixed;
-    top: 82px;
+    top: 50%;
     left: 50%;
-    width: min(94vw, 420px);
-    max-height: calc(100vh - 96px);
+    width: min(90vw, 400px);
+    max-height: min(84dvh, 620px);
     padding: 16px;
     border-radius: 22px;
+    transform: translate(-50%, -50%);
   }
 
   .lyric-box {
