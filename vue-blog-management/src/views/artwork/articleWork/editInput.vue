@@ -488,4 +488,55 @@ onMounted(() => {
 .btn-submit:active {
   transform: scale(0.98);
 }
+
+@media (max-width: 768px) {
+  .publish-container {
+    max-width: 100%;
+    padding: 18px 14px;
+    gap: 22px;
+  }
+
+  .publish-container h1 {
+    margin: 0 auto 4px;
+    font-size: 20px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .upload-placeholder,
+  .cover-preview img,
+  .cover-preview {
+    width: 100%;
+    max-width: 100%;
+    height: 150px;
+  }
+
+  .btn-group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 0 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .publish-container {
+    padding: 14px 10px;
+  }
+
+  .form-label {
+    font-size: 14px;
+  }
+
+  .btn-group {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

@@ -138,7 +138,12 @@ onMounted(() => {
       <el-radio-group :model-value="activeRange" size="small" @update:model-value="switchRange">
         <el-radio-button value="week">近7天</el-radio-button>
         <el-radio-button value="month">近30天</el-radio-button>
-        <el-popover v-model:visible="popoverVisible" placement="bottom-start" :width="470" trigger="click">
+        <el-popover
+          v-model:visible="popoverVisible"
+          placement="bottom-start"
+          width="min(470px, calc(100vw - 32px))"
+          trigger="click"
+        >
           <template #reference>
             <el-radio-button value="custom">自定义</el-radio-button>
           </template>
@@ -275,5 +280,32 @@ onMounted(() => {
 .preset-tag:hover {
   color: #409eff;
   border-color: #409eff;
+}
+
+@media (max-width: 768px) {
+  .custom-range-panel {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+  }
+
+  .custom-range-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .custom-date {
+    width: 100% !important;
+  }
+
+  .custom-range-sep {
+    display: none;
+  }
+
+  .custom-range-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
 }
 </style>

@@ -316,8 +316,17 @@ const submitForm = async (targetStatus) => {
 
 // ====================== 删除 ======================
 const selectedIds = ref([]);
+const mobileSelectAll = ref(false);
+const dailyTableRef = ref(null);
+const handleMobileSelectAll = (checked) => {
+  dailyTableRef.value?.clearSelection();
+  if (checked) {
+    dailyTableRef.value?.toggleAllSelection();
+  }
+};
 const handleSelectionChange = (val) => {
   selectedIds.value = val.map((item) => item.id);
+  mobileSelectAll.value = dailyList.value.length > 0 && val.length === dailyList.value.length;
 };
 
 const deleteDaily = (id) => {
@@ -729,7 +738,17 @@ onMounted(() => {
 
     <!-- 日常列表 -->
     <div class="list-card">
+      <div class="mobile-list-toolbar">
+        <el-checkbox v-model="mobileSelectAll" class="mobile-select-all" @change="handleMobileSelectAll">
+          全选当前页
+        </el-checkbox>
+        <el-button v-perm="'sys:works:add'" type="primary" :icon="Plus" @click="openAddDialog"> 发布 </el-button>
+        <el-button v-perm="'sys:works:delete'" type="danger" :icon="Delete" @click="handleBatchDelete">
+          批量删除
+        </el-button>
+      </div>
       <el-table
+        ref="dailyTableRef"
         :data="dailyList"
         v-loading="loading"
         border
@@ -766,29 +785,52 @@ onMounted(() => {
 
         <el-table-column label="图片" width="180" align="center">
           <template #default="{ row }">
-            <div v-if="row.images && row.images.split(',').filter(Boolean).length" class="image-carousel-wrapper">
-              <el-carousel
-                :interval="3000"
-                trigger="click"
-                height="110px"
-                :autoplay="true"
-                :pause-on-hover="true"
-                indicator-position="none"
-                arrow="always"
-                loop
-              >
-                <el-carousel-item v-for="(img, idx) in row.images.split(',').filter(Boolean)" :key="idx">
-                  <img
-                    :src="img"
-                    class="carousel-img"
-                    @error="onImgError"
-                    @click="openPreview(row.images.split(',').filter(Boolean), idx)"
-                  />
-                </el-carousel-item>
-              </el-carousel>
-              <div class="image-count-badge">共{{ row.images.split(',').filter(Boolean).length }}张</div>
+            <div class="daily-cover-area">
+              <div v-if="row.images && row.images.split(',').filter(Boolean).length" class="image-carousel-wrapper">
+                <el-carousel
+                  :interval="3000"
+                  trigger="click"
+                  height="110px"
+                  :autoplay="true"
+                  :pause-on-hover="true"
+                  indicator-position="none"
+                  arrow="always"
+                  loop
+                >
+                  <el-carousel-item v-for="(img, idx) in row.images.split(',').filter(Boolean)" :key="idx">
+                    <img
+                      :src="img"
+                      class="carousel-img"
+                      @error="onImgError"
+                      @click="openPreview(row.images.split(',').filter(Boolean), idx)"
+                    />
+                  </el-carousel-item>
+                </el-carousel>
+                <div class="image-count-badge">共{{ row.images.split(',').filter(Boolean).length }}张</div>
+              </div>
+              <span v-else class="daily-cover-empty">未上传图片</span>
+
+              <div class="mobile-daily-summary">
+                <el-tag size="small" :type="row.isTop === 1 ? 'success' : 'info'">
+                  {{ row.isTop === 1 ? '已置顶' : '未置顶' }}
+                </el-tag>
+                <el-tag size="small" :type="getDailyStatusType(row.status)">
+                  {{ getDailyStatusText(row.status) }}
+                </el-tag>
+                <span class="mobile-daily-stat" title="浏览">
+                  <el-icon><View /></el-icon>
+                  {{ formatCount(row.viewNum) }}
+                </span>
+                <span class="mobile-daily-stat" title="点赞">
+                  <el-icon><Star /></el-icon>
+                  {{ formatCount(row.likeNum) }}
+                </span>
+                <span class="mobile-daily-stat" title="评论">
+                  <el-icon><ChatDotRound /></el-icon>
+                  {{ formatCount(row.commentNum) }}
+                </span>
+              </div>
             </div>
-            <span v-else>—</span>
           </template>
         </el-table-column>
 
@@ -1309,6 +1351,14 @@ onMounted(() => {
   font-weight: 500;
 }
 
+.mobile-daily-summary {
+  display: none;
+}
+
+.daily-cover-empty {
+  color: #aaa;
+}
+
 :deep(.el-carousel__container) {
   height: 110px;
 }
@@ -1495,5 +1545,66 @@ onMounted(() => {
 
 .stat-item .el-icon {
   font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  .daily-cover-area {
+    display: flex;
+    width: 72px;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .daily-cover-empty {
+    display: flex;
+    width: 72px;
+    height: 72px;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--el-border-color);
+    border-radius: 9px;
+    background: var(--el-fill-color-lighter);
+    font-size: 11px;
+  }
+
+  .mobile-daily-summary {
+    display: flex;
+    width: 72px;
+    margin-top: 7px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .mobile-daily-summary .el-tag {
+    max-width: 72px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-daily-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #909399;
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  .mobile-daily-stat .el-icon {
+    font-size: 12px;
+  }
+
+  .row-stats {
+    display: none !important;
+  }
+
+  :deep(.responsive-data-table td[data-label='是否置顶']) {
+    display: none !important;
+  }
+
+  :deep(.responsive-data-table td[data-label='状态']) {
+    display: none !important;
+  }
 }
 </style>

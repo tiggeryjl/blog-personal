@@ -771,4 +771,34 @@ onUnmounted(() => {
     padding: 10px;
   }
 }
+
+@media (max-width: 480px) {
+  .header {
+    padding: 0 8px;
+  }
+
+  .title-box {
+    gap: 6px;
+  }
+
+  .title-logo {
+    height: 24px;
+  }
+
+  .title {
+    font-size: 14px;
+  }
+
+  .online-box {
+    display: none;
+  }
+
+  .notice-badge {
+    margin-right: 2px;
+  }
+
+  .user-info {
+    gap: 0;
+  }
+}
 </style>

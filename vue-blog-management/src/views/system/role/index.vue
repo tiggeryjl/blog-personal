@@ -166,7 +166,9 @@ const openAuth = async (row) => {
 
 // 保存权限
 const saveAuth = async () => {
-  const menuList = treeRef.value.getCheckedKeys();
+  const checked = treeRef.value.getCheckedKeys();
+  const halfChecked = treeRef.value.getHalfCheckedKeys();
+  const menuList = [...new Set([...checked, ...halfChecked])];
   const params = {
     roleId: currentRoleId.value,
     menuIdList: menuList,
@@ -177,30 +179,6 @@ const saveAuth = async () => {
     ElMessage.success('权限分配成功');
   } else {
     ElMessage.error(res.msg || '权限分配失败');
-  }
-};
-
-const handleTreeCheck = (data, { checked }) => {
-  // 获取当前节点所有子节点id
-  const getChildIds = (node) => {
-    let ids = [];
-    if (node.children && node.children.length) {
-      node.children.forEach((child) => {
-        ids.push(child.id);
-        ids = ids.concat(getChildIds(child));
-      });
-    }
-    return ids;
-  };
-
-  const childIds = getChildIds(data);
-  if (checked) {
-    // 选中父：所有子勾选
-    treeRef.value.setCheckedKeys([...treeRef.value.getCheckedKeys(), ...childIds]);
-  } else {
-    // 取消父：所有子取消
-    let checkedArr = treeRef.value.getCheckedKeys().filter((id) => !childIds.includes(id));
-    treeRef.value.setCheckedKeys(checkedArr);
   }
 };
 
@@ -320,8 +298,9 @@ onMounted(() => {
         :default-checked-keys="checkedKeys"
         ref="treeRef"
         :props="{ label: 'menuName', children: 'children' }"
-        :check-strictly="true"
-        @check="handleTreeCheck"
+        :check-strictly="false"
+        check-on-click-node
+        default-expand-all
         :disabled="currentRoleKey === 'admin'"
       />
       <template #footer>

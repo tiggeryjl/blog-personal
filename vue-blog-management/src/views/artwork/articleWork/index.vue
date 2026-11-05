@@ -152,9 +152,18 @@ const deleteArticle = async (id) => {
 
 // 批量删除选中的行
 const selectedArticles = ref([]);
+const mobileSelectAll = ref(false);
+const articleTableRef = ref(null);
+const handleMobileSelectAll = (checked) => {
+  articleTableRef.value?.clearSelection();
+  if (checked) {
+    articleTableRef.value?.toggleAllSelection();
+  }
+};
 // 表格选中事件
 const handleSelectionChange = (val) => {
   selectedArticles.value = val.map((item) => item.id);
+  mobileSelectAll.value = articleList.value.length > 0 && val.length === articleList.value.length;
 };
 
 // 批量删除
@@ -515,15 +524,53 @@ onMounted(() => {
 
     <!-- 文章列表 -->
     <div class="list-card">
+      <div class="mobile-list-toolbar">
+        <el-checkbox v-model="mobileSelectAll" class="mobile-select-all" @change="handleMobileSelectAll">
+          全选当前页
+        </el-checkbox>
+        <el-button v-perm="'sys:article:add'" type="primary" :icon="Plus" @click="goto('/editInput')">
+          发布
+        </el-button>
+        <el-button v-perm="'sys:article:delete'" type="danger" :icon="Delete" @click="handleBatchDelete">
+          批量删除
+        </el-button>
+      </div>
       <!-- 表格 -->
-      <el-table :data="articleList" style="width: 100%" border @selection-change="handleSelectionChange">
+      <el-table
+        ref="articleTableRef"
+        :data="articleList"
+        style="width: 100%"
+        border
+        @selection-change="handleSelectionChange"
+      >
         <el-table-column type="selection" width="55" align="center" />
 
         <el-table-column label="封面" width="150" align="center">
           <template #default="scope">
-            <div class="cover-box">
+            <div class="mobile-article-summary">
+              <el-tag size="small" :type="scope.row.isTop ? 'success' : 'info'">
+                {{ scope.row.isTop ? '已置顶' : '未置顶' }}
+              </el-tag>
+              <el-tag size="small" :type="getStatusType(scope.row.status)">
+                {{ getStatusText(scope.row.status) }}
+              </el-tag>
+              <span class="mobile-article-stat" title="浏览">
+                <el-icon><View /></el-icon>
+                {{ formatCount(scope.row.viewNum) }}
+              </span>
+              <span class="mobile-article-stat" title="点赞">
+                <el-icon><Star /></el-icon>
+                {{ formatCount(scope.row.likeNum) }}
+              </span>
+              <span class="mobile-article-stat" title="评论">
+                <el-icon><ChatDotRound /></el-icon>
+                {{ formatCount(scope.row.commentNum) }}
+              </span>
+            </div>
+            <div v-if="scope.row.cover" class="cover-box">
               <img :src="scope.row.cover" class="cover-img" alt="封面" @click="openPreview(scope.row.cover)" />
             </div>
+            <span v-else>—</span>
           </template>
         </el-table-column>
 
@@ -1113,5 +1160,56 @@ onMounted(() => {
 
 .stat-item .el-icon {
   font-size: 13px;
+}
+
+.mobile-article-summary {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-article-summary {
+    display: flex;
+    order: 2;
+    width: 72px;
+    margin-top: 7px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .mobile-article-summary .el-tag {
+    max-width: 72px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-article-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #909399;
+    font-size: 11px;
+    line-height: 1.3;
+  }
+
+  .mobile-article-stat .el-icon {
+    font-size: 12px;
+  }
+
+  .cover-box {
+    order: 1;
+  }
+
+  .row-stats {
+    display: none !important;
+  }
+
+  .responsive-data-table td[data-label='置顶'] {
+    display: none !important;
+  }
+
+  .responsive-data-table td[data-label='状态'] {
+    display: none !important;
+  }
 }
 </style>

@@ -8,6 +8,9 @@
 
 /* 移动端侧边栏抽屉：去掉默认内边距，内部菜单占满整块区域并独立滚动 */
 .sidebar-drawer .el-drawer__body {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
   padding: 0;
   overflow: hidden;
 }
@@ -19,9 +22,58 @@
 }
 
 .sidebar-drawer .sidebar-menu {
-  height: 100%;
+  flex: 1;
+  width: 100%;
+  height: auto;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   border-right: none;
+}
+
+.sidebar-drawer .sidebar-menu .el-sub-menu {
+  width: 100%;
+  overflow: visible;
+}
+
+.sidebar-drawer .sidebar-menu .el-sub-menu__title {
+  min-height: 48px;
+  line-height: 48px;
+}
+
+.sidebar-drawer .sidebar-menu .el-sub-menu > .el-menu {
+  display: none;
+  width: 100%;
+  overflow: visible;
+}
+
+.sidebar-drawer .sidebar-menu .el-sub-menu.is-opened > .el-menu {
+  display: block;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible;
+}
+
+.sidebar-drawer .sidebar-menu .el-menu-item {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  line-height: 44px;
+  opacity: 1;
+  visibility: visible;
+}
+
+.sidebar-drawer .sidebar-menu .el-sub-menu .el-menu-item {
+  padding-left: 48px !important;
+}
+
+.sidebar-drawer .sidebar-menu .el-menu-item span,
+.sidebar-drawer .sidebar-menu .el-sub-menu__title span {
+  display: inline-block;
+  min-width: 0;
+  overflow: visible;
+  opacity: 1;
+  visibility: visible;
 }
 
 /* ==================== 移动端（手机）通用适配 ==================== */
@@ -94,8 +146,918 @@
   .report-header,
   .notice-header,
   .chart-card-header,
-  .home-header {
+ .home-header {
     flex-wrap: wrap;
     gap: 10px;
+  }
+}
+
+/* ==================== 管理端业务页面响应式基线 ==================== */
+html,
+body,
+#app {
+  width: 100%;
+  min-width: 0;
+}
+
+.el-container,
+.el-main,
+.el-main > *,
+.article-management-container,
+.article-detail-page,
+.main-container,
+.user-container,
+.role-container,
+.report-page,
+.notice-page,
+.notice-config-page,
+.operlog-page,
+.music-management,
+.home-container,
+.publish-container {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.el-main > * {
+  max-width: 100%;
+}
+
+.el-main .el-card,
+.el-main .list-card,
+.el-main .query-card {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1024px) {
+  .article-management-container,
+  .article-detail-page,
+  .main-container,
+  .user-container,
+  .role-container,
+  .report-page,
+  .notice-config-page,
+  .operlog-page,
+  .music-management {
+    width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .page-header,
+  .header-row,
+  .report-header,
+  .notice-header,
+  .chart-card-header,
+  .home-header,
+  .card-head,
+  .toolbar {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .chart-row,
+  .form-grid,
+  .notice-layout {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .chart-row > .col-4,
+  .chart-row > .col-8 {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .el-main {
+    width: 100%;
+    padding: 10px !important;
+    overflow-x: hidden;
+  }
+
+  .article-management-container,
+  .article-detail-page,
+  .main-container,
+  .user-container,
+  .role-container,
+  .report-page,
+  .notice-config-page,
+  .operlog-page,
+  .music-management,
+  .home-container {
+    padding: 0 !important;
+  }
+
+  .page-header,
+  .header-row,
+  .home-header,
+  .report-header,
+  .notice-header,
+  .card-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .page-header h1,
+  .page-header h2,
+  .header-row h1,
+  .header-row h2,
+  .home-header h1,
+  .report-header-left h2,
+  .notice-header h3 {
+    font-size: 18px !important;
+    line-height: 1.4;
+  }
+
+  .header-buttons,
+  .toolbar,
+  .top-bar,
+  .mb-3 {
+    display: flex;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .el-main:has(.mobile-list-toolbar) .page-header .header-buttons {
+    display: none !important;
+  }
+
+  .mobile-list-toolbar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 1fr);
+    gap: 6px;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .mobile-list-toolbar .el-button {
+    width: 100%;
+    height: 32px;
+    margin: 0 !important;
+    padding: 0 7px;
+    font-size: 12px;
+  }
+
+  .mobile-select-all {
+    display: inline-flex;
+    height: 32px;
+    padding: 0 8px;
+    border: 1px solid var(--el-border-color-light);
+    border-radius: 6px;
+    background: var(--el-bg-color, #fff);
+    box-sizing: border-box;
+  }
+
+  .mobile-select-all .el-checkbox__label {
+    padding-left: 5px;
+    font-size: 12px;
+  }
+
+  .el-main:has(.mobile-list-toolbar) .responsive-selection-header {
+    display: none !important;
+  }
+
+  .header-buttons .el-button,
+  .toolbar .el-button,
+  .top-bar .el-button,
+  .mb-3 > .el-form-item,
+  .mb-3 .el-form-item__content {
+    width: 100%;
+  }
+
+  .header-buttons .el-button,
+  .toolbar .el-button,
+  .top-bar .el-button,
+  .mb-3 .el-button {
+    flex: 1 1 calc(50% - 4px);
+    margin-left: 0 !important;
+  }
+
+  .mb-3 > .el-form-item {
+    display: flex;
+    margin: 0 !important;
+  }
+
+  .mb-3 .el-form-item__content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-left: 0 !important;
+  }
+
+  .el-card {
+    width: 100% !important;
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+  }
+
+  .el-card + .el-card,
+  .el-card + .list-card {
+    margin-top: 12px;
+  }
+
+  .el-card__body {
+    padding: 12px !important;
+  }
+
+  .list-card {
+    padding: 10px !important;
+    overflow: visible;
+  }
+
+  .el-form--inline {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .el-form--inline .el-form-item {
+    display: flex;
+    width: 100% !important;
+    margin: 0 0 12px !important;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .el-form--inline .el-form-item__label {
+    width: auto !important;
+    height: auto !important;
+    padding: 0 0 5px !important;
+    line-height: 1.4;
+    justify-content: flex-start;
+  }
+
+  .el-form--inline .el-form-item__content {
+    width: 100% !important;
+    min-width: 0;
+    margin-left: 0 !important;
+  }
+
+  .el-form--inline .el-form-item__content > .el-input,
+  .el-form--inline .el-form-item__content > .el-input__wrapper,
+  .el-form--inline .el-form-item__content > .el-select,
+  .el-form--inline .el-form-item__content > .el-date-editor,
+  .el-form--inline .el-form-item__content > .el-cascader,
+  .el-form--inline .el-form-item__content > .el-input-number,
+  .el-form--inline .el-form-item__content > .el-tree-select {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .el-date-editor--daterange,
+  .el-date-editor--datetimerange {
+    width: 100% !important;
+  }
+
+  .el-select,
+  .el-tree-select,
+  .el-cascader,
+  .el-input-number,
+  .el-date-editor {
+    max-width: 100%;
+  }
+
+  .el-radio-group,
+  .el-checkbox-group {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .el-table {
+    width: 100% !important;
+    max-width: 100%;
+    font-size: 12px;
+  }
+
+  .el-table .cell {
+    padding: 0 6px;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+
+  .el-table__header-wrapper,
+  .el-table__body-wrapper {
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .el-table .el-button.is-link {
+    padding: 3px 2px;
+    margin-left: 0 !important;
+  }
+
+  .el-button + .el-button {
+    margin-left: 0;
+  }
+
+  .el-table__empty-block {
+    min-width: 220px;
+  }
+
+  /* 数据表格在手机端自动转换为卡片，字段名称由 responsiveTable.js 注入 */
+  .responsive-data-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    background: transparent !important;
+    --el-table-border-color: transparent;
+  }
+
+  .responsive-data-table .el-table__inner-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .responsive-data-table .el-table__header-wrapper {
+    display: block !important;
+    width: 100% !important;
+    overflow: visible !important;
+  }
+
+  .responsive-data-table .el-table__header-wrapper table,
+  .responsive-data-table .el-table__header-wrapper thead,
+  .responsive-data-table .el-table__header-wrapper tbody,
+  .responsive-data-table .el-table__header-wrapper tr {
+    display: block !important;
+    width: auto !important;
+  }
+
+  .responsive-data-table .el-table__header-wrapper th {
+    display: none !important;
+  }
+
+  .responsive-data-table .el-table__header-wrapper th.responsive-selection-header {
+    display: inline-flex !important;
+    width: auto !important;
+    margin: 0 0 8px;
+    padding: 6px 10px !important;
+    align-items: center;
+    border: 1px solid var(--el-border-color-light) !important;
+    border-radius: 999px;
+    background: var(--el-bg-color, #fff);
+    box-shadow: 0 2px 8px rgba(31, 45, 61, 0.05);
+  }
+
+  .responsive-data-table .el-table__header-wrapper th.responsive-selection-header .cell {
+    display: flex;
+    width: auto;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 0;
+  }
+
+  .responsive-data-table .el-table__header-wrapper th.responsive-selection-header .cell::after {
+    content: '全选当前页';
+    color: var(--el-text-color-regular);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .responsive-data-table .el-table__body-wrapper,
+  .responsive-data-table .el-scrollbar,
+  .responsive-data-table .el-scrollbar__wrap,
+  .responsive-data-table .el-scrollbar__view {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+
+  .responsive-data-table .el-scrollbar__bar,
+  .responsive-data-table .el-table__border-left-patch {
+    display: none !important;
+  }
+
+  .responsive-data-table .el-table__body,
+  .responsive-data-table .el-table__body tbody {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .responsive-data-table colgroup {
+    display: none !important;
+  }
+
+  .responsive-data-table tbody {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .responsive-data-table tbody > tr {
+    display: grid !important;
+    position: relative;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 10px;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 14px 12px;
+    box-sizing: border-box;
+    overflow: hidden;
+    border: 1px solid var(--el-border-color-light) !important;
+    border-radius: 12px;
+    background:
+      linear-gradient(135deg, var(--el-bg-color, #fff), var(--el-fill-color-extra-light, #fafbfc));
+    box-shadow: 0 4px 14px rgba(31, 45, 61, 0.06);
+  }
+
+  .responsive-data-table tbody > tr > td {
+    display: flex !important;
+    min-height: 0;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 7px;
+    width: auto !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 7px 8px !important;
+    box-sizing: border-box;
+    border: 0 !important;
+    border-radius: 8px;
+    background: var(--el-fill-color-extra-light, #f7f8fa) !important;
+    text-align: left !important;
+  }
+
+  .responsive-data-table tbody > tr > td::before {
+    flex: 0 0 auto;
+    content: attr(data-label);
+    color: var(--el-text-color-secondary);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.45;
+    text-align: left;
+    word-break: break-word;
+  }
+
+  .responsive-data-table tbody > tr > td[data-field-kind='empty']::before,
+  .responsive-data-table tbody > tr > td:not([data-label])::before {
+    content: '';
+  }
+
+  .responsive-data-table tbody > tr > td .cell {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    padding: 0 !important;
+    overflow: visible;
+    text-align: left !important;
+    white-space: normal !important;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* 主信息：标题、账号、名称等，作为名片抬头 */
+  .responsive-data-table tbody > tr > td[data-field-kind='primary'] {
+    grid-column: 1 / -1;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    padding: 4px 2px 9px !important;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+    border-radius: 0;
+    background: transparent !important;
+  }
+
+  .responsive-data-table tbody > tr > td[data-field-kind='primary']::before {
+    margin-bottom: 2px;
+    color: var(--el-color-primary);
+    font-size: 11px;
+    letter-spacing: 0.02em;
+  }
+
+  .responsive-data-table tbody > tr > td[data-field-kind='primary'] .cell {
+    color: var(--el-text-color-primary);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  /* 详情信息：简介、来源、链接等，横跨整行 */
+  .responsive-data-table tbody > tr > td[data-field-kind='detail'] {
+    grid-column: 1 / -1;
+    align-items: flex-start;
+  }
+
+  .responsive-data-table tbody > tr > td[data-field-kind='detail']::before {
+    min-width: 54px;
+  }
+
+  .responsive-data-table tbody > tr > td[data-field-kind='detail'] .cell {
+    color: var(--el-text-color-regular);
+    line-height: 1.6;
+  }
+
+  /* 状态、时间、排序等紧凑字段，两列组合展示 */
+  .responsive-data-table tbody > tr > td[data-field-kind='meta'] {
+    grid-column: span 1;
+    align-content: center;
+    font-size: 12px;
+  }
+
+  .responsive-data-table tbody > tr > td[data-field-kind='meta'] .cell {
+    color: var(--el-text-color-regular);
+    font-size: 12px;
+  }
+
+  /* 头像、封面等媒体信息固定到左侧 */
+  .responsive-data-table tbody > tr.responsive-table-row-has-media {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+
+  .responsive-data-table tbody > tr > td[data-field-kind='media'] {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    display: block !important;
+    align-self: start;
+    padding: 0 !important;
+    overflow: hidden;
+    border-radius: 9px;
+    background: transparent !important;
+  }
+
+  .responsive-data-table tbody > tr > td[data-field-kind='media']::before {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .responsive-data-table tbody > tr > td[data-field-kind='media'] .cell {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-direction: column;
+  }
+
+  .responsive-data-table tbody > tr > td[data-field-kind='media'] img,
+  .responsive-data-table tbody > tr > td[data-field-kind='media'] .el-image,
+  .responsive-data-table tbody > tr > td[data-field-kind='media'] .image-carousel-wrapper {
+    width: 72px !important;
+    height: 72px !important;
+    border-radius: 9px;
+  }
+
+  .responsive-data-table
+    tbody
+    > tr.responsive-table-row-has-media
+    > td[data-field-kind='primary'],
+  .responsive-data-table
+    tbody
+    > tr.responsive-table-row-has-media
+    > td[data-field-kind='detail'],
+  .responsive-data-table
+    tbody
+    > tr.responsive-table-row-has-media
+    > td[data-field-kind='meta'],
+  .responsive-data-table
+    tbody
+    > tr.responsive-table-row-has-media
+    > td[data-field-kind='action'] {
+    grid-column: 2;
+  }
+
+  .responsive-data-table
+    tbody
+    > tr.responsive-table-row-has-media
+    > td[data-field-kind='action'] {
+    grid-column: 1 / -1;
+  }
+
+  /* 选择框移到卡片右上角 */
+  .responsive-data-table tbody > tr > td[data-field-kind='selection'] {
+    position: absolute;
+    top: 10px;
+    right: 8px;
+    z-index: 2;
+    display: flex !important;
+    width: auto !important;
+    min-width: 0 !important;
+    padding: 4px !important;
+    overflow: visible !important;
+    visibility: visible !important;
+    background: transparent !important;
+  }
+
+  .responsive-data-table tbody > tr > td[data-field-kind='selection']::before {
+    display: none;
+  }
+
+  .responsive-data-table tbody > tr > td[data-field-kind='selection'] .cell {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .responsive-data-table
+    tbody
+    > tr
+    > td[data-field-kind='selection']
+    .el-checkbox {
+    height: auto;
+    margin-right: 0;
+  }
+
+  .responsive-data-table tbody > tr > td[data-field-kind='primary'],
+  .responsive-data-table tbody > tr > td[data-field-kind='detail'] {
+    padding-right: 30px !important;
+  }
+
+  /* 操作区固定在名片底部 */
+  .responsive-data-table tbody > tr > td[data-field-kind='action'] {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    margin-top: 2px;
+    padding-top: 10px !important;
+    border-top: 1px solid var(--el-border-color-lighter);
+    border-radius: 0;
+    background: transparent !important;
+  }
+
+  .responsive-data-table tbody > tr > td[data-field-kind='action']::before {
+    display: none;
+  }
+
+  .responsive-data-table tbody > tr > td img {
+    max-width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+
+  .responsive-data-table tbody > tr > td .el-image {
+    max-width: 100%;
+  }
+
+  .responsive-data-table .el-table-fixed-column--left,
+  .responsive-data-table .el-table-fixed-column--right {
+    position: static !important;
+    right: auto !important;
+    left: auto !important;
+    z-index: auto !important;
+    box-shadow: none !important;
+  }
+
+  .responsive-data-table [data-field-kind='action'] .cell,
+  .responsive-data-table [data-field-kind='action'] .action-buttons {
+    display: flex !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    gap: 6px !important;
+    padding: 0 !important;
+  }
+
+  .responsive-data-table [data-field-kind='action'] .el-button {
+    display: inline-flex !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: 28px !important;
+    margin: 0 !important;
+    padding: 0 9px !important;
+    flex: 0 1 auto !important;
+    border-radius: 999px !important;
+    font-size: 12px !important;
+    line-height: 1 !important;
+    white-space: nowrap;
+  }
+
+  .responsive-data-table [data-field-kind='action'] .el-button:not(.is-link) {
+    border-color: var(--el-button-border-color) !important;
+    background: var(--el-button-bg-color) !important;
+    color: var(--el-button-text-color) !important;
+  }
+
+  .responsive-data-table [data-field-kind='action'] .el-button.is-link {
+    border: 1px solid var(--el-border-color-lighter) !important;
+    background: var(--el-bg-color, #fff) !important;
+  }
+
+  .responsive-data-table [data-field-kind='action'] .el-button .el-icon {
+    margin-right: 3px;
+  }
+
+  .responsive-data-table [data-field-kind='action'] .el-button.is-link:hover {
+    background: var(--el-color-primary-light-9) !important;
+    border-color: var(--el-color-primary-light-7) !important;
+  }
+
+  .responsive-data-table [data-field-kind='action'] .el-button:not(.is-link):hover {
+    border-color: var(--el-button-hover-border-color) !important;
+    background: var(--el-button-hover-bg-color) !important;
+    color: var(--el-button-hover-text-color) !important;
+  }
+
+  .responsive-data-table .el-table__empty-block {
+    width: 100% !important;
+    min-width: 0;
+  }
+
+  .el-pagination {
+    justify-content: center;
+    flex-wrap: wrap;
+    row-gap: 8px;
+    white-space: normal;
+  }
+
+  .el-pagination__sizes,
+  .el-pagination__jump {
+    margin-left: 0 !important;
+  }
+
+  .el-overlay-dialog {
+    padding: 12px;
+    overflow-y: auto;
+  }
+
+  .el-overlay-dialog > .el-dialog {
+    display: flex;
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    max-height: calc(100dvh - 24px);
+    margin: 12px auto !important;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .el-dialog__header {
+    flex: 0 0 auto;
+  }
+
+  .el-dialog__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none !important;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .el-dialog__footer {
+    flex: 0 0 auto;
+  }
+
+  .el-dialog .el-form:not(.el-form--inline) .el-form-item {
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .el-dialog .el-form:not(.el-form--inline) .el-form-item__label {
+    width: auto !important;
+    height: auto !important;
+    padding: 0 0 6px !important;
+    line-height: 1.4;
+    justify-content: flex-start;
+  }
+
+  .el-dialog .el-form:not(.el-form--inline) .el-form-item__content {
+    width: 100% !important;
+    min-width: 0;
+    margin-left: 0 !important;
+  }
+
+  .el-dialog__footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .el-dialog__footer .el-button {
+    margin-left: 0 !important;
+  }
+
+  .el-upload,
+  .el-upload-list,
+  .el-upload-list__item {
+    max-width: 100%;
+  }
+
+  .el-upload--picture-card,
+  .el-upload-list--picture-card .el-upload-list__item {
+    width: 88px;
+    height: 88px;
+  }
+
+  .el-tabs__header {
+    overflow-x: auto;
+  }
+
+  .el-tabs__nav-wrap {
+    min-width: max-content;
+  }
+
+  .el-tabs__item {
+    height: 42px !important;
+    padding: 0 14px !important;
+    font-size: 15px !important;
+    line-height: 42px !important;
+  }
+
+  .el-descriptions {
+    overflow-x: auto;
+  }
+
+  .el-popover {
+    max-width: calc(100vw - 24px) !important;
+  }
+
+  .sidebar-drawer {
+    width: min(82vw, 280px) !important;
+  }
+
+  .notice-page {
+    height: auto;
+    min-height: calc(100dvh - 76px);
+  }
+
+  .notice-scroll {
+    overflow-x: hidden;
+  }
+
+  .notice-layout,
+  .form-grid {
+    gap: 16px !important;
+  }
+
+  .tab-content {
+    padding: 10px !important;
+    overflow: hidden;
+  }
+
+  .pagination-box {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .preview-pane {
+    max-width: 100% !important;
+  }
+
+  .detail-block pre {
+    max-width: 100%;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .trend-chart,
+  .chart-container {
+    height: 260px !important;
+  }
+}
+
+.mobile-list-toolbar {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .el-main {
+    padding: 8px !important;
+  }
+
+  .el-dialog__header,
+  .el-dialog__body,
+  .el-dialog__footer {
+    padding-right: 12px !important;
+    padding-left: 12px !important;
+  }
+
+  .header-buttons .el-button,
+  .toolbar .el-button,
+  .top-bar .el-button,
+  .mb-3 .el-button {
+    flex-basis: 100%;
+  }
+
+  .el-dialog__footer .el-button {
+    flex: 1 1 calc(50% - 4px);
+  }
+
+  .el-pagination .el-pagination__sizes,
+  .el-pagination .el-pagination__jump {
+    display: none;
+  }
+
+  .el-pagination button,
+  .el-pagination .el-pager li {
+    min-width: 28px;
+    height: 28px;
+    line-height: 28px;
+  }
+
+  .el-card__body {
+    padding: 10px !important;
+  }
+
+  .el-table {
+    font-size: 11px;
+  }
+
+  .el-table .cell {
+    padding: 0 4px;
   }
 }

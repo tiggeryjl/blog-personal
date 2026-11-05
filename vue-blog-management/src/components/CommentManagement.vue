@@ -3,6 +3,7 @@ import { ref, reactive, watch, computed, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import MyPagination from '@/components/MyPagination.vue';
 import PermissionViewTip from '@/components/PermissionViewTip.vue';
+import MobileCommentTree from '@/components/MobileCommentTree.vue';
 import {
   Search,
   Refresh,
@@ -322,6 +323,16 @@ const handleSelectionChange = (val) => {
   selectedIds.value = val.map((item) => item.id);
 };
 
+const toggleMobileSelection = ({ id, checked }) => {
+  const next = new Set(selectedIds.value);
+  if (checked) {
+    next.add(id);
+  } else {
+    next.delete(id);
+  }
+  selectedIds.value = [...next];
+};
+
 const handleBatchDelete = () => {
   if (!selectedIds.value.length) {
     ElMessage.warning('请先勾选要删除的评论');
@@ -362,7 +373,12 @@ onMounted(() => {
     <div class="page-header">
       <h1>{{ pageTitle }}</h1>
       <div class="header-actions">
-        <el-button type="primary" :icon="allExpanded ? Fold : Expand" @click="toggleAllRows">
+        <el-button
+          class="desktop-expand-btn"
+          type="primary"
+          :icon="allExpanded ? Fold : Expand"
+          @click="toggleAllRows"
+        >
           {{ allExpanded ? '全部折叠' : '全部展开' }}
         </el-button>
         <el-button v-perm="'sys:comment:delete'" type="danger" :icon="Delete" @click="handleBatchDelete">
@@ -428,6 +444,7 @@ onMounted(() => {
     <!-- 评论列表 -->
     <el-card class="list-card" shadow="hover">
       <el-table
+        class="desktop-comment-table"
         ref="tableRef"
         v-loading="loading"
         :data="treeList"
@@ -574,6 +591,20 @@ onMounted(() => {
           </template>
         </el-table-column>
       </el-table>
+
+      <div v-loading="loading" class="mobile-comment-tree-view">
+        <MobileCommentTree
+          :items="treeList"
+          :selected-ids="selectedIds"
+          :show-source-id="showSourceId"
+          :show-msg-type="showMsgType"
+          @reply="openReply"
+          @audit="handleAudit"
+          @top="handleTop"
+          @delete="handleDelete"
+          @toggle-select="toggleMobileSelection"
+        />
+      </div>
 
       <!-- 分页 -->
       <div class="pagination-box">
@@ -812,6 +843,21 @@ onMounted(() => {
   word-break: break-all;
   max-height: 80px;
   overflow-y: auto;
+}
+
+.mobile-comment-tree-view {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .desktop-comment-table,
+  .desktop-expand-btn {
+    display: none;
+  }
+
+  .mobile-comment-tree-view {
+    display: block;
+  }
 }
 </style>
 

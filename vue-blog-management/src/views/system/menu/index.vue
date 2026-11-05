@@ -2,6 +2,7 @@
 import { ref, reactive, onMounted, nextTick, watch, computed } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import PermissionViewTip from "@/components/PermissionViewTip.vue";
+import MobileMenuTree from "@/components/MobileMenuTree.vue";
 import {
   getMenuTree,
   addMenuApi,
@@ -241,6 +242,7 @@ onMounted(() => {
     </div>
 
     <el-table
+      class="desktop-menu-table"
       ref="tableRef"
       :data="tableData"
       border
@@ -292,6 +294,16 @@ onMounted(() => {
         </template>
       </el-table-column>
     </el-table>
+
+    <MobileMenuTree
+      v-if="tableData.length"
+      class="mobile-menu-tree-view"
+      :items="tableData"
+      @edit="openEditDialog"
+      @add-child="openAddChild"
+      @delete="handleDelete"
+    />
+    <el-empty v-else description="暂无菜单数据" />
   </el-card>
 
   <!-- 菜单弹窗 -->
@@ -377,4 +389,18 @@ onMounted(() => {
   </el-dialog>
 </template>
 
-<style scoped></style>
+<style scoped>
+.mobile-menu-tree-view {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .desktop-menu-table {
+    display: none;
+  }
+
+  .mobile-menu-tree-view {
+    display: flex;
+  }
+}
+</style>
