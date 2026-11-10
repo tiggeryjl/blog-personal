@@ -2,6 +2,7 @@ package com.blog.service.impl;
 
 import com.blog.constant.SystemConstant;
 import com.blog.pojo.vo.SiteProfileVO;
+import com.blog.pojo.vo.SiteFilingVO;
 import com.blog.service.SiteProfileService;
 import com.blog.service.SystemConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,16 @@ public class SiteProfileServiceImpl implements SiteProfileService {
     }
 
     @Override
+    public SiteFilingVO getFiling() {
+        return SiteFilingVO.builder()
+                .icp(normalizeFilingValue(
+                        systemConfigService.getValue(SystemConstant.ICP_BEIAN_CONFIG_KEY)))
+                .police(normalizeFilingValue(
+                        systemConfigService.getValue(SystemConstant.GONGAN_BEIAN_CONFIG_KEY)))
+                .build();
+    }
+
+    @Override
     public void saveProfile(SiteProfileVO profile) {
         SiteProfileVO save = SiteProfileVO.builder()
                 .name(trim(profile.getName()))
@@ -40,5 +51,10 @@ public class SiteProfileServiceImpl implements SiteProfileService {
 
     private String trim(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private String normalizeFilingValue(String value) {
+        String result = trim(value);
+        return "xxx".equalsIgnoreCase(result) ? "" : result;
     }
 }

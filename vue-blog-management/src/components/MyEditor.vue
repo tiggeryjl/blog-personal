@@ -1,11 +1,9 @@
 <script setup>
 import '@wangeditor/editor/dist/css/style.css';
-import { onBeforeUnmount, ref, shallowRef, onMounted, computed } from 'vue';
+import { onBeforeUnmount, ref, shallowRef, watch } from 'vue';
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue';
-import { useUserStore } from '@/stores/userloginstatus';
 import { ElMessage } from 'element-plus';
-
-const userStore = useUserStore();
+import { uploadApi } from '@/api/upload';
 
 const props = defineProps({
   modelValue: {
@@ -18,57 +16,68 @@ const emit = defineEmits(['update:modelValue']);
 // 编辑器实例，必须用 shallowRef，重要！
 const editorRef = shallowRef();
 
-const valueHtml = computed({
-  get() {
-    return props.modelValue;
-  },
-  set(val) {
-    emit('update:modelValue', val);
-  },
+const valueHtml = ref(props.modelValue || '');
+
+watch(
+  () => props.modelValue,
+  (value) => {
+    const nextValue = value || '';
+    if (nextValue !== valueHtml.value) {
+      valueHtml.value = nextValue;
+    }
+  }
+);
+
+watch(valueHtml, (value) => {
+  emit('update:modelValue', value);
 });
 
 const mode = 'default';
 
 const toolbarConfig = {};
+
+const uploadEditorMedia = async (file, insertFn, mediaType) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  try {
+    const result = await uploadApi(formData);
+    if (result?.code !== 200 || !result.data) {
+      throw new Error(result?.msg || `${mediaType}上传失败`);
+    }
+    const url = result.data;
+    if (mediaType === '图片') {
+      insertFn(url, file.name, '');
+    } else {
+      insertFn(url, '');
+    }
+  } catch (error) {
+    const message =
+      error?.response?.data?.msg ||
+      error?.message ||
+      `${mediaType}上传失败，请稍后重试`;
+    ElMessage.error(message);
+  }
+};
+
 // ========== 重点：配置上传图片、视频 ==========
 const editorConfig = {
   placeholder: '请输入内容...',
   MENU_CONF: {
     // 图片上传配置
     uploadImage: {
-      server: '/api/upload/upload', // 和页面封面上传接口保持一致
-      fieldName: 'file', // 后端接收文件参数名，和el-upload统一
-      // 请求头，函数形式实时读取最新token
-      headers: {
-        Authorization: computed(() => `Bearer ${userStore.token}`).value,
-      },
+      allowedFileTypes: ['image/*'],
       maxFileSize: 10 * 1024 * 1024, // 10MB 图片限制
-      // 上传成功回调，把图片插入编辑器
-      customInsert(res, insertFn) {
-        // res.data 是后端返回的图片URL
-        insertFn(res.data);
-      },
-      // 上传失败提示
-      onFailed(file, res) {
-        ElMessage.error(`图片上传失败：${res?.msg || '服务器异常'}`);
+      customUpload(file, insertFn) {
+        return uploadEditorMedia(file, insertFn, '图片');
       },
     },
 
     // 视频上传配置
     uploadVideo: {
-      server: '/api/upload/upload',
-      fieldName: 'file',
-      headers: {
-        Authorization: computed(() => `Bearer ${userStore.token}`).value,
-      },
+      allowedFileTypes: ['video/*'],
       maxFileSize: 50 * 1024 * 1024, // 视频50MB
-      customInsert(res, insertFn) {
-        const playUrl = res.data + '?response-content-disposition=inline';
-        // console.log('后端返回视频地址：', playUrl);
-        insertFn(playUrl);
-      },
-      onFailed(file, res) {
-        ElMessage.error(`视频上传失败：${res?.msg || '服务器异常'}`);
+      customUpload(file, insertFn) {
+        return uploadEditorMedia(file, insertFn, '视频');
       },
     },
   },

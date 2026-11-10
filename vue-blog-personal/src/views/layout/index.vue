@@ -21,6 +21,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useUserStore } from '@/store/userloginstatus';
 import { stopSessionRestore } from '@/router';
 import { logoutApi } from '@/api/auth';
+import { getSiteFilingApi } from '@/api/site';
 import ScrollToTop from '@/components/ScrollToTop.vue';
 import MusicPlayer from '@/components/MusicPlayer.vue';
 
@@ -34,6 +35,10 @@ const userStore = useUserStore();
 const isLogin = computed(() => !!userStore.user_token);
 // 手机菜单控制
 const showMobileMenu = ref(false);
+const siteFiling = ref({
+  icp: '',
+  police: '',
+});
 
 // 登录
 const goLogin = () => {
@@ -91,7 +96,22 @@ const applyRandomBg = () => {
 onMounted(() => {
   userStore.loadStorage();
   applyRandomBg();
+  loadSiteFiling();
 });
+
+const loadSiteFiling = async () => {
+  try {
+    const result = await getSiteFilingApi();
+    if (result?.code === 200 && result.data) {
+      siteFiling.value = {
+        icp: result.data.icp || '',
+        police: result.data.police || '',
+      };
+    }
+  } catch (error) {
+    console.warn('获取网站备案信息失败：', error);
+  }
+};
 
 // onUnmounted(() => {
 // });
@@ -232,6 +252,14 @@ onMounted(() => {
         <el-footer class="footer">
           <div class="footer-container">
             <div class="copyright">© {{ new Date().getFullYear() }} 我的博客 &nbsp;|&nbsp; 用心记录生活</div>
+            <div v-if="siteFiling.icp || siteFiling.police" class="filing-info">
+              <a v-if="siteFiling.icp" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
+                {{ siteFiling.icp }}
+              </a>
+              <a v-if="siteFiling.police" href="https://beian.mps.gov.cn/" target="_blank" rel="noopener noreferrer">
+                | {{ siteFiling.police }}
+              </a>
+            </div>
             <div class="version">Version 1.0.0</div>
           </div>
         </el-footer>
@@ -515,6 +543,28 @@ onMounted(() => {
   font-size: 14px;
   opacity: 0.85;
   text-align: center;
+}
+
+.filing-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  font-size: 13px;
+  opacity: 0.78;
+}
+
+.filing-info a {
+  color: var(--text-color);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.filing-info a:hover {
+  color: var(--primary-color);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .version {

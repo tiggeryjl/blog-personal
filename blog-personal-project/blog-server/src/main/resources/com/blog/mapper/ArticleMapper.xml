@@ -50,8 +50,14 @@
             <if test="summary != null">
                 summary = #{summary},
             </if>
+            <if test="aiSuggest != null">
+                ai_suggest = #{aiSuggest},
+            </if>
             <if test="content != null and content != ''">
                 content = #{content},
+            </if>
+            <if test="wordsNum != null">
+                words_num = #{wordsNum},
             </if>
             <if test="categoryId != null">
                 category_id = #{categoryId},
@@ -107,6 +113,7 @@
         <id property="id" column="id"/>
         <result property="title" column="title"/>
         <result property="summary" column="summary"/>
+        <result property="aiSuggest" column="ai_suggest"/>
         <result property="content" column="content"/>
         <result property="categoryId" column="category_id"/>
         <result property="cover" column="cover"/>
@@ -116,6 +123,7 @@
         <result property="viewNum" column="view_num"/>
         <result property="likeNum" column="like_num"/>
         <result property="commentNum" column="comment_num"/>
+        <result property="wordsNum" column="words_num"/>
         <result property="createTime" column="create_time"/>
         <result property="updateTime" column="update_time"/>
         <result property="publishTime" column="publish_time"/>

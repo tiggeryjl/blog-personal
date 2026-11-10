@@ -113,6 +113,7 @@ public class ArticleServiceImpl implements ArticleService {
         article.setViewNum(0L);
         article.setLikeNum(0L);
         article.setCommentNum(0L);
+        article.setWordsNum(ArticleUtil.countWords(article.getContent()));
         article.setCreateTime(LocalDateTime.now());
         article.setUpdateTime(LocalDateTime.now());
         if (ArticleStatusConstant.PUBLISHED.equals(articleDTO.getStatus())) {
@@ -444,6 +445,7 @@ public class ArticleServiceImpl implements ArticleService {
             String summary = aiService.generateSummary(article.getContent());
             if (StringUtils.hasText(summary)) {
                 article.setSummary(summary);
+                article.setAiSuggest(StatusConstant.ENABLE);
             } else {
                 throw new RuntimeException("AI 返回空摘要"); // 主动跳转到 catch
             }
@@ -454,6 +456,7 @@ public class ArticleServiceImpl implements ArticleService {
                 article.setSummary(autoSummary);
             }
         }
+        article.setWordsNum(ArticleUtil.countWords(article.getContent()));
         article.setUpdateTime(LocalDateTime.now());
 
         Integer actionType = articleDTO.getStatus();

@@ -179,20 +179,22 @@ onMounted(() => {
               <span>Spring Boot</span>
               <span>MyBatis</span>
               <span>MySQL</span>
+              <span>Redis</span>
             </div>
           </div>
           <div class="tech-row">
             <span class="tech-label">部署</span>
             <div class="skills">
+              <span>Ubuntu</span>
               <span>Linux</span>
               <span>Nginx</span>
-              <span>Docker</span>
+              <!-- <span>Docker</span> -->
               <span>Git</span>
             </div>
           </div>
-          <p class="github-hint">
+          <!-- <p class="github-hint">
             如果喜欢这样的风格，或者对某些功能感兴趣，欢迎去
-            <a class="inline-link" href="https://github.com/tiggeryjl" target="_blank" rel="noopener">
+            <a class="inline-link" href="https://github.com/tiggeryjl" target="_blank" rel="noopener noreferrer">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
                 <path
                   d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.57L9 21.07c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1-.33 3.3 1.23a11.5 11.5 0 0 1 6.02 0c2.28-1.56 3.29-1.23 3.29-1.23.66 1.66.25 2.88.12 3.18a4.65 4.65 0 0 1 1.23 3.22c0 4.61-2.81 5.63-5.48 5.93.43.37.81 1.1.81 2.22l-.01 3.29c0 .31.22.69.83.57A12 12 0 0 0 12 .3"
@@ -201,7 +203,7 @@ onMounted(() => {
               GitHub
             </a>
             看看源码。
-          </p>
+          </p> -->
         </div>
       </section>
 
@@ -316,6 +318,7 @@ onMounted(() => {
 
 .section {
   padding: 26px 0;
+  position: relative;
 }
 
 /* 区块之间的浅色分隔线 */

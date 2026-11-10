@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router';
 import SidebarMenuItem from '@/components/SidebarMenuItem.vue';
 
 defineProps({
-  // 过滤后的动态路由（已剔除 meta.hidden 的菜单）
+  // 过滤后的动态路由
   routes: { type: Array, default: () => [] },
 });
 

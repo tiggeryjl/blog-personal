@@ -96,6 +96,7 @@ public class SecurityConfig {
                                 "/user/home/popular",
                                 "/user/home/notice",
                                 "/user/site/profile",
+                                "/user/site/filing",
                                 "/user/music/list",
                                 "/user/article/getArticleList",
                                 "/user/article/getCalendarCount",

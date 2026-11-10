@@ -1,6 +1,7 @@
 package com.blog.service;
 
 import com.blog.pojo.vo.SiteProfileVO;
+import com.blog.pojo.vo.SiteFilingVO;
 
 /**
  * 站点信息配置服务
@@ -13,6 +14,11 @@ public interface SiteProfileService {
      * @return 站点信息
      */
     SiteProfileVO getProfile();
+
+    /**
+     * 获取网站备案信息
+     */
+    SiteFilingVO getFiling();
 
     /**
      * 保存站点信息

@@ -1,6 +1,7 @@
 package com.blog.controller.user;
 
 import com.blog.pojo.vo.SiteProfileVO;
+import com.blog.pojo.vo.SiteFilingVO;
 import com.blog.result.Result;
 import com.blog.service.SiteProfileService;
 import lombok.extern.slf4j.Slf4j;
@@ -28,5 +29,13 @@ public class SiteController {
     @GetMapping("/profile")
     public Result<SiteProfileVO> getProfile() {
         return Result.success(siteProfileService.getProfile());
+    }
+
+    /**
+     * 获取网站备案信息，未配置时返回空值
+     */
+    @GetMapping("/filing")
+    public Result<SiteFilingVO> getFiling() {
+        return Result.success(siteProfileService.getFiling());
     }
 }

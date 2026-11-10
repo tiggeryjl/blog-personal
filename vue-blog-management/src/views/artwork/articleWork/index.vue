@@ -211,8 +211,11 @@ const openPreviewNewTab = () => {
     return;
   }
 
-  const frontUrl = `/articleDetail?id=${encodeURIComponent(previewRow.value.id)}`;
-  window.open(frontUrl, '_blank');
+  const frontUrl = router.resolve({
+    path: '/articleDetail',
+    query: { id: previewRow.value.id },
+  }).href;
+  window.open(frontUrl, '_blank', 'noopener,noreferrer');
 };
 
 const buildPreviewHtml = (htmlContent) => {

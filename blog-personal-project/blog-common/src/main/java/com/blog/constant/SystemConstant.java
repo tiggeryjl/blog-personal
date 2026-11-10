@@ -21,6 +21,16 @@ public class SystemConstant {
     public static final String SITE_PROFILE_CONFIG_KEY = "site.profile";
 
     /**
+     * ICP备案号配置键
+     */
+    public static final String ICP_BEIAN_CONFIG_KEY = "icp-beian";
+
+    /**
+     * 公安备案号配置键
+     */
+    public static final String GONGAN_BEIAN_CONFIG_KEY = "gongan-beian";
+
+    /**
      * 超级管理员角色ID
      */
     public static final Long SUPER_ADMIN_ROLE_ID = 1L;

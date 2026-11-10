@@ -3,7 +3,14 @@ package com.blog.utils;
 import org.jsoup.Jsoup;
 import org.jsoup.safety.Safelist;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class ArticleUtil {
+
+    private static final Pattern WORD_PATTERN = Pattern.compile(
+            "\\p{IsHan}|[A-Za-z0-9]+(?:['’-][A-Za-z0-9]+)*"
+    );
 
     /**
      * 生成文章摘要（自动截取纯文本前 150 字）
@@ -21,6 +28,22 @@ public class ArticleUtil {
             return plainText;
         }
         return plainText.substring(0, maxLength) + "...";
+    }
+
+    /**
+     * 每个汉字计 1，连续英文单词或数字计 1，忽略 HTML、空白和标点。
+     */
+    public static long countWords(String content) {
+        if (content == null || content.isBlank()) {
+            return 0L;
+        }
+        String plainText = Jsoup.parse(content).text();
+        Matcher matcher = WORD_PATTERN.matcher(plainText);
+        long count = 0L;
+        while (matcher.find()) {
+            count++;
+        }
+        return count;
     }
 
 }
