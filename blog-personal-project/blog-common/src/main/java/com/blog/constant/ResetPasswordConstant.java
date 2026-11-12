@@ -35,6 +35,41 @@ public final class ResetPasswordConstant {
      */
     public static final long TICKET_TTL_SECONDS = 600L;
 
+    /**
+     * 验证码错误次数前缀
+     */
+    public static final String ATTEMPT_KEY_PREFIX = "reset:pwd:attempt:";
+
+    /**
+     * 邮箱每日发送上限前缀
+     */
+    public static final String EMAIL_DAILY_KEY_PREFIX = "reset:pwd:limit:email:";
+
+    /**
+     * IP 每日发送上限前缀
+     */
+    public static final String IP_DAILY_KEY_PREFIX = "reset:pwd:limit:ip:";
+
+    /**
+     * 每日计数有效期
+     */
+    public static final long DAILY_COUNT_TTL_SECONDS = 86400L;
+
+    /**
+     * 验证码最多错误次数
+     */
+    public static final long MAX_ATTEMPTS = 5L;
+
+    /**
+     * 同一邮箱每日发送上限
+     */
+    public static final long EMAIL_DAILY_LIMIT = 15L;
+
+    /**
+     * 同一 IP 每日发送上限
+     */
+    public static final long IP_DAILY_LIMIT = 30L;
+
     private ResetPasswordConstant() {
     }
 }

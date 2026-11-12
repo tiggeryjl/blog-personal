@@ -1,11 +1,9 @@
 package com.blog.service.impl;
 
-import com.blog.constant.DelStatusConstant;
-import com.blog.constant.LinkStatusConstant;
-import com.blog.constant.NoticeConstant;
-import com.blog.constant.StatusConstant;
+import com.blog.constant.*;
 import com.blog.context.BaseContext;
 import com.blog.exception.LinkException;
+import com.blog.exception.RegisterFailedException;
 import com.blog.mapper.LinkMapper;
 import com.blog.mapper.SysUserMapper;
 import com.blog.pojo.dto.LinkApplyDTO;
@@ -19,6 +17,9 @@ import com.blog.pojo.vo.LinkVo;
 import com.blog.result.PageResult;
 import com.blog.service.LinkService;
 import com.blog.service.NoticeService;
+import com.blog.utils.MailUtil;
+import com.blog.utils.SsrfUrlValidator;
+import com.blog.utils.UserUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
@@ -175,8 +176,13 @@ public class LinkServiceImpl implements LinkService {
         String url = dto.getLinkUrl() == null ? "" : dto.getLinkUrl().trim();
         String name = dto.getLinkName() == null ? "" : dto.getLinkName().trim();
         String email = dto.getEmail() == null ? null : dto.getEmail().trim();
+        try {
+            SsrfUrlValidator.validate(url);
+        } catch (Exception e) {
+            throw new LinkException("无效链接");
+        }
 
-        // 已拒绝的同链接申请：更新回“待审核”，避免与唯一索引冲突
+        // 已拒绝的同链接申请
         LinkVo exist = linkMapper.getByUrl(url);
         if (exist != null) {
             Integer auditStatus = exist.getAuditStatus();

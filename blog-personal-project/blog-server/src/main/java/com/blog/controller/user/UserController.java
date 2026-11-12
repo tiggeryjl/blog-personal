@@ -250,10 +250,10 @@ public class UserController {
      * @return 统一结果
      */
     @PostMapping("/resetPwd/code")
-    public Result sendResetPwdCode(@Valid @RequestBody ResetPasswordCodeDTO resetPasswordCodeDTO) {
+    public Result sendResetPwdCode(@Valid @RequestBody ResetPasswordCodeDTO resetPasswordCodeDTO,HttpServletRequest request) {
         log.info("发送重置密码验证码:{}", resetPasswordCodeDTO.getEmail());
-        userService.sendResetPwdCode(resetPasswordCodeDTO.getEmail());
-        return Result.success();
+        userService.sendResetPwdCode(resetPasswordCodeDTO.getEmail(),IpUtil.getClientIp(request));
+        return Result.success("验证码已发送");
     }
 
     /**

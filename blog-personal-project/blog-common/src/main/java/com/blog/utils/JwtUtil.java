@@ -157,4 +157,9 @@ public class JwtUtil {
         }
         return cookie.toString();
     }
+
+    public static Date getIssuedAt(String secretKey, String token) {
+        Claims claims = parseToken(secretKey, token);
+        return claims.getIssuedAt();
+    }
 }

@@ -31,7 +31,7 @@ public class MessageConstant {
     public static final String USERNAME_EXISTS = "用户名已被注册";
     public static final String PHONE_FORMAT_ERROR = "手机号格式错误";
     public static final String PHONE_EXISTS = "手机号已被注册";
-    public static final String EMAIL_FORMAT_ERROR = "邮箱格式错误";
+    public static final String EMAIL_FORMAT_ERROR = "邮箱格式错误/不合法";
     public static final String EMAIL_EXISTS = "邮箱已被注册";
 
     public static final String PASSWORD_ERROR = "密码错误";

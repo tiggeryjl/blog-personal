@@ -21,6 +21,7 @@ import com.blog.service.MailService;
 import com.blog.service.LoginVerificationService;
 import com.blog.service.RedisService;
 import com.blog.service.UserService;
+import com.blog.utils.MailUtil;
 import com.blog.utils.PasswordSaltUtil;
 import com.blog.utils.UserUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -217,6 +218,9 @@ public class UserServiceImpl implements UserService {
         if (!email.matches(UserUtil.EMAIL_REGEX)) {
             throw new RegisterFailedException(MessageConstant.EMAIL_FORMAT_ERROR);
         }
+        if (MailUtil.isBadTestEmail(email)) {
+            throw new RegisterFailedException(MessageConstant.EMAIL_FORMAT_ERROR);
+        }
         if (userMapper.selectByEmail(email) != null) {
             throw new RegisterFailedException(MessageConstant.EMAIL_EXISTS);
         }
@@ -380,7 +384,7 @@ public class UserServiceImpl implements UserService {
      * 同一个邮箱 60 秒内只能发一次，验证码 5 分钟内有效
      */
     @Override
-    public void sendResetPwdCode(String email) {
+    public void sendResetPwdCode(String email,String ip) {
         String mail = normalizeEmail(email);
         if (!StringUtils.hasText(mail)) {
             throw new RegisterFailedException("邮箱不能为空");
@@ -394,20 +398,45 @@ public class UserServiceImpl implements UserService {
         }
 
         String limitKey = ResetPasswordConstant.LIMIT_KEY_PREFIX + mail;
-        if (Boolean.TRUE.equals(redisService.hasKey(limitKey))) {
+        if (!redisService.setIfAbsent(limitKey, "1",
+                ResetPasswordConstant.SEND_INTERVAL_SECONDS)) {
             throw new RegisterFailedException("验证码发送太频繁了，请稍后再试");
+        }
+
+        // 邮箱日限
+        String date = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE);
+        long emailCount = redisService.incrementAndExpire(
+                ResetPasswordConstant.EMAIL_DAILY_KEY_PREFIX + date + ":" + mail,
+                1, ResetPasswordConstant.DAILY_COUNT_TTL_SECONDS);
+        if (emailCount > ResetPasswordConstant.EMAIL_DAILY_LIMIT) {
+            throw new RegisterFailedException("该邮箱今日验证码发送次数已达上限");
+        }
+
+        // IP 日限（代理池换 IP 也顶不住这一层）
+        String safeIp = StringUtils.hasText(ip) ? ip.trim() : "unknown";
+        if (safeIp.length() > 100) {
+            safeIp = safeIp.substring(0, 100);
+        }
+        long ipCount = redisService.incrementAndExpire(
+                ResetPasswordConstant.IP_DAILY_KEY_PREFIX + date + ":" + safeIp,
+                1, ResetPasswordConstant.DAILY_COUNT_TTL_SECONDS);
+        if (ipCount > ResetPasswordConstant.IP_DAILY_LIMIT) {
+            throw new RegisterFailedException("当前网络今日验证码发送次数已达上限");
         }
 
         String code = String.format("%06d", RANDOM.nextInt(1000000));
         String codeKey = ResetPasswordConstant.CODE_KEY_PREFIX + mail;
         redisService.set(codeKey, code, ResetPasswordConstant.CODE_TTL_SECONDS);
-        redisService.set(limitKey, "1", ResetPasswordConstant.SEND_INTERVAL_SECONDS);
+//        redisService.set(limitKey, "1", ResetPasswordConstant.SEND_INTERVAL_SECONDS);
+        // 每发新码，清空旧的错误计数
+        redisService.delete(ResetPasswordConstant.ATTEMPT_KEY_PREFIX + mail);
 
         try {
             mailService.sendHtml(mail, "【小叶同学的博客】重置密码验证码", buildResetCodeHtml(code));
         } catch (Exception e) {
             // 发信失败要把验证码和限流一起清掉
             redisService.delete(codeKey);
+            redisService.delete(ResetPasswordConstant.ATTEMPT_KEY_PREFIX + mail);
             redisService.delete(limitKey);
             log.error("重置密码验证码发送失败，邮箱：{}", mail, e);
             throw new RegisterFailedException("验证码发送失败，请稍后重试");
@@ -429,13 +458,26 @@ public class UserServiceImpl implements UserService {
             throw new RegisterFailedException("该邮箱还没有注册");
         }
 
-        String cachedCode = redisService.get(ResetPasswordConstant.CODE_KEY_PREFIX + mail, String.class);
+        String codeKey = ResetPasswordConstant.CODE_KEY_PREFIX + mail;
+        String cachedCode = redisService.get(codeKey, String.class);
+        String attemptKey = ResetPasswordConstant.ATTEMPT_KEY_PREFIX + mail;
         if (!StringUtils.hasText(cachedCode)) {
             throw new RegisterFailedException("验证码已过期，请重新获取");
         }
         if (!cachedCode.equals(emailCode)) {
+            long attempts = redisService.incrementAndExpire(
+                    attemptKey, 1, ResetPasswordConstant.CODE_TTL_SECONDS);
+            if (attempts >= ResetPasswordConstant.MAX_ATTEMPTS) {
+                redisService.delete(codeKey);
+                redisService.delete(attemptKey);
+                throw new RegisterFailedException("验证码错误次数过多，请重新获取");
+            }
             throw new RegisterFailedException("验证码不正确");
         }
+
+        // 验证码一次性，用过立即销毁
+        redisService.delete(codeKey);
+        redisService.delete(attemptKey);
 
         String ticket = UUID.randomUUID().toString().replace("-", "");
         redisService.set(ResetPasswordConstant.TICKET_KEY_PREFIX + ticket, mail,
@@ -678,6 +720,9 @@ public class UserServiceImpl implements UserService {
         // ===================== 3. 单独校验邮箱（有值才校） =====================
         if (StringUtils.hasText(email)) {
             if (!email.matches(UserUtil.EMAIL_REGEX)) {
+                throw new RegisterFailedException(MessageConstant.EMAIL_FORMAT_ERROR);
+            }
+            if (MailUtil.isBadTestEmail(email)) {
                 throw new RegisterFailedException(MessageConstant.EMAIL_FORMAT_ERROR);
             }
             if (userMapper.selectByEmail(email) != null) {

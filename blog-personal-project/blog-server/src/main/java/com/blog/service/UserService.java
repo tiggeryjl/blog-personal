@@ -61,7 +61,7 @@ public interface UserService {
      *
      * @param email 注册邮箱
      */
-    void sendResetPwdCode(String email);
+    void sendResetPwdCode(String email, String ip);
 
     /**
      * 忘记密码：校验邮箱验证码，通过后返回一次性凭证

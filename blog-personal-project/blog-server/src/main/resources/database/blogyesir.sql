@@ -323,7 +323,7 @@ CREATE TABLE link
     create_time  datetime     DEFAULT NULL COMMENT '添加时间',
     update_time  datetime     DEFAULT NULL COMMENT '修改时间',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_link_url_del (link_url, delete_flag),
+    UNIQUE KEY uk_link_url_del (link_url,delete_flag,id),
     KEY idx_audit_status_del_sort_time (audit_status, status, delete_flag, sort, create_time),
     KEY idx_audit_del_time (audit_status, delete_flag, create_time),
     KEY idx_audit_del_sort_time (audit_status, delete_flag, sort, create_time),
