@@ -118,12 +118,20 @@ const captchaComponent = ref(null);
 const passwordInput = ref(null);
 let pendingLoginData = null;
 
-const handleCaptchaFail = () => {
+const handleCaptchaFail = (failure) => {
   // 阿里云 SDK 可能在成功回调之后继续触发 onClose，此时不能覆盖登录状态
   if (!pendingLoginData) return;
   pendingLoginData = null;
   loading.value = false;
-  errorMsg.value = '安全验证已取消，请重新登录';
+  if (failure?.type === 'close') {
+    errorMsg.value = '安全验证已取消，请重新登录';
+    return;
+  }
+  if (failure?.type === 'error') {
+    errorMsg.value = failure.message || '安全验证加载失败，请刷新页面重试';
+    return;
+  }
+  errorMsg.value = failure?.message || '安全验证未通过，请重试';
 };
 
 const handleCaptchaSuccess = (captchaVerifyParam) => {
@@ -132,7 +140,7 @@ const handleCaptchaSuccess = (captchaVerifyParam) => {
     return;
   }
   if (!captchaVerifyParam) {
-    handleCaptchaFail();
+    handleCaptchaFail({ type: 'error', message: '验证参数无效，请重试' });
     return;
   }
 
@@ -171,8 +179,7 @@ const onSubmit = async () => {
   if (captchaComponent.value) {
     captchaComponent.value.show();
   } else {
-    handleCaptchaFail();
-    errorMsg.value = '安全验证组件未加载，请刷新页面重试';
+    handleCaptchaFail({ type: 'error', message: '安全验证组件未加载，请刷新页面重试' });
   }
 };
 
@@ -560,7 +567,12 @@ const validate = (formType) => {
                     inputmode="numeric"
                     @keydown.enter.prevent="onSubmit"
                   />
-                  <button type="button" class="captcha-btn" :disabled="loginCodeBtnDisabled" @click="sendLoginEmailCode">
+                  <button
+                    type="button"
+                    class="captcha-btn"
+                    :disabled="loginCodeBtnDisabled"
+                    @click="sendLoginEmailCode"
+                  >
                     {{ loginCodeBtnText }}
                   </button>
                 </div>
@@ -617,13 +629,13 @@ const validate = (formType) => {
             </div>
             <div class="field">
               <label>邮箱</label>
-              <input type="text" placeholder="请输入邮箱 *" v-model="regEmail" />
+              <input type="text" placeholder="请输入邮箱(必填) *" v-model="regEmail" />
             </div>
 
             <div class="field">
               <label>验证码</label>
               <div class="captcha-wrap">
-                <input v-model="emailCode" placeholder="请输入验证码" maxlength="6" inputmode="numeric" />
+                <input v-model="emailCode" placeholder="请输入邮箱验证码" maxlength="6" inputmode="numeric" />
                 <button type="button" class="captcha-btn" :disabled="codeBtnDisabled" @click="sendEmailCode">
                   {{ codeBtnText }}
                 </button>

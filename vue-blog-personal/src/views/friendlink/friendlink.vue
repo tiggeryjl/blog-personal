@@ -9,7 +9,7 @@ import { getSiteProfileApi } from '@/api/site.js';
 
 const userStore = useUserStore();
 
-// 站点信息（管理端配置，未配置时链接显示“即将上线”）
+// 站点信息
 const siteProfile = reactive({
   name: '',
   url: '',
@@ -78,14 +78,13 @@ const copyText = async (text, successTip) => {
     return;
   }
 
-  // HTTPS/localhost 优先使用 Clipboard API
   if (window.isSecureContext && navigator.clipboard?.writeText) {
     try {
       await navigator.clipboard.writeText(content);
       ElMessage.success(successTip);
       return;
     } catch (err) {
-      // 权限被拒绝时继续使用兼容复制方案
+      ElMessage.error('复制失败');
     }
   }
 
@@ -134,6 +133,7 @@ const loadLinks = async () => {
     const result = await getPublicLinkListApi();
     if (result.code === 200) {
       linkList.value = result.data || [];
+      failedAvatarIds.value = new Set();
     }
   } catch (err) {
     ElMessage.error('友链加载失败，请稍后重试');
@@ -301,6 +301,21 @@ const formatTime = (t) => {
   return String(t).replace('T', ' ').slice(0, 10);
 };
 
+// 头像加载失败标记
+const failedAvatarIds = ref(new Set());
+const isAvatarBroken = (item) => failedAvatarIds.value.has(item.id);
+const handleAvatarError = (item) => {
+  if (!item || item.id == null) return;
+  failedAvatarIds.value.add(item.id);
+  failedAvatarIds.value = new Set(failedAvatarIds.value);
+};
+// 无头像时用名称首字兜底，保证占位也是圆的
+const avatarPlaceholder = (name) =>
+  String(name || '?')
+    .trim()
+    .charAt(0)
+    .toUpperCase() || '?';
+
 onMounted(() => {
   loadLinks();
   loadApplications();
@@ -331,11 +346,7 @@ onBeforeUnmount(() => {
                 <div class="info-row">
                   <span class="info-label">网站名称:</span>
                   <span class="my-name">{{ siteProfile.name || '小叶同学的博客' }}</span>
-                  <button
-                    v-if="siteProfile.avatar"
-                    class="copy-button tooltip"
-                    @click="copyAvatarUrl"
-                  >
+                  <button v-if="siteProfile.avatar" class="copy-button tooltip" @click="copyAvatarUrl">
                     <el-icon><CopyDocument /></el-icon>复制头像url
                     <span class="tooltip-text">点击复制我的头像url</span>
                   </button>
@@ -385,7 +396,16 @@ onBeforeUnmount(() => {
         </div>
         <div class="links-grid">
           <div class="link-card" v-for="item in linkList" :key="item.id" @click="goLink(item.linkUrl)">
-            <img :src="item.linkAvatar" :alt="item.linkName" class="avatar" />
+            <div class="avatar-box">
+              <img
+                v-if="item.linkAvatar && !isAvatarBroken(item)"
+                :src="item.linkAvatar"
+                :alt="item.linkName"
+                class="avatar"
+                @error="handleAvatarError(item)"
+              />
+              <span v-else class="avatar-fallback">{{ avatarPlaceholder(item.linkName) }}</span>
+            </div>
             <h4 class="name">{{ item.linkName }}</h4>
             <p class="desc"><MarqueeText :text="item.linkDesc" /></p>
           </div>
@@ -432,7 +452,16 @@ onBeforeUnmount(() => {
         <div v-loading="applyLoading" class="links-grid apply-grid">
           <div class="link-card apply-card" v-for="item in applyList" :key="item.id">
             <!-- @click="goLink(item.linkUrl)"> -->
-            <img :src="item.linkAvatar" :alt="item.linkName" class="avatar" />
+            <div class="avatar-box">
+              <img
+                v-if="item.linkAvatar && !isAvatarBroken(item)"
+                :src="item.linkAvatar"
+                :alt="item.linkName"
+                class="avatar"
+                @error="handleAvatarError(item)"
+              />
+              <span v-else class="avatar-fallback">{{ avatarPlaceholder(item.linkName) }}</span>
+            </div>
             <div class="apply-card-body">
               <div class="apply-card-head">
                 <el-tag :type="getAuditStatus(item.auditStatus).tagType" size="small">
@@ -878,13 +907,53 @@ onBeforeUnmount(() => {
   background: var(--card-bg-hover);
 }
 
-.avatar {
+.avatar-box {
   width: 70px;
   height: 70px;
+  aspect-ratio: 1 / 1;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  padding: 2px;
+  border: 2px solid var(--primary-color);
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+}
+
+.link-card .avatar-box {
+  margin: 0 auto;
+}
+
+.avatar-box .avatar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  flex: none;
+  padding: 0;
+  border: 0;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--primary-color);
-  padding: 2px;
+  object-position: center;
+}
+
+.avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+  user-select: none;
 }
 
 .name {
@@ -911,12 +980,6 @@ onBeforeUnmount(() => {
   gap: 14px;
   text-align: left;
   padding: 1rem 1.1rem;
-}
-
-.apply-card .avatar {
-  width: 56px;
-  height: 56px;
-  flex-shrink: 0;
 }
 
 .apply-card-body {
@@ -1076,7 +1139,6 @@ onBeforeUnmount(() => {
   .apply-grid {
     grid-template-columns: 1fr;
   }
-
 }
 
 @media (max-width: 576px) {

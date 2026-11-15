@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 /**
- * 站点信息（友链页展示的博客信息）
+ * 站点信息（友链页展示的个人博客信息）
  */
 @Data
 @Builder

@@ -17,7 +17,7 @@ import {
 import { useRouter, useRoute } from 'vue-router'; // 引入路由
 import { setTheme } from '@/utils/theme'; //主题色
 import { ElMessage } from 'element-plus';
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useUserStore } from '@/store/userloginstatus';
 import { stopSessionRestore } from '@/router';
 import { logoutApi } from '@/api/auth';
@@ -35,6 +35,8 @@ const userStore = useUserStore();
 const isLogin = computed(() => !!userStore.user_token);
 // 手机菜单控制
 const showMobileMenu = ref(false);
+const menuBtnRef = ref(null);
+const menuWrapperRef = ref(null);
 const siteFiling = ref({
   icp: '',
   police: '',
@@ -52,8 +54,28 @@ const goProfile = () => {
 
 //导航栏跳转
 const goTo = (path) => {
+  showMobileMenu.value = false;
   router.push(path);
 };
+
+const handleDocumentClick = (event) => {
+  if (!showMobileMenu.value) return;
+  const target = event.target;
+  if (menuBtnRef.value?.contains(target) || menuWrapperRef.value?.contains(target)) {
+    return;
+  }
+  if (target.closest?.('.el-popper, .el-overlay, .el-dialog, .music-panel, .music-container, .music-mini')) {
+    return;
+  }
+  showMobileMenu.value = false;
+};
+
+watch(
+  () => route.fullPath,
+  () => {
+    showMobileMenu.value = false;
+  }
+);
 
 // 退出登录
 const logout = async () => {
@@ -97,6 +119,7 @@ onMounted(() => {
   userStore.loadStorage();
   applyRandomBg();
   loadSiteFiling();
+  document.addEventListener('click', handleDocumentClick);
 });
 
 const loadSiteFiling = async () => {
@@ -113,8 +136,9 @@ const loadSiteFiling = async () => {
   }
 };
 
-// onUnmounted(() => {
-// });
+onUnmounted(() => {
+  document.removeEventListener('click', handleDocumentClick);
+});
 </script>
 
 <template>
@@ -127,7 +151,13 @@ const loadSiteFiling = async () => {
             <img src="@/assets/image/logo.png" alt="Logo" @click="goTo('/index')" />
           </div>
 
-          <div ref="menuBtnRef" class="mobile-menu-btn" @click="showMobileMenu = !showMobileMenu">
+          <div
+            ref="menuBtnRef"
+            class="mobile-menu-btn"
+            :aria-expanded="showMobileMenu"
+            aria-label="网站菜单"
+            @click="showMobileMenu = !showMobileMenu"
+          >
             <el-icon>
               <Menu />
             </el-icon>
@@ -260,7 +290,7 @@ const loadSiteFiling = async () => {
                 | {{ siteFiling.police }}
               </a>
             </div>
-            <div class="version">Version 1.0.0</div>
+            <!-- <div class="version">Version 1.0.0</div> -->
           </div>
         </el-footer>
       </div>

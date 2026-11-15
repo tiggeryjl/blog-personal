@@ -225,7 +225,7 @@ public class LinkServiceImpl implements LinkService {
     }
 
     /**
-     * 生成“用户申请友链”通知
+     * 生成用户申请友链通知
      */
     private void createApplyNotice(String linkName, String email, Long linkId) {
         String safeName = (linkName == null || linkName.trim().isEmpty()) ? "友链" : linkName.trim();
