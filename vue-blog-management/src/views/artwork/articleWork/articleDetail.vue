@@ -6,6 +6,7 @@ import { ArrowLeft } from '@element-plus/icons-vue';
 import { getArticleDetailApi } from '@/api/article.js';
 import { getTagOptionsApi } from '@/api/tag.js';
 import { getStatusText, getStatusType } from '@/constants/articleConstants';
+import { safeHtml } from '@/utils/safeHtml';
 
 const route = useRoute();
 const router = useRouter();
@@ -153,7 +154,7 @@ onMounted(() => {
 
           <!-- 正文 -->
           <div class="content-card">
-            <div v-if="article.content" class="article-content" v-html="article.content"></div>
+            <div v-if="article.content" class="article-content" v-html="safeHtml(article.content)"></div>
             <el-empty v-else description="暂无文章内容" :image-size="80" />
           </div>
         </div>

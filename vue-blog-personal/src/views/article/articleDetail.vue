@@ -11,6 +11,7 @@ import { likeApi, LIKE_TARGET_TYPE } from '@/api/like.js';
 import { requireLogin } from '@/utils/auth';
 import { isGuestLiked, rememberGuestLiked } from '@/utils/guestLike.js';
 import { useUserStore } from '@/store/userloginstatus';
+import { safeHtml } from '@/utils/safeHtml';
 
 const router = useRouter();
 const route = useRoute();
@@ -177,7 +178,7 @@ const publishing = ref(false);
 
 // 发表评论/回复评论
 const publishComment = async (commentId, replyId, content) => {
-  if (!requireLogin('登录后才能发表评论哦~')) return false;
+  if (!(await requireLogin('登录后才能发表评论哦~'))) return false;
   // 发布新评论
   if (commentId === undefined && replyId === undefined && content === undefined) {
     if (!commentForm.value.content.trim()) {
@@ -419,7 +420,7 @@ onUnmounted(() => {
 
       <!-- 文章正文 -->
       <div class="content">
-        <div class="article-body" v-html="article.content" @click="handleImageClick"></div>
+        <div class="article-body" v-html="safeHtml(article.content)" @click="handleImageClick"></div>
       </div>
 
       <div class="article-actions">
@@ -700,6 +701,7 @@ onUnmounted(() => {
 }
 
 .article-body :deep(img) {
+  width: 50%;
   max-width: 100%;
   height: auto;
   border-radius: 8px;
@@ -711,6 +713,12 @@ onUnmounted(() => {
   -webkit-user-select: none !important;
   -webkit-user-drag: none !important;
   outline: none !important;
+}
+
+@media (max-width: 768px) {
+  .article-body :deep(img) {
+    width: 90%;
+  }
 }
 
 .article-body :deep(img:hover) {

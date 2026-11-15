@@ -33,6 +33,7 @@ import com.blog.service.ArticleService;
 import com.blog.service.RedisService;
 import com.blog.utils.ArticleUtil;
 import com.blog.utils.DeviceInfoUtil;
+import com.blog.utils.HtmlSanitizer;
 import com.blog.utils.IpUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -89,6 +90,10 @@ public class ArticleServiceImpl implements ArticleService {
      */
     @Override
     public void add(ArticleDTO articleDTO) {
+        //清理
+        articleDTO.setContent(HtmlSanitizer.cleanRichText(articleDTO.getContent()));
+        articleDTO.setTitle(HtmlSanitizer.cleanRichText(articleDTO.getTitle()));
+
         Article article = new Article();
         BeanUtils.copyProperties(articleDTO, article);
 
@@ -430,6 +435,10 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     @Transactional
     public void update(ArticleDTO articleDTO) {
+        //清理
+        articleDTO.setContent(HtmlSanitizer.cleanRichText(articleDTO.getContent()));
+        articleDTO.setTitle(HtmlSanitizer.cleanRichText(articleDTO.getTitle()));
+
         Article article = articleMapper.getArticleById(articleDTO.getId());
 
         if (article == null) {

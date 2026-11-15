@@ -8,7 +8,7 @@ public final class NoticeTextUtil {
     private static final int DAILY_SUMMARY_LENGTH = 50;
 
     public static String dailySummary(String content, Long dailyId) {
-        String normalized = content == null ? "" : content.trim().replaceAll("\\s+", " ");
+        String normalized = HtmlSanitizer.cleanPlainText(content == null ? "" : content).trim().replaceAll("\\s+", " ");
         if (normalized.isEmpty()) {
             return "日常 #" + dailyId;
         }

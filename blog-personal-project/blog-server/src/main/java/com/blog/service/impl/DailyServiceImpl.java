@@ -19,6 +19,7 @@ import com.blog.pojo.vo.DailyCountVO;
 import com.blog.pojo.vo.DailyFrontVO;
 import com.blog.result.PageResult;
 import com.blog.service.DailyService;
+import com.blog.utils.HtmlSanitizer;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
@@ -163,6 +164,9 @@ public class DailyServiceImpl implements DailyService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void add(DailyDTO dailyDTO) {
+        //清理
+        dailyDTO.setContent(HtmlSanitizer.cleanRichText(dailyDTO.getContent()));
+
         String content = dailyDTO.getContent() == null ? "" : dailyDTO.getContent().trim();
         String images = joinUrls(dailyDTO.getImages());
         String files = joinUrls(dailyDTO.getFiles());
@@ -227,6 +231,9 @@ public class DailyServiceImpl implements DailyService {
         if (dailyDTO.getId() == null) {
             throw new CustomException("日常ID不能为空");
         }
+        //清理
+        dailyDTO.setContent(HtmlSanitizer.cleanRichText(dailyDTO.getContent()));
+
         Daily oldDaily = dailyMapper.getById(dailyDTO.getId());
         if (oldDaily == null) {
             throw new CustomException("日常不存在或已被删除");

@@ -21,6 +21,7 @@ import com.blog.result.PageResult;
 import com.blog.service.CommentService;
 import com.blog.service.NoticeService;
 import com.blog.utils.CommentTreeUtil;
+import com.blog.utils.HtmlSanitizer;
 import com.blog.utils.NoticeTextUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -106,7 +107,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     /**
-     * 平铺分页(关键字搜索场景)，并补齐回复对应的主楼上下文
+     * 平铺分页，并补齐回复对应的主楼上下文
      */
     private PageResult pageQueryFlat(CommentPageQueryDTO dto, Integer page, Integer pageSize) {
         PageHelper.startPage(page, pageSize);
@@ -153,6 +154,7 @@ public class CommentServiceImpl implements CommentService {
 
         List<CommentVo> messageTree = CommentTreeUtil.buildFlatReplyTree(rows);
         fillLikedStatus(messageTree);
+        sanitizeComments(messageTree);
         return new PageResult(pageInfo.getTotal(), messageTree);
     }
 
@@ -169,6 +171,7 @@ public class CommentServiceImpl implements CommentService {
 
         List<CommentVo> rows = new ArrayList<>(commentMapper.selectByIds(mainIds));
         rows.addAll(commentMapper.selectRepliesByParentIds(mainIds, dto.getStatus()));
+        sanitizeComments(rows);
         return new PageResult(pageInfo.getTotal(), rows);
     }
 
@@ -256,7 +259,7 @@ public class CommentServiceImpl implements CommentService {
                 .userId(user.getId())
                 .userNickname(user.getNickname())
                 .userAvatar(user.getAvatar())
-                .content(commentReplyDTO.getContent().trim())
+                .content(HtmlSanitizer.cleanPlainText(commentReplyDTO.getContent()).trim())
                 .likeNum(0)
                 .status(StatusConstant.ENABLE)
                 .isTop(StatusConstant.DISABLE)
@@ -312,7 +315,13 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void addArticleComment(Long articleId, String content) {
-        String trimmed = content == null ? "" : content.trim();
+
+        String raw = content == null ? "" : content;
+        String cleaned = HtmlSanitizer.cleanPlainText(raw).trim();
+        if (cleaned.isEmpty() && !raw.trim().isEmpty()) {
+            throw new CommentException("内容包含不支持的标签或非法字符");
+        }
+        String trimmed = cleaned;
         if (trimmed.isEmpty()) {
             throw new CommentException("评论内容不能为空");
         }
@@ -360,7 +369,12 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void addDailyComment(Long dailyId, String content) {
-        String trimmed = content == null ? "" : content.trim();
+        String raw = content == null ? "" : content;
+        String cleaned = HtmlSanitizer.cleanPlainText(raw).trim();
+        if (cleaned.isEmpty() && !raw.trim().isEmpty()) {
+            throw new CommentException("内容包含不支持的标签或非法字符");
+        }
+        String trimmed = cleaned;
         if (trimmed.isEmpty()) {
             throw new CommentException("评论内容不能为空");
         }
@@ -409,7 +423,12 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void addMessageComment(Integer msgType, String content) {
-        String trimmed = content == null ? "" : content.trim();
+        String raw = content == null ? "" : content;
+        String cleaned = HtmlSanitizer.cleanPlainText(raw).trim();
+        if (cleaned.isEmpty() && !raw.trim().isEmpty()) {
+            throw new CommentException("内容包含不支持的标签或非法字符");
+        }
+        String trimmed = cleaned;
         if (trimmed.isEmpty()) {
             throw new CommentException("留言内容不能为空");
         }
@@ -633,7 +652,26 @@ public class CommentServiceImpl implements CommentService {
 
         List<CommentVo> commentVos = CommentTreeUtil.buildFlatReplyTree(commentVoList);
         fillLikedStatus(commentVos);
+        sanitizeComments(commentVos);
         return commentVos;
+    }
+
+    /**
+     * 输出侧净化：兼容历史脏数据，返回给前端前统一转成纯文本
+     * 注意：只处理评论类 VO，绝不要对文章正文（富文本）调用
+     */
+    private void sanitizeComments(List<CommentVo> vos) {
+        if (vos == null || vos.isEmpty()) {
+            return;
+        }
+        for (CommentVo vo : vos) {
+            vo.setContent(HtmlSanitizer.cleanPlainText(vo.getContent()));
+            vo.setUserNickname(HtmlSanitizer.cleanPlainText(vo.getUserNickname()));
+            vo.setParentNickname(HtmlSanitizer.cleanPlainText(vo.getParentNickname()));
+            vo.setReplyUserNickname(HtmlSanitizer.cleanPlainText(vo.getReplyUserNickname()));
+            vo.setSourceTitle(HtmlSanitizer.cleanPlainText(vo.getSourceTitle()));
+            sanitizeComments(vo.getReplies());
+        }
     }
 
     /**

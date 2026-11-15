@@ -1,6 +1,7 @@
 <script setup>
 import { ref, nextTick, watch } from 'vue';
 import { fetchStream } from '@/api/AIChat.js';
+import { safeHtml } from '@/utils/safeHtml';
 
 // ========== 状态 ==========
 const dialogVisible = ref(false);
@@ -50,11 +51,19 @@ function clearConversation() {
 }
 
 function formatMessage(content) {
-  // 简单 Markdown 处理（可扩展）
-  return content
-    .replace(/\n/g, '<br>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/`(.*?)`/g, '<code>$1</code>');
+  // 先转成纯文本（清除已有标签和引号），再做 Markdown 轻量替换
+  const plain = String(content ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+  return safeHtml(
+    plain
+      .replace(/\n/g, '<br>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/`(.*?)`/g, '<code>$1</code>')
+  );
 }
 
 function scrollToBottom() {
