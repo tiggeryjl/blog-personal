@@ -355,7 +355,7 @@ let latestPublishRequestId = 0;
 
 // 发表评论/回复评论
 const publishComment = async (commentId, replyId, content) => {
-  if (!requireLogin('登录后才能发表评论哦~')) return false;
+  if (!(await requireLogin('登录后才能发表评论哦~'))) return false;
   if (commentId === undefined && replyId === undefined && content === undefined) {
     const draftContent = commentForm.value.content;
     const submittedContent = draftContent.trim();

@@ -1,5 +1,9 @@
 package com.blog.controller.admin;
 
+import com.blog.constant.MultiStatusConstant;
+import com.blog.mapper.SysUserMapper;
+import com.blog.properties.JwtProperties;
+import com.blog.service.RedisService;
 import com.blog.validation.ValidationGroups;
 import com.blog.context.BaseContext;
 import com.blog.pojo.dto.*;
@@ -40,9 +44,24 @@ public class SysAdminController {
     @Autowired
     private SysAdminService adminService;
     @Autowired
+    private SysUserMapper userMapper;
+    @Autowired
     private JwtService jwtService;
     @Autowired
     private AliyunAcsClient aliyunAcsClient;
+    @Autowired
+    private JwtProperties jwtProperties;
+    @Autowired
+    private RedisService redisService;
+
+    private String readCookie(HttpServletRequest req, String name) {
+        Cookie[] cookies = req.getCookies();
+        if (cookies == null) return null;
+        for (Cookie c : cookies) {
+            if (name.equals(c.getName())) return c.getValue();
+        }
+        return null;
+    }
 
     /**
      * 无感刷新token
@@ -51,26 +70,38 @@ public class SysAdminController {
     @PostMapping("/refreshToken")
     public Result<Map<String,String>> refreshToken(HttpServletRequest req, HttpServletResponse resp) {
         // 从请求cookie读取refreshToken
-        String refreshToken = null;
-        Cookie[] cookies = req.getCookies();
-        if(cookies != null) {
-            for (Cookie cookie : cookies) {
-                if("admin_refreshToken".equals(cookie.getName())) {
-                    refreshToken = cookie.getValue();
-                    break;
-                }
-            }
-        }
+        String refreshToken = readCookie(req, "admin_refreshToken");
+
         // 无refreshToken或已过期
         if(refreshToken == null || !jwtService.validateToken(refreshToken)) {
             return Result.error(401, "登录失效，请重新登录");
         }
         // 解析用户id
         Long userId = jwtService.getUserIdFromRefreshToken(refreshToken);
-        UserSimpleVO user = adminService.getUserInfo(userId);
+//        UserSimpleVO user = adminService.getUserInfo(userId);
+        SysUser user = userMapper.getByUserId(userId);
         if(user == null) {
             return Result.error(401, "用户不存在");
         }
+
+        if (!MultiStatusConstant.ONE.equals(user.getStatus())
+                || Integer.valueOf(1).equals(user.getDeleteFlag())) {
+            return Result.error(401, "账号已被禁用或注销");
+        }
+
+        //比对 Redis 白名单，旧 rt 已登出/改密即拒绝
+        String rtId = jwtService.getRtId(refreshToken);
+        Object savedRtId = redisService.get("rt:admin:" + userId, String.class);
+        if (savedRtId == null || !savedRtId.equals(rtId)) {
+            return Result.error(401, "登录已失效，请重新登录");
+        }
+
+        // 轮换：签发新 rt 覆盖旧 rt
+        String newRt = jwtService.createRefreshToken(userId, true);
+        jwtService.setUserRefreshCookie(newRt, true, resp);
+        redisService.set("rt:admin:" + userId, jwtService.getRtId(newRt),
+                jwtProperties.getUserRefreshTtl() / 1000);
+
         // 生成新accessToken
         String newAccessToken = jwtService.createToken(userId, user.getUsername());
 
@@ -95,6 +126,12 @@ public class SysAdminController {
         String token = jwtService.createToken(user.getId(),user.getUsername());
         String refreshToken  = jwtService.createRefreshToken(user.getId(), remember);
         jwtService.setAdminRefreshCookie(refreshToken, remember, resp);
+
+        // rt 白名单：key=rt:user:{userId}，value=rtId，TTL 与 rt 一致
+        long ttlSeconds = remember
+                ? jwtProperties.getUserRefreshTtl() / 1000
+                : 12 * 60 * 60;   // 未勾选记住我：12 小时
+        redisService.set("rt:admin:" + user.getId(), jwtService.getRtId(refreshToken), ttlSeconds);
 
         UserSimpleVO userSimpleVO = new UserSimpleVO();
         BeanUtils.copyProperties(user, userSimpleVO);
@@ -153,6 +190,7 @@ public class SysAdminController {
         log.info("管理员id:{}-修改密码", passwordEditDTO.getUserId());
         passwordEditDTO.setUserId(BaseContext.getCurrentId());
         adminService.updatePwd(passwordEditDTO);
+        redisService.delete("rt:admin:" + passwordEditDTO.getUserId());
         return Result.success();
     }
 
@@ -166,7 +204,9 @@ public class SysAdminController {
     @PutMapping("/{id}/resetPassword")
     public Result<String> resetPassword(@PathVariable Long id) {
         log.info("重置用户密码:{}", id);
-        return Result.success(adminService.resetPassword(id));
+        String resetPassword = adminService.resetPassword(id);
+        redisService.delete("rt:admin:" +id);
+        return Result.success(resetPassword);
     }
 
     /**
@@ -193,6 +233,7 @@ public class SysAdminController {
     public Result updateStatus(@PathVariable Long id, @PathVariable Integer status){
         log.info("启用禁用用户{}的状态{}",id,status);
         adminService.updateStatus(id,status);
+        redisService.delete("rt:admin:" +id);
         return Result.success();
     }
 
@@ -278,7 +319,12 @@ public class SysAdminController {
      * @return
      */
     @PostMapping("/logout")
-    public Result<String> logout(HttpServletResponse resp) {
+    public Result<String> logout(HttpServletRequest req,HttpServletResponse resp) {
+        String rt = readCookie(req, "admin_refreshToken");
+        if (rt != null && jwtService.validateToken(rt)) {
+            Long userId = jwtService.getUserIdFromRefreshToken(rt);
+            redisService.delete("rt:admin:" + userId);
+        }
         jwtService.clearAdminRefreshCookie(resp);
         return Result.success();
     }

@@ -91,6 +91,7 @@ const restoreSession = () => {
     const newToken = res?.code === 200 ? res.data?.token : null;
     if (!newToken) throw new Error('刷新token失败');
     useUserStore().setToken(newToken);
+    useUserStore().sessionChecked = true;
     const result = await queryUserInfoApi();
     useUserStore().updateUserInfo(result.data);
     return true;
@@ -100,6 +101,7 @@ const restoreSession = () => {
   restorePromise.catch(() => {
     restoreFailed = true;
     restorePromise = null;
+    useUserStore().sessionChecked = true;
   });
 
   return restorePromise;
@@ -115,9 +117,9 @@ export const stopSessionRestore = () => {
 // 只有设置 / 个人中心相关页面（meta.requiresAuth）才必须先登录
 router.beforeEach(async (to, from, next) => {
   const needLogin = to.matched.some((record) => record.meta?.requiresAuth);
-
+  const store = useUserStore();
   // 已有本地 token，直接放行
-  if (localStorage.getItem('user_token')) return next();
+  if (store.user_token) return next();
 
   if (!needLogin) {
     // 游客直接浏览，同时后台静默尝试恢复登录态（有登录态就显示头像，没有就忽略）

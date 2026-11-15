@@ -99,7 +99,7 @@ watch(isLogin, () => {
 const publishing = ref(false);
 
 const publishComment = async (commentId, replyId, content) => {
-  if (!requireLogin('登录后才能留言哦~')) return false;
+  if (!(await requireLogin('登录后才能留言哦~'))) return false;
 
   // 发表新留言
   if (commentId === undefined && replyId === undefined && content === undefined) {

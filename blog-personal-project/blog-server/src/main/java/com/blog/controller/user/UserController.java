@@ -1,7 +1,9 @@
 package com.blog.controller.user;
 
 import com.blog.constant.MessageConstant;
+import com.blog.constant.MultiStatusConstant;
 import com.blog.context.BaseContext;
+import com.blog.mapper.SysUserMapper;
 import com.blog.pojo.dto.EmailRegisterDTO;
 import com.blog.pojo.dto.PasswordEditDTO;
 import com.blog.pojo.dto.ResetPasswordCodeDTO;
@@ -19,9 +21,11 @@ import com.blog.pojo.vo.LoginVO;
 import com.blog.pojo.vo.LoginRiskInfoVO;
 import com.blog.pojo.vo.UserPersonalInfoVO;
 import com.blog.pojo.vo.UserSimpleVO;
+import com.blog.properties.JwtProperties;
 import com.blog.result.Result;
 import com.blog.service.JwtService;
 import com.blog.service.LoginVerificationService;
+import com.blog.service.RedisService;
 import com.blog.service.UserService;
 import com.blog.utils.AliyunAcsClient;
 import com.blog.utils.DeviceInfoUtil;
@@ -48,11 +52,17 @@ public class UserController {
     @Autowired
     private UserService userService;
     @Autowired
+    private SysUserMapper userMapper;
+    @Autowired
     private JwtService jwtService;
     @Autowired
     private LoginVerificationService loginVerificationService;
     @Autowired
     private AliyunAcsClient aliyunAcsClient;
+    @Autowired
+    private JwtProperties jwtProperties;
+    @Autowired
+    private RedisService redisService;
 
     /**
      * 用户注册
@@ -127,6 +137,15 @@ public class UserController {
         return Result.success(buildLoginVO(user, false, response));
     }
 
+    private String readCookie(HttpServletRequest req, String name) {
+        Cookie[] cookies = req.getCookies();
+        if (cookies == null) return null;
+        for (Cookie c : cookies) {
+            if (name.equals(c.getName())) return c.getValue();
+        }
+        return null;
+    }
+
     /**
      * 刷新token
      * @param req
@@ -136,26 +155,39 @@ public class UserController {
     @PostMapping("/refreshToken")
     public Result<Map<String,String>> refreshToken(HttpServletRequest req, HttpServletResponse resp) {
         // 读取Cookie中的refreshToken
-        String refreshToken = null;
-        Cookie[] cookies = req.getCookies();
-        if(cookies != null) {
-            for (Cookie cookie : cookies) {
-                if("user_refreshToken".equals(cookie.getName())) {
-                    refreshToken = cookie.getValue();
-                    break;
-                }
-            }
-        }
+        String refreshToken = readCookie(req, "user_refreshToken");
+
         // !validateToken代表token失效/不存在返回401
         if(refreshToken == null || !jwtService.validateToken(refreshToken)) {
             return Result.error(401, "登录失效，请重新登录");
         }
         // 专用方法解析refreshToken的userId（从自定义claim取，不从subject UUID取）
         Long userId = jwtService.getUserIdFromRefreshToken(refreshToken);
-        UserSimpleVO user = userService.getUserInfo(userId);
-        if(user == null) {
+//        UserSimpleVO user = userService.getUserInfo(userId);
+        SysUser user = userMapper.getByUserId(userId);
+
+        if (user == null){
             return Result.error(401, "用户不存在");
         }
+
+        if (!MultiStatusConstant.ONE.equals(user.getStatus())
+                || Integer.valueOf(1).equals(user.getDeleteFlag())) {
+            return Result.error(401, "账号已被禁用或注销");
+        }
+
+        //比对 Redis 白名单，旧 rt 已登出/改密即拒绝
+        String rtId = jwtService.getRtId(refreshToken);
+        Object savedRtId = redisService.get("rt:user:" + userId, String.class);
+        if (savedRtId == null || !savedRtId.equals(rtId)) {
+            return Result.error(401, "登录已失效，请重新登录");
+        }
+
+        // 轮换：签发新 rt 覆盖旧 rt
+        String newRt = jwtService.createRefreshToken(userId, true);
+        jwtService.setUserRefreshCookie(newRt, true, resp);
+        redisService.set("rt:user:" + userId, jwtService.getRtId(newRt),
+                jwtProperties.getUserRefreshTtl() / 1000);
+
         // 生成新短期accessToken
         String newAccessToken = jwtService.createToken(userId, user.getUsername());
 
@@ -311,7 +343,12 @@ public class UserController {
      * @return
      */
     @PostMapping("/logout")
-    public Result<String> logout(HttpServletResponse resp) {
+    public Result<String> logout(HttpServletRequest req,HttpServletResponse resp) {
+        String rt = readCookie(req, "user_refreshToken");
+        if (rt != null && jwtService.validateToken(rt)) {
+            Long userId = jwtService.getUserIdFromRefreshToken(rt);
+            redisService.delete("rt:user:" + userId);
+        }
         jwtService.clearUserRefreshCookie(resp);
         return Result.success();
     }
@@ -334,6 +371,12 @@ public class UserController {
         String token = jwtService.createToken(user.getId(), user.getUsername());
         String refreshToken = jwtService.createRefreshToken(user.getId(), remember);
         jwtService.setUserRefreshCookie(refreshToken, remember, response);
+
+        // rt 白名单：key=rt:user:{userId}，value=rtId，TTL 与 rt 一致
+        long ttlSeconds = remember
+                ? jwtProperties.getUserRefreshTtl() / 1000
+                : 12 * 60 * 60;   // 未勾选记住我：12 小时
+        redisService.set("rt:user:" + user.getId(), jwtService.getRtId(refreshToken), ttlSeconds);
 
         UserSimpleVO simpleVO = new UserSimpleVO();
         BeanUtils.copyProperties(user, simpleVO);

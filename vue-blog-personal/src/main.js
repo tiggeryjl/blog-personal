@@ -1,36 +1,38 @@
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
+import { createApp } from 'vue';
+import { createPinia } from 'pinia';
 
-import App from './App.vue'
-import router from './router'
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
-import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import App from './App.vue';
+import router from './router';
+import ElementPlus from 'element-plus';
+import 'element-plus/dist/index.css';
+import zhCn from 'element-plus/es/locale/lang/zh-cn';
+import * as ElementPlusIconsVue from '@element-plus/icons-vue';
 
 // 引入 Font Awesome
-import { library } from '@fortawesome/fontawesome-svg-core'
-import { fas } from '@fortawesome/free-solid-svg-icons' // 全部实心图标
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faGithub } from '@fortawesome/free-brands-svg-icons' // GitHub 品牌图标
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { fas } from '@fortawesome/free-solid-svg-icons'; // 全部实心图标
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faGithub } from '@fortawesome/free-brands-svg-icons'; // GitHub 品牌图标
 
-import './assets/main.css'
-import './assets/styles/theme.css'
-import './assets/styles/responsive.css'
+import './assets/main.css';
+import './assets/styles/theme.css';
+import './assets/styles/responsive.css';
+import { useUserStore } from '@/store/userloginstatus.js';
 
 // 注册所有图标
-library.add(fas)
-library.add(faGithub)
+library.add(fas);
+library.add(faGithub);
 
-const app = createApp(App)
+const app = createApp(App);
 
-app.use(createPinia())
-app.use(router)
-app.use(ElementPlus, { locale: zhCn })
+app.use(createPinia());
+app.use(router);
+app.use(ElementPlus, { locale: zhCn });
 // 注册图标
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
-  app.component(key, component)
+  app.component(key, component);
 }
-app.component('FontAwesomeIcon', FontAwesomeIcon)
+app.component('FontAwesomeIcon', FontAwesomeIcon);
 
-app.mount('#app')
+useUserStore().loadStorage();
+app.mount('#app');

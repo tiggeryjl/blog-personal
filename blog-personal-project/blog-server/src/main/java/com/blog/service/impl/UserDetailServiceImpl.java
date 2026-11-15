@@ -1,6 +1,7 @@
 package com.blog.service.impl;
 
 import com.blog.constant.MessageConstant;
+import com.blog.constant.MultiStatusConstant;
 import com.blog.mapper.SysMenuMapper;
 import com.blog.mapper.SysUserMapper;
 import com.blog.pojo.entity.LoginUser;
@@ -33,8 +34,13 @@ public class UserDetailServiceImpl implements UserDetailsService {
         if (user == null) {
             throw new UsernameNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
         }
+        // 禁用/注销/逻辑删除一律不放行
+        if (!MultiStatusConstant.ONE.equals(user.getStatus())
+                || Integer.valueOf(1).equals(user.getDeleteFlag())) {
+            throw new UsernameNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+        }
 
-        // 装载用户角色，供权限校验器判断超管（roleList 之前为空导致超管放行从未生效）
+        // 装载用户角色，供权限校验器判断超管
         List<SysRole> roleList = sysUserMapper.selectRoleListByUserId(user.getId());
         user.setRoleList(roleList);
 

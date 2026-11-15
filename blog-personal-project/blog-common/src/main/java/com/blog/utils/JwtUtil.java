@@ -117,25 +117,25 @@ public class JwtUtil {
 
     // 写入管理端RefreshToken到HttpOnly Cookie（同域无需Secure，生产HTTPS自行加Secure）
     public static void setAdminRefreshCookie(String refreshToken, long maxAgeSeconds, HttpServletResponse response) {
-        response.setHeader("Set-Cookie",
+        response.addHeader("Set-Cookie",
                 buildRefreshCookie("admin_refreshToken", refreshToken, maxAgeSeconds));
     }
 
     // 清除管理端Cookie（退出登录）
     public static void clearAdminRefreshCookie(HttpServletResponse response) {
-        String clearCookie = "admin_refreshToken=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax";
-        response.setHeader("Set-Cookie", clearCookie);
+        response.addHeader("Set-Cookie",
+                buildRefreshCookie("admin_refreshToken", "", 0));
     }
 
     // 设置用户端刷新Cookie
     public static void setUserRefreshCookie(String refreshToken, long maxAgeSeconds, HttpServletResponse response) {
-        response.setHeader("Set-Cookie",
+        response.addHeader("Set-Cookie",
                 buildRefreshCookie("user_refreshToken", refreshToken, maxAgeSeconds));
     }
     // 清除用户端Cookie
     public static void clearUserRefreshCookie(HttpServletResponse response) {
-        String clearCookie = "user_refreshToken=; Path=/; HttpOnly; Max-Age=0; SameSite=Lax";
-        response.setHeader("Set-Cookie", clearCookie);
+        response.addHeader("Set-Cookie",
+                buildRefreshCookie("user_refreshToken", "", 0));
     }
 
     /**
@@ -151,7 +151,7 @@ public class JwtUtil {
     private static String buildRefreshCookie(String name, String value, long maxAgeSeconds) {
         StringBuilder cookie = new StringBuilder()
                 .append(name).append('=').append(value)
-                .append("; Path=/; HttpOnly; SameSite=Lax");
+                .append("; Path=/; HttpOnly; Secure; SameSite=Lax");
         if (maxAgeSeconds > 0) {
             cookie.append("; Max-Age=").append(maxAgeSeconds);
         }
@@ -161,5 +161,10 @@ public class JwtUtil {
     public static Date getIssuedAt(String secretKey, String token) {
         Claims claims = parseToken(secretKey, token);
         return claims.getIssuedAt();
+    }
+
+    /** 读取 refreshToken 的唯一标识（subject 里的 UUID） */
+    public static String getRtId(String secretKey, String token) {
+        return parseToken(secretKey, token).getSubject();
     }
 }

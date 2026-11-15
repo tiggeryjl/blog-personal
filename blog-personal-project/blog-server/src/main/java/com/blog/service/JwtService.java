@@ -23,4 +23,6 @@ public interface JwtService {
     void setUserRefreshCookie(String refreshToken, boolean remember, HttpServletResponse response);
     //把refreshToken清空
     void clearUserRefreshCookie(HttpServletResponse response);
+    // 读取 refreshToken 的唯一标识
+    String getRtId(String token);
 }

@@ -1,7 +1,8 @@
 import { ElMessage } from 'element-plus';
+import { useUserStore } from '@/store/userloginstatus';
 
 // 是否已登录
-export const isLoggedIn = () => !!localStorage.getItem('user_token');
+export const isLoggedIn = () => !!useUserStore().user_token;
 
 /**
  * 需要登录才能进行的操作统一入口
@@ -9,8 +10,21 @@ export const isLoggedIn = () => !!localStorage.getItem('user_token');
  * @param {string} tip 未登录时的提示文案
  * @returns {boolean} true 表示已登录，可以继续执行操作
  */
-export const requireLogin = (tip = '请先登录后再进行该操作') => {
-  if (isLoggedIn()) return true;
+export const requireLogin = async (tip = '请先登录后再进行该操作') => {
+  const store = useUserStore();
+  if (store.user_token) return true;
+
+  // 首次判断时可能 cookie 还没换成 token
+  if (!store.sessionChecked) {
+    try {
+      await store.restoreFromCookie(); // ← 见下面第 2 条，把 router 里的恢复逻辑挪到 store
+    } catch (e) {
+      /* 未登录，忽略 */
+    }
+    store.sessionChecked = true;
+  }
+
+  if (useUserStore().user_token) return true;
   ElMessage.warning(tip);
   return false;
 };

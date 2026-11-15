@@ -377,6 +377,7 @@ public class UserServiceImpl implements UserService {
         user.setPassword(newEncryptPwd);
 
         userMapper.update(user);
+        redisService.delete("rt:user:" + user.getId());
     }
 
     /**
@@ -524,6 +525,7 @@ public class UserServiceImpl implements UserService {
         userMapper.update(user);
 
         // 改密成功，凭证和验证码一起作废
+        redisService.delete("rt:user:" + user.getId());
         redisService.delete(ticketKey);
         redisService.delete(ResetPasswordConstant.CODE_KEY_PREFIX + mail);
     }

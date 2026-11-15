@@ -3,15 +3,17 @@ package com.blog.service.impl;
 import com.blog.properties.JwtProperties;
 import com.blog.service.JwtService;
 import com.blog.utils.JwtUtil;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 @Component
 public class JwtServiceImpl implements JwtService {
 
     /**
-     * 未勾选"记住我"时刷新令牌的有效期：12 小时
+     * 未勾选记住我时刷新令牌的有效期：12 小时
      * （Cookie 本身是会话级，关闭浏览器即失效，这里再收窄一层令牌有效期）
      */
     private static final long SESSION_REFRESH_TTL_MILLIS = 12 * 60 * 60 * 1000L;
@@ -81,8 +83,13 @@ public class JwtServiceImpl implements JwtService {
         JwtUtil.clearUserRefreshCookie(response);
     }
 
+    @Override
+    public String getRtId(String token) {
+        return JwtUtil.getRtId(jwtProperties.getUserSecretKey(), token);
+    }
+
     /**
-     * 勾选"记住我"返回 Cookie 的 Max-Age（秒），与刷新令牌有效期保持一致；
+     * 勾选记住我返回 Cookie 的 Max-Age（秒），与刷新令牌有效期保持一致；
      * 未勾选返回 0，此时不写 Max-Age，浏览器按会话Cookie处理
      *
      * @param remember 是否勾选记住我

@@ -1,18 +1,20 @@
 import { defineStore } from 'pinia';
 import { ElMessage } from 'element-plus';
 
+const emptyUserInfo = () => ({
+  id: '',
+  nickname: '',
+  avatar: '',
+  email: '',
+  phone: '',
+});
 // 第一个参数 'user' 是唯一标识，可自定义
 // 第二个参数是配置
 export const useUserStore = defineStore('user', {
   state: () => ({
     user_token: '', // 用户 token
-    userInfo: {
-      id: '', // 用户 id
-      nickname: '', // 昵称
-      avatar: '', // 头像
-      email: '', // 邮箱
-      phone: '', // 手机号
-    },
+    userInfo: emptyUserInfo(),
+    sessionChecked: false, // 本次页面生命周期内是否已经用 cookie 试过恢复登录态
   }),
 
   actions: {
@@ -27,56 +29,48 @@ export const useUserStore = defineStore('user', {
         phone: res.user.phone,
       };
 
-      // 同时保存到 localStorage（刷新不丢失）
-      localStorage.setItem('user_token', res.token);
       localStorage.setItem('userInfo', JSON.stringify(this.userInfo));
+      this.sessionChecked = true;
     },
 
     // 退出登录
     logout() {
       this.user_token = '';
-      this.userInfo = {
-        id: '',
-        nickname: '',
-        avatar: '',
-        email: '',
-        phone: '',
-      };
-
-      localStorage.removeItem('user_token');
+      this.userInfo = emptyUserInfo();
+      this.sessionChecked = true;
       localStorage.removeItem('userInfo');
+    },
+
+    async restoreFromCookie() {
+      const { getRefreshTokenApi, queryUserInfoApi } = await import('@/api/auth.js'); // 动态引入避免循环依赖
+      const res = await getRefreshTokenApi({ silent: true });
+      const newToken = res?.code === 200 ? res.data?.token : null;
+      if (!newToken) throw new Error('未登录');
+      this.user_token = newToken;
+      const info = await queryUserInfoApi();
+      if (info?.data) this.updateUserInfo(info.data);
+      this.sessionChecked = true;
+      return true;
     },
 
     // 更新本地 token（静默刷新、登录过期清理时使用）
     setToken(token) {
       this.user_token = token || '';
-      if (token) {
-        localStorage.setItem('user_token', token);
-      } else {
-        localStorage.removeItem('user_token');
-      }
     },
 
     // 刷新页面时，从本地恢复数据
     loadStorage() {
       try {
-        const token = localStorage.getItem('user_token') || '';
         const userInfoStr = localStorage.getItem('userInfo') || '';
 
-        if (!token) {
-          this.logout();
-          return;
-        }
-
-        this.user_token = token;
         if (userInfoStr) {
           const info = JSON.parse(userInfoStr);
           this.userInfo = {
-            id: info.id || '',
-            nickname: info.nickname || '',
-            avatar: info.avatar || '',
-            email: info.email || '',
-            phone: info.phone || '',
+            id: info.id ?? '',
+            nickname: info.nickname ?? '',
+            avatar: info.avatar ?? '',
+            email: info.email ?? '',
+            phone: info.phone ?? '',
           };
         }
       } catch (e) {
@@ -95,7 +89,4 @@ export const useUserStore = defineStore('user', {
       localStorage.setItem('userInfo', JSON.stringify(this.userInfo));
     },
   },
-  persist: {
-    paths: ['user_token'],
-  }, // 开启持久化存储localStorage
 });

@@ -48,7 +48,8 @@ public class AIController {
         if (auth == null || !auth.isAuthenticated()) {
             throw new UserNotLoginException(MessageConstant.TOKEN_EXPIRED);
         }
-        return aiService.chatStream(message);
+        return null; //TODO 等待修复，ai接口鉴权
+//        return aiService.chatStream(message);
     }
 
     /**
