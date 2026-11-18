@@ -100,6 +100,8 @@ public class ReportController {
     @GetMapping("/weeklyData")
     public Result<Map<String, Object>> weeklyData() {
         log.info("获取AI周报基础数据");
-        return Result.success(reportService.weeklyReportData());
+
+        return Result.success();
+//        return Result.success(reportService.weeklyReportData());
     }
 }
