@@ -15,5 +15,6 @@ public class AliOssProperties {
     private String bucketName;
     private String region;
     private String sceneId;
+    private String cdnDomain;
 
 }

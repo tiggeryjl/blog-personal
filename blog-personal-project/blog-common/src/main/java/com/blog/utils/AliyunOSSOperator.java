@@ -29,16 +29,17 @@ public class AliyunOSSOperator {
     private String accessKeySecret;
     private String bucketName;
     private String region;
+    private String cdnDomain;
 
     public String upload(byte[] content, String originalFilename) throws Exception {
 
-        Long userId = BaseContext.getCurrentId();
-        // 填写Object完整路径，例如2024/06/1.png。Object完整路径中不能包含Bucket名称。
+//        Long userId = BaseContext.getCurrentId();
         //获取当前系统日期的字符串,格式为 yyyy/MM
         String dir = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
         //生成一个新的不重复的文件名
         String newFileName = UUID.randomUUID() + originalFilename.substring(originalFilename.lastIndexOf("."));
-        String objectName = dir +"/"+"userId-"+userId+ "/" + newFileName;
+//        String objectName = dir +"/"+"userId-"+userId+ "/" + newFileName;
+        String objectName = "img"+"/" +dir + "/" + newFileName;
 
         // 创建OSSClient实例。
         ClientBuilderConfiguration clientBuilderConfiguration = new ClientBuilderConfiguration();
@@ -67,6 +68,17 @@ public class AliyunOSSOperator {
             ossClient.shutdown();
         }
 
+        return buildUrl(objectName);
+//        return "https://" + bucketName + "." + endpoint + "/" + objectName;
+    }
+
+    public String buildUrl(String objectName) {
+        if (cdnDomain != null && !cdnDomain.isBlank()) {
+            String base = cdnDomain.endsWith("/")
+                    ? cdnDomain.substring(0, cdnDomain.length() - 1)
+                    : cdnDomain;
+            return base + "/" + objectName;
+        }
         return "https://" + bucketName + "." + endpoint + "/" + objectName;
     }
 

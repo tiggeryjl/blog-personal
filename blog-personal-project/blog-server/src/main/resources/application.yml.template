@@ -35,6 +35,7 @@ blog:
     endpoint: your-endpoint
     region: your-region
     scene-id: your-scene-id
+    cdn-domain: # 你的cdn域名
   jwt:
     user-secret-key: your-jwt-secret-key-here
     user-token-name: Authorization
