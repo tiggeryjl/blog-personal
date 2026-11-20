@@ -376,7 +376,7 @@ const publishComment = async (commentId, replyId, content) => {
         if (commentForm.value.content === draftContent) {
           commentForm.value.content = '';
         }
-        ElMessage.success('评论发布成功！');
+        ElMessage.success(result.data?.needAudit ? '评论已提交，请等待审核!' : '评论发布成功！');
         await getCommentList(dailyId);
         return true;
       }
@@ -408,7 +408,7 @@ const publishComment = async (commentId, replyId, content) => {
     });
     if (!isCurrentDaily(dailyId)) return false;
     if (result?.code === 200) {
-      ElMessage.success('回复成功！');
+      ElMessage.success(result.data?.needAudit ? '回复已提交，审核通过后其他人可见' : '回复成功！');
       await getCommentList(dailyId);
       return true;
     }

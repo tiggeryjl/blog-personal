@@ -16,6 +16,18 @@ export const getMessageCommentListApi = (data) =>
 export const updateCommentStatusApi = (data) =>
   request.put("/admin/comment/status", data);
 
+// 批量审核评论
+export const updateCommentStatusBatchApi = (data) =>
+  request.put("/admin/comment/status/batch", data);
+
+// 获取评论审核开关
+export const getCommentAuditEnabledApi = () =>
+  request.get("/admin/comment/audit-enabled");
+
+// 更新评论审核开关
+export const updateCommentAuditEnabledApi = (enabled) =>
+  request.put("/admin/comment/audit-enabled", null, { params: { enabled } });
+
 // 后台回复评论
 export const addCommentReplyApi = (data) =>
   request.post("/admin/comment/reply", data);

@@ -9,6 +9,7 @@ import com.blog.mapper.DailyMapper;
 import com.blog.mapper.LikeMapper;
 import com.blog.mapper.SysUserMapper;
 import com.blog.mapper.SysUserRoleMapper;
+import com.blog.pojo.dto.CommentBatchStatusDTO;
 import com.blog.pojo.dto.CommentPageQueryDTO;
 import com.blog.pojo.dto.CommentReplyDTO;
 import com.blog.pojo.dto.CommentStatusDTO;
@@ -16,10 +17,12 @@ import com.blog.pojo.entity.Article;
 import com.blog.pojo.entity.Comment;
 import com.blog.pojo.entity.SysUser;
 import com.blog.pojo.vo.CommentVo;
+import com.blog.pojo.vo.CommentSubmitVO;
 import com.blog.pojo.vo.DailyFrontVO;
 import com.blog.result.PageResult;
 import com.blog.service.CommentService;
 import com.blog.service.NoticeService;
+import com.blog.service.SystemConfigService;
 import com.blog.utils.CommentTreeUtil;
 import com.blog.utils.HtmlSanitizer;
 import com.blog.utils.NoticeTextUtil;
@@ -29,10 +32,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -65,6 +70,9 @@ public class CommentServiceImpl implements CommentService {
 
     @Autowired
     private LikeMapper likeMapper;
+
+    @Autowired
+    private SystemConfigService systemConfigService;
 
     /**
      * 分页查询评论列表
@@ -139,7 +147,9 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public PageResult pageUserMessageQuery(CommentPageQueryDTO commentPageQueryDTO) {
         commentPageQueryDTO.setType(CommentConstant.TWO);
-        commentPageQueryDTO.setStatus(StatusConstant.ENABLE);
+        commentPageQueryDTO.setStatus(null);
+        Long viewerId = BaseContext.getCurrentId();
+        commentPageQueryDTO.setViewerId(viewerId);
 
         PageHelper.startPage(commentPageQueryDTO.getPage(), commentPageQueryDTO.getPageSize());
 
@@ -149,8 +159,8 @@ public class CommentServiceImpl implements CommentService {
             return new PageResult(pageInfo.getTotal(), new ArrayList<>());
         }
 
-        List<CommentVo> rows = new ArrayList<>(commentMapper.selectPublicByIds(mainIds));
-        rows.addAll(commentMapper.selectPublicRepliesByParentIds(mainIds, StatusConstant.ENABLE));
+        List<CommentVo> rows = new ArrayList<>(commentMapper.selectPublicByIds(mainIds, viewerId));
+        rows.addAll(commentMapper.selectPublicRepliesByParentIds(mainIds, viewerId));
 
         List<CommentVo> messageTree = CommentTreeUtil.buildFlatReplyTree(rows);
         fillLikedStatus(messageTree);
@@ -193,17 +203,54 @@ public class CommentServiceImpl implements CommentService {
      */
     @Override
     public void updateStatus(CommentStatusDTO commentStatusDTO) {
-        Comment comment = commentMapper.getById(commentStatusDTO.getId());
+        updateStatusInternal(commentStatusDTO.getId(), commentStatusDTO.getStatus());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateBatchStatus(CommentBatchStatusDTO commentBatchStatusDTO) {
+        validateTargetStatus(commentBatchStatusDTO.getStatus());
+        List<Long> ids = commentBatchStatusDTO.getIds().stream()
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        if (CommentStatusConstant.APPROVED.equals(commentBatchStatusDTO.getStatus())) {
+            ids.sort(Comparator.comparingInt(this::commentDepth));
+        }
+        for (Long id : ids) {
+            if (id != null) {
+                updateStatusInternal(id, commentBatchStatusDTO.getStatus());
+            }
+        }
+    }
+
+    @Override
+    public boolean isAuditEnabled() {
+        String value = systemConfigService.getValue(CommentStatusConstant.AUDIT_ENABLED_KEY);
+        return !StringUtils.hasText(value) || Boolean.parseBoolean(value.trim());
+    }
+
+    @Override
+    public void updateAuditEnabled(boolean enabled) {
+        systemConfigService.saveValue(
+                CommentStatusConstant.AUDIT_ENABLED_KEY,
+                Boolean.toString(enabled),
+                CommentStatusConstant.AUDIT_ENABLED_DESCRIPTION
+        );
+    }
+
+    private void updateStatusInternal(Long id, Integer status) {
+        validateTargetStatus(status);
+        Comment comment = commentMapper.getById(id);
         if (comment == null || DelStatusConstant.DISABLE.equals(comment.getDeleteFlag())) {
             throw new CommentException("评论不存在");
         }
-        if (!StatusConstant.ENABLE.equals(commentStatusDTO.getStatus())
-                && !StatusConstant.DISABLE.equals(commentStatusDTO.getStatus())) {
-            throw new CommentException("评论状态不合法");
+        if (CommentStatusConstant.APPROVED.equals(status)) {
+            validateParentApproved(comment);
         }
         Comment update = Comment.builder()
-                .id(commentStatusDTO.getId())
-                .status(commentStatusDTO.getStatus())
+                .id(id)
+                .status(status)
                 .updateTime(LocalDateTime.now())
                 .build();
         commentMapper.update(update);
@@ -227,11 +274,11 @@ public class CommentServiceImpl implements CommentService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void addUserReply(CommentReplyDTO commentReplyDTO) {
-        addReply(commentReplyDTO, true);
+    public CommentSubmitVO addUserReply(CommentReplyDTO commentReplyDTO) {
+        return addReply(commentReplyDTO, true);
     }
 
-    private void addReply(CommentReplyDTO commentReplyDTO, boolean validateVisibility) {
+    private CommentSubmitVO addReply(CommentReplyDTO commentReplyDTO, boolean validateVisibility) {
         Comment parent = commentMapper.getById(commentReplyDTO.getParentId());
         if (parent == null || DelStatusConstant.DISABLE.equals(parent.getDeleteFlag())) {
             throw new CommentException("回复的评论不存在");
@@ -242,6 +289,8 @@ public class CommentServiceImpl implements CommentService {
                     && dailyMapper.getDetailById(parent.getSourceId()) == null) {
                 throw new CommentException("日常不存在或暂未公开");
             }
+        } else if (!CommentStatusConstant.APPROVED.equals(parent.getStatus())) {
+            throw new CommentException("请先审核通过父评论后再回复");
         }
 
         SysUser user = sysUserMapper.getByUserId(BaseContext.getCurrentId());
@@ -249,6 +298,9 @@ public class CommentServiceImpl implements CommentService {
             throw new CommentException("当前用户不存在或登录已失效");
         }
 
+        Integer initialStatus = validateVisibility
+                ? resolveSubmissionStatus(user)
+                : CommentStatusConstant.APPROVED;
         Comment reply = Comment.builder()
                 .type(parent.getType())
                 .sourceId(parent.getSourceId())
@@ -261,7 +313,7 @@ public class CommentServiceImpl implements CommentService {
                 .userAvatar(user.getAvatar())
                 .content(HtmlSanitizer.cleanPlainText(commentReplyDTO.getContent()).trim())
                 .likeNum(0)
-                .status(StatusConstant.ENABLE)
+                .status(initialStatus)
                 .isTop(StatusConstant.DISABLE)
                 .deleteFlag(DelStatusConstant.ENABLE)
                 .createTime(LocalDateTime.now())
@@ -271,6 +323,7 @@ public class CommentServiceImpl implements CommentService {
         if (validateVisibility) {
             notifyAdminForComment(reply, null);
         }
+        return buildSubmitResult(reply);
     }
 
     /**
@@ -314,7 +367,7 @@ public class CommentServiceImpl implements CommentService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void addArticleComment(Long articleId, String content) {
+    public CommentSubmitVO addArticleComment(Long articleId, String content) {
 
         String raw = content == null ? "" : content;
         String cleaned = HtmlSanitizer.cleanPlainText(raw).trim();
@@ -339,6 +392,7 @@ public class CommentServiceImpl implements CommentService {
             throw new CommentException("当前用户不存在或登录已失效");
         }
 
+        Integer initialStatus = resolveSubmissionStatus(user);
         Comment comment = Comment.builder()
                 .type(CommentConstant.ZERO)
                 .sourceId(articleId)
@@ -350,7 +404,7 @@ public class CommentServiceImpl implements CommentService {
                 .userAvatar(user.getAvatar())
                 .content(trimmed)
                 .likeNum(0)
-                .status(StatusConstant.ENABLE)
+                .status(initialStatus)
                 .isTop(StatusConstant.DISABLE)
                 .deleteFlag(DelStatusConstant.ENABLE)
                 .createTime(LocalDateTime.now())
@@ -358,6 +412,7 @@ public class CommentServiceImpl implements CommentService {
                 .build();
         commentMapper.add(comment);
         notifyAdminForComment(comment, article.getTitle());
+        return buildSubmitResult(comment);
     }
 
     /**
@@ -368,7 +423,7 @@ public class CommentServiceImpl implements CommentService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void addDailyComment(Long dailyId, String content) {
+    public CommentSubmitVO addDailyComment(Long dailyId, String content) {
         String raw = content == null ? "" : content;
         String cleaned = HtmlSanitizer.cleanPlainText(raw).trim();
         if (cleaned.isEmpty() && !raw.trim().isEmpty()) {
@@ -392,6 +447,7 @@ public class CommentServiceImpl implements CommentService {
             throw new CommentException("当前用户不存在或登录已失效");
         }
 
+        Integer initialStatus = resolveSubmissionStatus(user);
         Comment comment = Comment.builder()
                 .type(CommentConstant.ONE)
                 .sourceId(dailyId)
@@ -403,7 +459,7 @@ public class CommentServiceImpl implements CommentService {
                 .userAvatar(user.getAvatar())
                 .content(trimmed)
                 .likeNum(0)
-                .status(StatusConstant.ENABLE)
+                .status(initialStatus)
                 .isTop(StatusConstant.DISABLE)
                 .deleteFlag(DelStatusConstant.ENABLE)
                 .createTime(LocalDateTime.now())
@@ -412,6 +468,7 @@ public class CommentServiceImpl implements CommentService {
         commentMapper.add(comment);
         notifyAdminForComment(comment,
                 NoticeTextUtil.dailySummary(daily.getContent(), daily.getId()));
+        return buildSubmitResult(comment);
     }
 
     /**
@@ -422,7 +479,7 @@ public class CommentServiceImpl implements CommentService {
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void addMessageComment(Integer msgType, String content) {
+    public CommentSubmitVO addMessageComment(Integer msgType, String content) {
         String raw = content == null ? "" : content;
         String cleaned = HtmlSanitizer.cleanPlainText(raw).trim();
         if (cleaned.isEmpty() && !raw.trim().isEmpty()) {
@@ -446,6 +503,7 @@ public class CommentServiceImpl implements CommentService {
             throw new CommentException("当前用户不存在或登录已失效");
         }
 
+        Integer initialStatus = resolveSubmissionStatus(user);
         Comment comment = Comment.builder()
                 .type(CommentConstant.TWO)
                 .sourceId(LayoutConstant.PARENTID)
@@ -457,7 +515,7 @@ public class CommentServiceImpl implements CommentService {
                 .userAvatar(user.getAvatar())
                 .content(trimmed)
                 .likeNum(0)
-                .status(StatusConstant.ENABLE)
+                .status(initialStatus)
                 .isTop(StatusConstant.DISABLE)
                 .deleteFlag(DelStatusConstant.ENABLE)
                 .createTime(LocalDateTime.now())
@@ -465,6 +523,7 @@ public class CommentServiceImpl implements CommentService {
                 .build();
         commentMapper.add(comment);
         notifyAdminForComment(comment, null);
+        return buildSubmitResult(comment);
     }
 
     /**
@@ -516,7 +575,13 @@ public class CommentServiceImpl implements CommentService {
         boolean isReply = comment.getParentId() != null
                 && !LayoutConstant.PARENTID.equals(comment.getParentId());
         boolean isMessage = CommentConstant.TWO.equals(comment.getType());
-        String title = isReply ? "收到新回复" : (isMessage ? "收到新留言" : "收到新评论");
+        boolean pending = CommentStatusConstant.PENDING.equals(comment.getStatus());
+        String title;
+        if (pending) {
+            title = isReply ? "收到待审核回复" : (isMessage ? "收到待审核留言" : "收到待审核评论");
+        } else {
+            title = isReply ? "收到新回复" : (isMessage ? "收到新留言" : "收到新评论");
+        }
         String actionText = isReply ? "回复评论" : "评论";
         if (isMessage) {
             actionText = isReply ? "回复留言" : "留言";
@@ -644,7 +709,11 @@ public class CommentServiceImpl implements CommentService {
         if (sourceId == null || sourceId <= 0) {
             return Collections.emptyList();
         }
-        Comment query = Comment.builder().type(type).sourceId(sourceId).build();
+        Comment query = Comment.builder()
+                .type(type)
+                .sourceId(sourceId)
+                .userId(BaseContext.getCurrentId())
+                .build();
         List<CommentVo> commentVoList = commentMapper.getPublicComments(query);
         if (commentVoList == null || commentVoList.isEmpty()) {
             return Collections.emptyList();
@@ -654,6 +723,67 @@ public class CommentServiceImpl implements CommentService {
         fillLikedStatus(commentVos);
         sanitizeComments(commentVos);
         return commentVos;
+    }
+
+    private Integer resolveSubmissionStatus(SysUser user) {
+        if (!isAuditEnabled()
+                || sysUserRoleMapper.hasRole(user.getId(), SystemConstant.SUPER_ADMIN_ROLE)) {
+            return CommentStatusConstant.APPROVED;
+        }
+        return CommentStatusConstant.PENDING;
+    }
+
+    private CommentSubmitVO buildSubmitResult(Comment comment) {
+        return CommentSubmitVO.builder()
+                .id(comment.getId())
+                .status(comment.getStatus())
+                .needAudit(CommentStatusConstant.PENDING.equals(comment.getStatus()))
+                .build();
+    }
+
+    private void validateTargetStatus(Integer status) {
+        if (!CommentStatusConstant.HIDDEN.equals(status)
+                && !CommentStatusConstant.APPROVED.equals(status)
+                && !CommentStatusConstant.REJECTED.equals(status)) {
+            throw new CommentException("评论状态不合法");
+        }
+    }
+
+    private void validateParentApproved(Comment comment) {
+        Long parentId = comment.getParentId();
+        if (parentId == null || LayoutConstant.PARENTID.equals(parentId)) {
+            return;
+        }
+        Set<Long> visitedIds = new HashSet<>();
+        Comment current = commentMapper.getById(parentId);
+        while (current != null) {
+            if (current.getId() == null || !visitedIds.add(current.getId())) {
+                throw new CommentException("评论回复关系异常");
+            }
+            if (DelStatusConstant.DISABLE.equals(current.getDeleteFlag())
+                    || !CommentStatusConstant.APPROVED.equals(current.getStatus())) {
+                throw new CommentException("请先审核通过父评论");
+            }
+            Long currentParentId = current.getParentId();
+            if (currentParentId == null || LayoutConstant.PARENTID.equals(currentParentId)) {
+                return;
+            }
+            current = commentMapper.getById(currentParentId);
+        }
+    }
+
+    private int commentDepth(Long id) {
+        int depth = 0;
+        Set<Long> visitedIds = new HashSet<>();
+        Comment current = commentMapper.getById(id);
+        while (current != null
+                && current.getParentId() != null
+                && !LayoutConstant.PARENTID.equals(current.getParentId())
+                && visitedIds.add(current.getId())) {
+            depth++;
+            current = commentMapper.getById(current.getParentId());
+        }
+        return depth;
     }
 
     /**

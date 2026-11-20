@@ -202,6 +202,8 @@ watch(
             <span class="category-tag" v-if="item.msgType">
               {{ categoryMap[item.msgType] || '未分类' }}
             </span>
+            <span v-if="item.status === 1 && !item.admin" class="audit-approved">审核通过</span>
+            <span v-if="item.status === 2" class="audit-pending">审核中，仅自己可见</span>
             <span class="time">{{ item.createTime }}</span>
           </div>
 
@@ -217,12 +219,8 @@ watch(
             </button>
           </div>
 
-          <div class="action-row">
-            <button
-              class="action-btn"
-              :class="{ active: item.liked }"
-              @click="emit('like-comment', item.id)"
-            >
+          <div v-if="item.status === 1" class="action-row">
+            <button class="action-btn" :class="{ active: item.liked }" @click="emit('like-comment', item.id)">
               <font-awesome-icon icon="fa-solid fa-thumbs-up" /> {{ item.liked ? '已点赞' : '点赞' }} {{ item.likeNum }}
             </button>
             <button
@@ -257,11 +255,7 @@ watch(
                 class="emoji-panel"
               />
             </div>
-            <button
-              class="send-reply-btn"
-              :disabled="getCommentUI(item.id).submitting"
-              @click="sendReply(item.id)"
-            >
+            <button class="send-reply-btn" :disabled="getCommentUI(item.id).submitting" @click="sendReply(item.id)">
               {{ getCommentUI(item.id).submitting ? '发送中...' : '发送' }}
             </button>
             <button class="cancel-reply-btn" @click="closeAllReplies">取消</button>
@@ -277,6 +271,8 @@ watch(
                     {{ r.userNickname }}
                     <span v-if="r.admin" class="admin">博主</span>
                     <span v-if="r.replyUserNickname" class="reply-to-text">回复 @{{ r.replyUserNickname }}</span>
+                    <span v-if="r.status === 1 && !r.admin" class="audit-approved">审核通过</span>
+                    <span v-if="r.status === 2" class="audit-pending">审核中</span>
                   </span>
                   <span class="reply-time">{{ r.createTime }}</span>
                 </div>
@@ -293,12 +289,8 @@ watch(
                   </button>
                 </div>
 
-                <div class="reply-action-row">
-                  <button
-                    class="action-btn"
-                    :class="{ active: r.liked }"
-                    @click="emit('like-reply', item.id, r.id)"
-                  >
+                <div v-if="r.status === 1" class="reply-action-row">
+                  <button class="action-btn" :class="{ active: r.liked }" @click="emit('like-reply', item.id, r.id)">
                     <font-awesome-icon icon="fa-solid fa-thumbs-up" /> {{ r.liked ? '已点赞' : '点赞' }} {{ r.likeNum }}
                   </button>
                   <button
@@ -415,6 +407,24 @@ watch(
   font-size: 12px;
   padding: 1px 6px;
   border-radius: 6px;
+}
+
+.audit-pending {
+  background: rgba(230, 162, 60, 0.14);
+  color: #b88230;
+  font-size: 12px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.audit-approved {
+  background: rgba(103, 194, 58, 0.13);
+  color: #4e9a2f;
+  font-size: 12px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
 }
 
 .category-tag {

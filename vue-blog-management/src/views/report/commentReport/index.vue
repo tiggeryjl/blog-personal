@@ -28,6 +28,8 @@ const statItems = computed(() => [
   { label: '评论总数', value: summary.value.commentTotal, icon: 'ChatLineSquare', color: '#F56C6C' },
   { label: '本周新增', value: summary.value.newComment, icon: 'ChatDotRound', color: '#409EFF' },
   { label: '正常评论', value: summary.value.normalCount, icon: 'CircleCheck', color: '#67C23A' },
+  { label: '待审核', value: summary.value.pendingCount, icon: 'Clock', color: '#E6A23C' },
+  { label: '审核拒绝', value: summary.value.rejectedCount, icon: 'CircleClose', color: '#F56C6C' },
   { label: '隐藏评论', value: summary.value.hiddenCount, icon: 'Hide', color: '#E6A23C' },
 ]);
 

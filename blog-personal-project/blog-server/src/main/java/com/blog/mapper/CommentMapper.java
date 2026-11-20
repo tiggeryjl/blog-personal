@@ -64,7 +64,8 @@ public interface CommentMapper {
      * @param ids 评论ID集合
      * @return 评论列表
      */
-    List<CommentVo> selectPublicByIds(@Param("ids") List<Long> ids);
+    List<CommentVo> selectPublicByIds(@Param("ids") List<Long> ids,
+                                      @Param("viewerId") Long viewerId);
 
     /**
      * 查询指定主楼留言下的全部可见回复(不包含敏感字段)
@@ -74,7 +75,7 @@ public interface CommentMapper {
      * @return 回复列表
      */
     List<CommentVo> selectPublicRepliesByParentIds(@Param("ids") List<Long> ids,
-                                                   @Param("status") Integer status);
+                                                   @Param("viewerId") Long viewerId);
 
     /**
      * 根据ID查询评论

@@ -217,6 +217,8 @@ onMounted(() => {
           <el-select v-model="queryForm.status" placeholder="全部" style="width: 130px" clearable>
             <el-option label="正常" :value="1" />
             <el-option label="已隐藏" :value="0" />
+            <el-option label="待审核" :value="2" />
+            <el-option label="审核拒绝" :value="3" />
           </el-select>
         </el-form-item>
 

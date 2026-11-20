@@ -3,6 +3,7 @@ package com.blog.controller.admin;
 import com.blog.pojo.dto.CommentPageQueryDTO;
 import com.blog.pojo.dto.CommentReplyDTO;
 import com.blog.pojo.dto.CommentStatusDTO;
+import com.blog.pojo.dto.CommentBatchStatusDTO;
 import com.blog.result.PageResult;
 import com.blog.result.Result;
 import com.blog.service.CommentService;
@@ -148,6 +149,36 @@ public class CommentController {
     public Result updateStatus(@Valid @RequestBody CommentStatusDTO commentStatusDTO) {
         log.info("审核评论:{}", commentStatusDTO);
         commentService.updateStatus(commentStatusDTO);
+        return Result.success();
+    }
+
+    /**
+     * 批量审核评论
+     */
+    @PreAuthorize("hasPermission(null,'sys:comment:audit')")
+    @PutMapping("/status/batch")
+    public Result updateBatchStatus(@Valid @RequestBody CommentBatchStatusDTO commentBatchStatusDTO) {
+        log.info("批量审核评论:{}", commentBatchStatusDTO);
+        commentService.updateBatchStatus(commentBatchStatusDTO);
+        return Result.success();
+    }
+
+    /**
+     * 获取评论审核开关
+     */
+    @PreAuthorize("hasPermission(null,'sys:comment:audit')")
+    @GetMapping("/audit-enabled")
+    public Result<Boolean> getAuditEnabled() {
+        return Result.success(commentService.isAuditEnabled());
+    }
+
+    /**
+     * 更新评论审核开关
+     */
+    @PreAuthorize("hasPermission(null,'sys:comment:audit')")
+    @PutMapping("/audit-enabled")
+    public Result updateAuditEnabled(@RequestParam Boolean enabled) {
+        commentService.updateAuditEnabled(Boolean.TRUE.equals(enabled));
         return Result.success();
     }
 

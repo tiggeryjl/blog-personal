@@ -249,7 +249,7 @@ CREATE TABLE comment
     content             text            NOT NULL COMMENT '评论内容',
 
     like_num            int          DEFAULT 0 COMMENT '点赞数',
-    status              tinyint      DEFAULT 1 COMMENT '状态 0隐藏 1正常',
+    status              tinyint      DEFAULT 1 COMMENT '状态 0隐藏 1正常 2待审核 3审核拒绝',
     is_top              tinyint      DEFAULT 0 COMMENT '是否置顶 0否 1是',
 
     ip_address          varchar(45)  DEFAULT NULL COMMENT '评论时IP地址',
@@ -626,3 +626,6 @@ VALUES ('icp-beian', 'xxx', 'string', 'ICP备案号，按需填写', NOW(), NOW(
 -- 公安备案信息
 INSERT IGNORE INTO system_config (config_key, config_value, config_type, description, create_time, update_time)
 VALUES ('gongan-beian', 'xxx', 'string', '公安备案号，按需填写', NOW(), NOW());
+-- 评论审核开关
+INSERT IGNORE INTO system_config (config_key, config_value, config_type, description, create_time, update_time)
+VALUES ('comment.audit.enabled', 'true', 'boolean', '新评论是否需要管理员审核', NOW(), NOW());

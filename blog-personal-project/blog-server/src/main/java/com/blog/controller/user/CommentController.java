@@ -6,6 +6,7 @@ import com.blog.pojo.dto.CommentReplyDTO;
 import com.blog.pojo.dto.DailyCommentDTO;
 import com.blog.pojo.dto.MessageCommentDTO;
 import com.blog.pojo.vo.CommentVo;
+import com.blog.pojo.vo.CommentSubmitVO;
 import com.blog.result.PageResult;
 import com.blog.result.Result;
 import com.blog.service.CommentService;
@@ -47,11 +48,10 @@ public class CommentController {
      * @return 新评论ID
      */
     @PostMapping("/article/{articleId}")
-    public Result addArticleComment(@PathVariable("articleId") Long articleId,
-                                    @Valid @RequestBody ArticleCommentDTO articleCommentDTO) {
+    public Result<CommentSubmitVO> addArticleComment(@PathVariable("articleId") Long articleId,
+                                                     @Valid @RequestBody ArticleCommentDTO articleCommentDTO) {
         log.info("发表文章id为{}的评论:{}", articleId, articleCommentDTO);
-        commentService.addArticleComment(articleId, articleCommentDTO.getContent());
-        return Result.success();
+        return Result.success(commentService.addArticleComment(articleId, articleCommentDTO.getContent()));
     }
 
     /**
@@ -74,11 +74,10 @@ public class CommentController {
      * @return 统一结果
      */
     @PostMapping("/daily/{dailyId}")
-    public Result addDailyComment(@PathVariable("dailyId") Long dailyId,
-                                  @Valid @RequestBody DailyCommentDTO dailyCommentDTO) {
+    public Result<CommentSubmitVO> addDailyComment(@PathVariable("dailyId") Long dailyId,
+                                                   @Valid @RequestBody DailyCommentDTO dailyCommentDTO) {
         log.info("发表日常id为{}的评论:{}", dailyId, dailyCommentDTO);
-        commentService.addDailyComment(dailyId, dailyCommentDTO.getContent());
-        return Result.success();
+        return Result.success(commentService.addDailyComment(dailyId, dailyCommentDTO.getContent()));
     }
 
     /**
@@ -101,10 +100,10 @@ public class CommentController {
      * @return 统一结果
      */
     @PostMapping("/message")
-    public Result addMessageComment(@Valid @RequestBody MessageCommentDTO messageCommentDTO) {
+    public Result<CommentSubmitVO> addMessageComment(@Valid @RequestBody MessageCommentDTO messageCommentDTO) {
         log.info("发表留言:{}", messageCommentDTO);
-        commentService.addMessageComment(messageCommentDTO.getMsgType(), messageCommentDTO.getContent());
-        return Result.success();
+        return Result.success(commentService.addMessageComment(
+                messageCommentDTO.getMsgType(), messageCommentDTO.getContent()));
     }
 
     /**
@@ -114,10 +113,9 @@ public class CommentController {
      * @return 统一结果
      */
     @PostMapping("/reply")
-    public Result reply(@Valid @RequestBody CommentReplyDTO commentReplyDTO) {
+    public Result<CommentSubmitVO> reply(@Valid @RequestBody CommentReplyDTO commentReplyDTO) {
         log.info("回复评论:{}", commentReplyDTO);
-        commentService.addUserReply(commentReplyDTO);
-        return Result.success();
+        return Result.success(commentService.addUserReply(commentReplyDTO));
     }
 
 

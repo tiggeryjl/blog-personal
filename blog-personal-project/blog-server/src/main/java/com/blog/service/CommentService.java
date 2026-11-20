@@ -3,7 +3,9 @@ package com.blog.service;
 import com.blog.pojo.dto.CommentPageQueryDTO;
 import com.blog.pojo.dto.CommentReplyDTO;
 import com.blog.pojo.dto.CommentStatusDTO;
+import com.blog.pojo.dto.CommentBatchStatusDTO;
 import com.blog.pojo.vo.CommentVo;
+import com.blog.pojo.vo.CommentSubmitVO;
 import com.blog.result.PageResult;
 
 import java.util.List;
@@ -45,6 +47,21 @@ public interface CommentService {
     void updateStatus(CommentStatusDTO commentStatusDTO);
 
     /**
+     * 批量审核评论
+     */
+    void updateBatchStatus(CommentBatchStatusDTO commentBatchStatusDTO);
+
+    /**
+     * 是否开启新评论审核
+     */
+    boolean isAuditEnabled();
+
+    /**
+     * 更新评论审核开关
+     */
+    void updateAuditEnabled(boolean enabled);
+
+    /**
      * 后台回复评论
      *
      * @param commentReplyDTO 被回复评论ID与回复内容
@@ -56,7 +73,7 @@ public interface CommentService {
      *
      * @param commentReplyDTO 被回复评论ID与回复内容
      */
-    void addUserReply(CommentReplyDTO commentReplyDTO);
+    CommentSubmitVO addUserReply(CommentReplyDTO commentReplyDTO);
 
     /**
      * 置顶/取消置顶评论
@@ -108,7 +125,7 @@ public interface CommentService {
      * @param content   评论内容
      * @return 新评论ID
      */
-    void addArticleComment(Long articleId, String content);
+    CommentSubmitVO addArticleComment(Long articleId, String content);
 
     /**
      * 发表日常顶级评论
@@ -116,7 +133,7 @@ public interface CommentService {
      * @param dailyId 日常ID
      * @param content 评论内容
      */
-    void addDailyComment(Long dailyId, String content);
+    CommentSubmitVO addDailyComment(Long dailyId, String content);
 
     /**
      * 发表留言板留言
@@ -124,5 +141,5 @@ public interface CommentService {
      * @param msgType 留言类型 0评论留言 1反馈建议 2申请友链
      * @param content 留言内容
      */
-    void addMessageComment(Integer msgType, String content);
+    CommentSubmitVO addMessageComment(Integer msgType, String content);
 }

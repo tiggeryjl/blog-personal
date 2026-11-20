@@ -44,6 +44,11 @@ public class CommentPageQueryDTO implements Serializable {
     private Integer status;
 
     /**
+     * 用户端查看评论时，额外放行当前用户自己的待审核评论
+     */
+    private Long viewerId;
+
+    /**
      * 是否置顶 0否 1是
      */
     private Integer isTop;

@@ -14,7 +14,7 @@
 
 ## 项目简介
 
-Yesir Blog 是一套个人博客全栈项目，仓库包含面向访客的博客前台、面向运营人员的管理后台，以及统一提供 API 和实时通信能力的 Spring Boot 服务。
+Yesir Blog 是一套个人博客全栈项目，仓库包含面向访客的博客前台、管理后台，以及统一提供 API 和实时通信能力的 Spring Boot 服务。
 
 - `vue-blog-personal`：博客用户端，负责内容浏览、账号中心、评论互动、友链、音乐和 WebSocket 通知。
 - `vue-blog-management`：博客管理端，负责内容运营、评论审核、友链和音乐管理、权限管理、运营报表和操作日志。
@@ -41,7 +41,7 @@ Yesir Blog 是一套个人博客全栈项目，仓库包含面向访客的博客
 
 - **数据看板**：汇总访问、文章、日常、评论、用户和友链数据，展示趋势、分布和排行榜。
 - **内容管理**：文章与日常的富文本编辑、图片/视频/文件上传、分类标签、状态切换、置顶、定时发布、预览和批量操作。
-- **互动管理**：文章评论、日常评论和留言的筛选、回复、置顶、隐藏、删除与回收站恢复。
+- **互动管理**：文章评论、日常评论和留言支持审核开关、批量通过/拒绝、审核状态标识、作者查看自己的待审核评论、筛选、回复、置顶、隐藏、删除与回收站恢复。
 - **用户与权限**：用户、角色、菜单和按钮权限管理，支持动态路由、接口权限和角色授权。
 - **友链与音乐**：友链审核和状态管理，音乐信息、封面和音频管理，并支持后台试听。
 - **站点配置**：公告、备案、个人博客信息、网站设置和 RSS 配置。
@@ -82,15 +82,15 @@ flowchart LR
 
 ## 技术栈
 
-| 分层 | 主要技术 |
-| --- | --- |
-| 博客用户端 | Vue 3.5、Vite 3、Vue Router、Pinia、Element Plus、Axios、WangEditor、ECharts |
-| 管理后台 | Vue 3.5、Vite 3、Vue Router、Pinia、Element Plus、Axios、WangEditor、ECharts |
-| 后端框架 | Java 17、Spring Boot 3.3.8、Spring Security、Spring WebSocket、Spring Scheduling |
-| 数据访问 | MySQL 8、MyBatis 3.0.5、PageHelper、Redis、Lettuce |
-| 认证与安全 | JWT、HttpOnly Refresh Cookie、Jsoup HTML 白名单、`xss` 前端过滤、文件上传校验 |
-| 外部能力 | Spring AI 1.0.0-M7、DeepSeek、阿里云 OSS、阿里云验证码、SMTP、Apache POI |
-| 其他 | Fastjson 2.0.66、Lombok、Hutool、Font Awesome、Lucide |
+| 分层       | 主要技术                                                                         |
+| ---------- | -------------------------------------------------------------------------------- |
+| 博客用户端 | Vue 3.5、Vite 3、Vue Router、Pinia、Element Plus、Axios、WangEditor、ECharts     |
+| 管理后台   | Vue 3.5、Vite 3、Vue Router、Pinia、Element Plus、Axios、WangEditor、ECharts     |
+| 后端框架   | Java 17、Spring Boot 3.3.8、Spring Security、Spring WebSocket、Spring Scheduling |
+| 数据访问   | MySQL 8、MyBatis 3.0.5、PageHelper、Redis、Lettuce                               |
+| 认证与安全 | JWT、HttpOnly Refresh Cookie、Jsoup HTML 白名单、`xss` 前端过滤、文件上传校验    |
+| 外部能力   | Spring AI 1.0.0-M7、DeepSeek、阿里云 OSS、阿里云验证码、SMTP、Apache POI         |
+| 其他       | Fastjson 2.0.66、Lombok、Hutool、Font Awesome、Lucide                            |
 
 ## 目录结构
 
@@ -120,14 +120,14 @@ blog-personal/
 
 ## 环境要求
 
-| 环境 | 建议版本 |
-| --- | --- |
-| JDK | 17 |
-| Maven | 3.8+ |
-| Node.js | 18+ |
-| npm | 9+ |
-| MySQL | 8.0 |
-| Redis | 7.x |
+| 环境    | 建议版本 |
+| ------- | -------- |
+| JDK     | 17       |
+| Maven   | 3.8+     |
+| Node.js | 18+      |
+| npm     | 9+       |
+| MySQL   | 8.0      |
+| Redis   | 7.x      |
 
 阿里云 OSS、阿里云验证码、DeepSeek 和 SMTP 属于外部服务。只浏览已有公开内容时可以暂不配置部分外部服务，但上传、验证码、邮件和 AI 功能会受到影响。
 
@@ -152,15 +152,13 @@ cd blog-personal
 
 默认管理员账号：
 
-| 账号 | 密码 | 角色 |
-| --- | --- | --- |
+| 账号    | 密码     | 角色       |
+| ------- | -------- | ---------- |
 | `admin` | `123456` | 超级管理员 |
 
 首次登录后请立即修改默认密码。
 
 ### 3. 创建本地配置文件
-
-仓库只提交 `.template` 配置文件，真实配置已被 `.gitignore` 排除。
 
 PowerShell：
 
@@ -191,25 +189,25 @@ application-prod.yml.template -> application-prod.yml
 至少需要修改：
 
 - `application-dev.yml` 中的 MySQL 地址、库名、用户名和密码。
-- `application-dev.yml` 中的 Redis 地址、密码和数据库编号。
+- `application-dev.yml` 中的 Redis 地址、密码。
 - `application.yml` 中的 JWT 密钥。
 - `application.yml` 中的 OSS `bucket-name`、`endpoint`、`region` 和验证码 `scene-id`。
 - 发件邮箱和 DeepSeek 密钥。
 
 常用环境变量：
 
-| 变量 | 是否必需 | 用途 |
-| --- | --- | --- |
-| `OSS_ACCESS_KEY_ID` | 上传/验证码必需 | 阿里云 AccessKey ID |
-| `OSS_ACCESS_KEY_SECRET` | 上传/验证码必需 | 阿里云 AccessKey Secret |
-| `DEEPSEEK_API_KEY` | AI 功能需要 | DeepSeek API Key |
-| `MAIL_HOST` | 邮件功能需要 | SMTP 服务器，默认 `smtp.qq.com` |
-| `MAIL_PORT` | 否 | SMTP 端口，默认 `465` |
-| `MAIL_USERNAME` | 邮件功能需要 | 发件邮箱 |
-| `MAIL_PASSWORD` | 邮件功能需要 | SMTP 授权码 |
-| `MAIL_ENABLED` | 否 | 是否启用邮件发送，默认 `true` |
-| `RSS_SITE_URL` | 建议 | RSS 和新文章通知使用的站点地址 |
-| `SPRING_PROFILES_ACTIVE` | 否 | 运行环境，默认 `dev` |
+| 变量                     | 是否必需        | 用途                            |
+| ------------------------ | --------------- | ------------------------------- |
+| `OSS_ACCESS_KEY_ID`      | 上传/验证码必需 | 阿里云 AccessKey ID             |
+| `OSS_ACCESS_KEY_SECRET`  | 上传/验证码必需 | 阿里云 AccessKey Secret         |
+| `DEEPSEEK_API_KEY`       | AI 功能需要     | DeepSeek API Key                |
+| `MAIL_HOST`              | 邮件功能需要    | SMTP 服务器，默认 `smtp.qq.com` |
+| `MAIL_PORT`              | 否              | SMTP 端口，默认 `465`           |
+| `MAIL_USERNAME`          | 邮件功能需要    | 发件邮箱                        |
+| `MAIL_PASSWORD`          | 邮件功能需要    | SMTP 授权码                     |
+| `MAIL_ENABLED`           | 否              | 是否启用邮件发送，默认 `true`   |
+| `RSS_SITE_URL`           | 建议            | RSS 和新文章通知使用的站点地址  |
+| `SPRING_PROFILES_ACTIVE` | 否              | 运行环境，默认 `dev`            |
 
 PowerShell 示例：
 
@@ -285,11 +283,11 @@ npm run dev
 
 ### 后端配置文件
 
-| 文件 | 说明 |
-| --- | --- |
-| `application.yml` | 公共配置、JWT、OSS/CDN、AI、RSS 和邮件配置 |
-| `application-dev.yml` | 开发环境端口、MySQL、Redis 和日志级别 |
-| `application-prod.yml` | 生产环境端口、MySQL、Redis 和日志级别 |
+| 文件                   | 说明                                       |
+| ---------------------- | ------------------------------------------ |
+| `application.yml`      | 公共配置、JWT、OSS/CDN、AI、RSS 和邮件配置 |
+| `application-dev.yml`  | 开发环境端口、MySQL、Redis 和日志级别      |
+| `application-prod.yml` | 生产环境端口、MySQL、Redis 和日志级别      |
 
 仓库只跟踪对应的 `.template` 文件。Spring Boot 配置还可通过环境变量覆盖，例如：
 
@@ -367,14 +365,14 @@ mvn clean package -Dmaven.test.skip=true
 
 博客用户端登录页面基于以下开源项目修改：
 
-| 项目 | 说明 |
-| --- | --- |
-| 原仓库 | <https://gitee.com/niumg9527/login-animation> |
-| 作者 | niumg9527 |
-| 协议 | MIT License |
-| 使用文件 | `LoginPage.vue`、`AnimatedCharacters.vue` 及其子组件 |
+| 项目     | 说明                                                       |
+| -------- | ---------------------------------------------------------- |
+| 原仓库   | <https://gitee.com/niumg9527/login-animation>              |
+| 作者     | niumg9527                                                  |
+| 协议     | MIT License                                                |
+| 使用文件 | `LoginPage.vue`、`AnimatedCharacters.vue` 及其子组件       |
 | 修改内容 | 新增注册、邮箱验证码和登录风险验证，并适配本项目的认证逻辑 |
-| 原始协议 | [login-template-LICENSE](./login-template-LICENSE) |
+| 原始协议 | [login-template-LICENSE](./login-template-LICENSE)         |
 
 ## License
 

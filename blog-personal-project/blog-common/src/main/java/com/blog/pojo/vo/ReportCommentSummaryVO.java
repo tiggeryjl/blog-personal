@@ -24,6 +24,10 @@ public class ReportCommentSummaryVO implements Serializable {
 
     private Long hiddenCount;
 
+    private Long pendingCount;
+
+    private Long rejectedCount;
+
     private Long articleCommentCount;
 
     private Long dailyCommentCount;

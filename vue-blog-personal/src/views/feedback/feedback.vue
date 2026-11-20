@@ -117,7 +117,7 @@ const publishComment = async (commentId, replyId, content) => {
       });
       if (result?.code === 200) {
         commentForm.value.content = '';
-        ElMessage.success('留言发布成功！');
+        ElMessage.success(result.data?.needAudit ? '留言已提交，审核通过后其他人可见' : '留言发布成功！');
         await getMessageList(1);
         return true;
       }
@@ -141,7 +141,7 @@ const publishComment = async (commentId, replyId, content) => {
   try {
     const result = await addCommentReplyApi({ parentId, content: content.trim() });
     if (result?.code === 200) {
-      ElMessage.success('回复成功！');
+      ElMessage.success(result.data?.needAudit ? '评论已提交，请等待审核!' : '回复成功！');
       await getMessageList(page.value);
       return true;
     }

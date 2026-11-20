@@ -6,7 +6,7 @@ import {
   getCommentStatusType,
   getMessageTypeText,
 } from '@/constants/commentConstants';
-import { CaretRight, ChatLineRound, Check, Delete, Hide, Top } from '@element-plus/icons-vue';
+import { CaretRight, ChatLineRound, Check, CircleClose, Delete, Hide, Top } from '@element-plus/icons-vue';
 
 const props = defineProps({
   items: { type: Array, default: () => [] },
@@ -139,21 +139,38 @@ const toggleExpand = (item) => {
       </div>
 
       <footer class="comment-actions">
-        <el-button v-perm="'sys:comment:audit'" type="success" link :icon="ChatLineRound" @click="emit('reply', item)">
+        <el-button
+          v-if="item.status === COMMENT_STATUS.NORMAL"
+          v-perm="'sys:comment:audit'"
+          type="success"
+          link
+          :icon="ChatLineRound"
+          @click="emit('reply', item)"
+        >
           回复
         </el-button>
         <el-button
           v-perm="'sys:comment:audit'"
-          v-if="item.status === COMMENT_STATUS.HIDDEN"
+          v-if="item.status === COMMENT_STATUS.PENDING || item.status === COMMENT_STATUS.HIDDEN || item.status === COMMENT_STATUS.REJECTED"
           type="success"
           link
           :icon="Check"
           @click="emit('audit', item, COMMENT_STATUS.NORMAL)"
         >
-          显示
+          {{ item.status === COMMENT_STATUS.PENDING ? '通过' : '恢复' }}
         </el-button>
         <el-button
-          v-else
+          v-if="item.status === COMMENT_STATUS.PENDING"
+          v-perm="'sys:comment:audit'"
+          type="danger"
+          link
+          :icon="CircleClose"
+          @click="emit('audit', item, COMMENT_STATUS.REJECTED)"
+        >
+          拒绝
+        </el-button>
+        <el-button
+          v-if="item.status === COMMENT_STATUS.NORMAL"
           v-perm="'sys:comment:audit'"
           type="warning"
           link
@@ -162,7 +179,14 @@ const toggleExpand = (item) => {
         >
           隐藏
         </el-button>
-        <el-button v-perm="'sys:comment:audit'" type="primary" link :icon="Top" @click="emit('top', item)">
+        <el-button
+          v-if="item.status === COMMENT_STATUS.NORMAL"
+          v-perm="'sys:comment:audit'"
+          type="primary"
+          link
+          :icon="Top"
+          @click="emit('top', item)"
+        >
           {{ item.isTop === 1 ? '取消置顶' : '置顶' }}
         </el-button>
         <el-button v-perm="'sys:comment:delete'" type="danger" link :icon="Delete" @click="emit('delete', item)">

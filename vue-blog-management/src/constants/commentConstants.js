@@ -21,7 +21,9 @@ export const COMMENT_TYPE_TEXT = {
  */
 export const COMMENT_STATUS = {
   HIDDEN: 0,
-  NORMAL: 1
+  NORMAL: 1,
+  PENDING: 2,
+  REJECTED: 3
 }
 
 /**
@@ -29,7 +31,9 @@ export const COMMENT_STATUS = {
  */
 export const COMMENT_STATUS_TEXT = {
   [COMMENT_STATUS.HIDDEN]: '已隐藏',
-  [COMMENT_STATUS.NORMAL]: '正常'
+  [COMMENT_STATUS.NORMAL]: '正常',
+  [COMMENT_STATUS.PENDING]: '待审核',
+  [COMMENT_STATUS.REJECTED]: '审核拒绝'
 }
 
 /**
@@ -37,7 +41,9 @@ export const COMMENT_STATUS_TEXT = {
  */
 export const COMMENT_STATUS_TYPE = {
   [COMMENT_STATUS.HIDDEN]: 'danger',
-  [COMMENT_STATUS.NORMAL]: 'success'
+  [COMMENT_STATUS.NORMAL]: 'success',
+  [COMMENT_STATUS.PENDING]: 'warning',
+  [COMMENT_STATUS.REJECTED]: 'danger'
 }
 
 /**

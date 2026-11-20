@@ -164,6 +164,8 @@
             (SELECT COUNT(*) FROM comment WHERE delete_flag = 0 AND create_time &gt;= #{begin} AND create_time &lt; #{end}) AS newComment,
             (SELECT COUNT(*) FROM comment WHERE delete_flag = 0 AND status = 1) AS normalCount,
             (SELECT COUNT(*) FROM comment WHERE delete_flag = 0 AND status = 0) AS hiddenCount,
+            (SELECT COUNT(*) FROM comment WHERE delete_flag = 0 AND status = 2) AS pendingCount,
+            (SELECT COUNT(*) FROM comment WHERE delete_flag = 0 AND status = 3) AS rejectedCount,
             (SELECT COUNT(*) FROM comment WHERE delete_flag = 0 AND type = 0) AS articleCommentCount,
             (SELECT COUNT(*) FROM comment WHERE delete_flag = 0 AND type = 1) AS dailyCommentCount,
             (SELECT COUNT(*) FROM comment WHERE delete_flag = 0 AND type = 2) AS messageCommentCount
@@ -198,6 +200,8 @@
         SELECT CASE status
             WHEN 1 THEN '正常'
             WHEN 0 THEN '隐藏'
+            WHEN 2 THEN '待审核'
+            WHEN 3 THEN '审核拒绝'
             ELSE '其他'
         END AS name, COUNT(*) AS value
         FROM `comment`

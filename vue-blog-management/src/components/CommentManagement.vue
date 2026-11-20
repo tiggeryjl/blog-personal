@@ -4,6 +4,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import MyPagination from '@/components/MyPagination.vue';
 import PermissionViewTip from '@/components/PermissionViewTip.vue';
 import MobileCommentTree from '@/components/MobileCommentTree.vue';
+import { usePermissionStore } from '@/stores/permission';
 import {
   Search,
   Refresh,
@@ -12,6 +13,7 @@ import {
   Hide,
   Check,
   ChatLineRound,
+  CircleClose,
   CaretRight,
   Expand,
   Fold,
@@ -22,8 +24,11 @@ import {
   getMessageCommentListApi,
   addCommentReplyApi,
   updateCommentStatusApi,
+  updateCommentStatusBatchApi,
   updateCommentTopApi,
   logicDeleteCommentApi,
+  getCommentAuditEnabledApi,
+  updateCommentAuditEnabledApi,
 } from '@/api/comment.js';
 import {
   COMMENT_STATUS,
@@ -44,6 +49,9 @@ const props = defineProps({
   showMsgType: { type: Boolean, default: false },
   showSourceId: { type: Boolean, default: true },
 });
+
+const permissionStore = usePermissionStore();
+const canAudit = computed(() => permissionStore.hasPerm('sys:comment:audit'));
 
 // 按评论类型选择列表接口
 const listApiMap = {
@@ -82,6 +90,8 @@ const total = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
 const loading = ref(false);
+const auditEnabled = ref(true);
+const auditLoading = ref(false);
 const tableRef = ref(null);
 
 /**
@@ -262,7 +272,12 @@ const resetQuery = () => {
 
 // 审核：显示/隐藏
 const handleAudit = async (row, status) => {
-  const actionText = status === COMMENT_STATUS.NORMAL ? '显示' : '隐藏';
+  const actionText =
+    status === COMMENT_STATUS.NORMAL
+      ? '审核通过'
+      : status === COMMENT_STATUS.REJECTED
+        ? '拒绝'
+        : '隐藏';
   try {
     const result = await updateCommentStatusApi({ id: row.id, status });
     if (result.code === 200) {
@@ -273,6 +288,70 @@ const handleAudit = async (row, status) => {
     }
   } catch (error) {
     ElMessage.error('网络请求失败，请稍后重试');
+  }
+};
+
+const handleBatchAudit = async (status) => {
+  if (!selectedIds.value.length) {
+    ElMessage.warning('请先勾选要审核的评论');
+    return;
+  }
+  const actionText =
+    status === COMMENT_STATUS.NORMAL ? '通过' : status === COMMENT_STATUS.REJECTED ? '拒绝' : '隐藏';
+  try {
+    await ElMessageBox.confirm(
+      `确定批量${actionText}选中的 ${selectedIds.value.length} 条评论吗？`,
+      '批量审核',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    );
+    const result = await updateCommentStatusBatchApi({
+      ids: selectedIds.value,
+      status,
+    });
+    if (result.code === 200) {
+      ElMessage.success(`批量${actionText}成功`);
+      getCommentList();
+    } else {
+      ElMessage.error(result.msg || `批量${actionText}失败`);
+    }
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error('批量审核失败，请稍后重试');
+    }
+  }
+};
+
+const loadAuditEnabled = async () => {
+  if (!canAudit.value) return;
+  try {
+    const result = await getCommentAuditEnabledApi();
+    if (result.code === 200) {
+      auditEnabled.value = Boolean(result.data);
+    }
+  } catch (error) {
+    ElMessage.error('获取评论审核开关失败');
+  }
+};
+
+const handleAuditEnabledChange = async (enabled) => {
+  auditLoading.value = true;
+  try {
+    const result = await updateCommentAuditEnabledApi(enabled);
+    if (result.code === 200) {
+      ElMessage.success(enabled ? '已开启新评论审核' : '已关闭新评论审核');
+    } else {
+      auditEnabled.value = !enabled;
+      ElMessage.error(result.msg || '更新评论审核开关失败');
+    }
+  } catch (error) {
+    auditEnabled.value = !enabled;
+    ElMessage.error('更新评论审核开关失败');
+  } finally {
+    auditLoading.value = false;
   }
 };
 
@@ -364,6 +443,9 @@ const handleBatchDelete = () => {
 
 onMounted(() => {
   getCommentList();
+  if (canAudit.value) {
+    loadAuditEnabled();
+  }
 });
 </script>
 
@@ -373,6 +455,15 @@ onMounted(() => {
     <div class="page-header">
       <h1>{{ pageTitle }}</h1>
       <div class="header-actions">
+        <div v-if="canAudit" class="audit-switch">
+          <span>新评论审核</span>
+          <el-switch
+            v-perm="'sys:comment:audit'"
+            v-model="auditEnabled"
+            :loading="auditLoading"
+            @change="handleAuditEnabledChange"
+          />
+        </div>
         <el-button
           class="desktop-expand-btn"
           type="primary"
@@ -383,6 +474,12 @@ onMounted(() => {
         </el-button>
         <el-button v-perm="'sys:comment:delete'" type="danger" :icon="Delete" @click="handleBatchDelete">
           批量删除
+        </el-button>
+        <el-button v-perm="'sys:comment:audit'" type="success" :icon="Check" @click="handleBatchAudit(COMMENT_STATUS.NORMAL)">
+          批量通过
+        </el-button>
+        <el-button v-perm="'sys:comment:audit'" type="danger" :icon="CircleClose" @click="handleBatchAudit(COMMENT_STATUS.REJECTED)">
+          批量拒绝
         </el-button>
       </div>
     </div>
@@ -558,22 +655,39 @@ onMounted(() => {
         <el-table-column label="操作" width="250" align="center" fixed="right">
           <template #default="{ row }">
             <div class="action-buttons">
-              <el-button v-perm="'sys:comment:audit'" type="success" link :icon="ChatLineRound" @click="openReply(row)">
+              <el-button
+                v-if="row.status === COMMENT_STATUS.NORMAL"
+                v-perm="'sys:comment:audit'"
+                type="success"
+                link
+                :icon="ChatLineRound"
+                @click="openReply(row)"
+              >
                 回复
               </el-button>
               <el-button
                 v-perm="'sys:comment:audit'"
-                v-if="row.status === COMMENT_STATUS.HIDDEN"
+                v-if="row.status === COMMENT_STATUS.PENDING || row.status === COMMENT_STATUS.HIDDEN || row.status === COMMENT_STATUS.REJECTED"
                 type="success"
                 link
                 :icon="Check"
                 @click="handleAudit(row, COMMENT_STATUS.NORMAL)"
               >
-                显示
+                {{ row.status === COMMENT_STATUS.PENDING ? '通过' : '恢复' }}
               </el-button>
               <el-button
                 v-perm="'sys:comment:audit'"
-                v-else
+                v-if="row.status === COMMENT_STATUS.PENDING"
+                type="danger"
+                link
+                :icon="CircleClose"
+                @click="handleAudit(row, COMMENT_STATUS.REJECTED)"
+              >
+                拒绝
+              </el-button>
+              <el-button
+                v-perm="'sys:comment:audit'"
+                v-if="row.status === COMMENT_STATUS.NORMAL"
                 type="warning"
                 link
                 :icon="Hide"
@@ -581,7 +695,14 @@ onMounted(() => {
               >
                 隐藏
               </el-button>
-              <el-button v-perm="'sys:comment:audit'" type="primary" link :icon="Top" @click="handleTop(row)">
+              <el-button
+                v-if="row.status === COMMENT_STATUS.NORMAL"
+                v-perm="'sys:comment:audit'"
+                type="primary"
+                link
+                :icon="Top"
+                @click="handleTop(row)"
+              >
                 {{ row.isTop === 1 ? '取消置顶' : '置顶' }}
               </el-button>
               <el-button v-perm="'sys:comment:delete'" type="danger" link :icon="Delete" @click="handleDelete(row)">
@@ -655,7 +776,18 @@ onMounted(() => {
 
 .header-actions {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
+}
+
+.audit-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--el-text-color-regular);
+  font-size: 14px;
+  white-space: nowrap;
 }
 
 .query-card,

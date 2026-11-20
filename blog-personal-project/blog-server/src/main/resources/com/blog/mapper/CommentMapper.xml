@@ -73,7 +73,15 @@
                 )
             </if>
             <if test="msgType != null">AND c.msg_type = #{msgType}</if>
-            <if test="status != null">AND c.status = #{status}</if>
+            <choose>
+                <when test="viewerId != null">
+                    AND (
+                        c.status = 1
+                        OR (c.status = 2 AND c.user_id = #{viewerId})
+                    )
+                </when>
+                <when test="status != null">AND c.status = #{status}</when>
+            </choose>
             <if test="isTop != null">AND c.is_top = #{isTop}</if>
             <if test="begin != null">AND c.create_time &gt;= #{begin}</if>
             <if test="end != null">AND c.create_time &lt;= #{end}</if>
@@ -117,7 +125,15 @@
             <if test="type != null">AND c.type = #{type}</if>
             <if test="sourceId != null">AND c.source_id = #{sourceId}</if>
             <if test="msgType != null">AND c.msg_type = #{msgType}</if>
-            <if test="status != null">AND c.status = #{status}</if>
+            <choose>
+                <when test="viewerId != null">
+                    AND (
+                        c.status = 1
+                        OR (c.status = 2 AND c.user_id = #{viewerId})
+                    )
+                </when>
+                <when test="status != null">AND c.status = #{status}</when>
+            </choose>
             <if test="isTop != null">AND c.is_top = #{isTop}</if>
             <if test="begin != null">AND c.create_time &gt;= #{begin}</if>
             <if test="end != null">AND c.create_time &lt;= #{end}</if>
@@ -194,7 +210,12 @@
     <select id="selectPublicByIds" resultType="com.blog.pojo.vo.CommentVo">
         <include refid="publicCommentSelect"/>
         WHERE c.delete_flag = 0
-          AND c.status = 1
+          AND (
+              c.status = 1
+              <if test="viewerId != null">
+                  OR (c.status = 2 AND c.user_id = #{viewerId})
+              </if>
+          )
           AND c.id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
         ORDER BY c.is_top DESC, c.create_time DESC
@@ -206,7 +227,12 @@
             SELECT c.id
             FROM comment c
             WHERE c.delete_flag = 0
-              AND c.status = 1
+              AND (
+                  c.status = 1
+                  <if test="viewerId != null">
+                      OR (c.status = 2 AND c.user_id = #{viewerId})
+                  </if>
+              )
               AND c.parent_id IN
               <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
             UNION ALL
@@ -214,11 +240,15 @@
             FROM comment c
             INNER JOIN reply_tree rt ON c.parent_id = rt.id
             WHERE c.delete_flag = 0
-              AND c.status = 1
+              AND (
+                  c.status = 1
+                  <if test="viewerId != null">
+                      OR (c.status = 2 AND c.user_id = #{viewerId})
+                  </if>
+              )
         )
         <include refid="publicCommentSelect"/>
         WHERE c.id IN (SELECT id FROM reply_tree)
-        <if test="status != null">AND c.status = #{status}</if>
         ORDER BY c.create_time ASC
     </select>
 
@@ -334,7 +364,12 @@
         WHERE c.type = #{type}
           AND c.source_id = #{sourceId}
           AND c.delete_flag = 0
-          AND c.status = 1
+          AND (
+              c.status = 1
+              <if test="userId != null">
+                  OR (c.status = 2 AND c.user_id = #{userId})
+              </if>
+          )
         ORDER BY c.is_top DESC, c.create_time DESC
     </select>
 
