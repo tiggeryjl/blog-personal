@@ -6,6 +6,7 @@ import com.blog.pojo.dto.CommentStatusDTO;
 import com.blog.pojo.dto.CommentBatchStatusDTO;
 import com.blog.pojo.vo.CommentVo;
 import com.blog.pojo.vo.CommentSubmitVO;
+import com.blog.pojo.vo.MessageCommentPageVO;
 import com.blog.result.PageResult;
 
 import java.util.List;
@@ -37,7 +38,7 @@ public interface CommentService {
      * @param commentPageQueryDTO 查询参数
      * @return 分页结果
      */
-    PageResult pageUserMessageQuery(CommentPageQueryDTO commentPageQueryDTO);
+    MessageCommentPageVO pageUserMessageQuery(CommentPageQueryDTO commentPageQueryDTO);
 
     /**
      * 审核/隐藏评论

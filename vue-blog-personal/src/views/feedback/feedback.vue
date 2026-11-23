@@ -36,6 +36,7 @@ const categoryOptions = [
 // ========== 留言列表 ==========
 const commentList = ref([]);
 const total = ref(0);
+const commentTotal = ref(0);
 const page = ref(1);
 const pageSize = ref(10);
 const listLoading = ref(false);
@@ -66,6 +67,7 @@ const getMessageList = async (targetPage = page.value) => {
       const data = result.data || {};
       commentList.value = normalizeComments(data.rows);
       total.value = Number(data.total) || 0;
+      commentTotal.value = Number(data.commentTotal) || 0;
       page.value = targetPage;
       return true;
     }
@@ -530,7 +532,7 @@ onUnmounted(() => {
     <div class="card">
       <h3>
         评论
-        <span v-if="total" class="comment-count">({{ total }})</span>
+        <span v-if="commentTotal" class="comment-count">({{ commentTotal }})</span>
       </h3>
 
       <div v-if="listLoadFailed" class="list-error">

@@ -7,6 +7,7 @@ import com.blog.pojo.dto.DailyCommentDTO;
 import com.blog.pojo.dto.MessageCommentDTO;
 import com.blog.pojo.vo.CommentVo;
 import com.blog.pojo.vo.CommentSubmitVO;
+import com.blog.pojo.vo.MessageCommentPageVO;
 import com.blog.result.PageResult;
 import com.blog.result.Result;
 import com.blog.service.CommentService;
@@ -87,7 +88,7 @@ public class CommentController {
      * @return 分页结果
      */
     @GetMapping("/message/list")
-    public Result<PageResult> getMessageCommentList(CommentPageQueryDTO param) {
+    public Result<MessageCommentPageVO> getMessageCommentList(CommentPageQueryDTO param) {
         param.setType(2);
         log.info("分页查询留言评论:{}", param);
         return Result.success(commentService.pageUserMessageQuery(param));

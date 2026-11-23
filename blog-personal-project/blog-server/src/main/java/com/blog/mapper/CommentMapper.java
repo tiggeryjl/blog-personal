@@ -42,6 +42,12 @@ public interface CommentMapper {
     List<Long> pageMainIds(CommentPageQueryDTO params);
 
     /**
+     * 统计用户端可见的主楼与回复总数
+     */
+    long countPublicVisibleByType(@Param("type") Integer type,
+                                  @Param("viewerId") Long viewerId);
+
+    /**
      * 根据ID集合查询评论(完整VO)
      *
      * @param ids 评论ID集合

@@ -19,6 +19,7 @@ import com.blog.pojo.entity.SysUser;
 import com.blog.pojo.vo.CommentVo;
 import com.blog.pojo.vo.CommentSubmitVO;
 import com.blog.pojo.vo.DailyFrontVO;
+import com.blog.pojo.vo.MessageCommentPageVO;
 import com.blog.result.PageResult;
 import com.blog.service.CommentService;
 import com.blog.service.NoticeService;
@@ -145,18 +146,20 @@ public class CommentServiceImpl implements CommentService {
      * @return 分页结果
      */
     @Override
-    public PageResult pageUserMessageQuery(CommentPageQueryDTO commentPageQueryDTO) {
+    public MessageCommentPageVO pageUserMessageQuery(CommentPageQueryDTO commentPageQueryDTO) {
         commentPageQueryDTO.setType(CommentConstant.TWO);
         commentPageQueryDTO.setStatus(null);
         Long viewerId = BaseContext.getCurrentId();
         commentPageQueryDTO.setViewerId(viewerId);
+        commentPageQueryDTO.setPublicOnly(true);
 
         PageHelper.startPage(commentPageQueryDTO.getPage(), commentPageQueryDTO.getPageSize());
 
         List<Long> mainIds = commentMapper.pageMainIds(commentPageQueryDTO);
         PageInfo<Long> pageInfo = new PageInfo<>(mainIds);
+        long commentTotal = commentMapper.countPublicVisibleByType(CommentConstant.TWO, viewerId);
         if (mainIds == null || mainIds.isEmpty()) {
-            return new PageResult(pageInfo.getTotal(), new ArrayList<>());
+            return new MessageCommentPageVO(pageInfo.getTotal(), commentTotal, new ArrayList<>());
         }
 
         List<CommentVo> rows = new ArrayList<>(commentMapper.selectPublicByIds(mainIds, viewerId));
@@ -165,7 +168,7 @@ public class CommentServiceImpl implements CommentService {
         List<CommentVo> messageTree = CommentTreeUtil.buildFlatReplyTree(rows);
         fillLikedStatus(messageTree);
         sanitizeComments(messageTree);
-        return new PageResult(pageInfo.getTotal(), messageTree);
+        return new MessageCommentPageVO(pageInfo.getTotal(), commentTotal, messageTree);
     }
 
     /**

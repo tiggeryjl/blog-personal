@@ -49,6 +49,11 @@ public class CommentPageQueryDTO implements Serializable {
     private Long viewerId;
 
     /**
+     * 是否按用户端可见规则查询
+     */
+    private Boolean publicOnly;
+
+    /**
      * 是否置顶 0否 1是
      */
     private Integer isTop;

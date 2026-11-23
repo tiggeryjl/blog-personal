@@ -126,10 +126,12 @@
             <if test="sourceId != null">AND c.source_id = #{sourceId}</if>
             <if test="msgType != null">AND c.msg_type = #{msgType}</if>
             <choose>
-                <when test="viewerId != null">
+                <when test="publicOnly != null and publicOnly">
                     AND (
                         c.status = 1
-                        OR (c.status = 2 AND c.user_id = #{viewerId})
+                        <if test="viewerId != null">
+                            OR (c.status = 2 AND c.user_id = #{viewerId})
+                        </if>
                     )
                 </when>
                 <when test="status != null">AND c.status = #{status}</when>
@@ -146,6 +148,20 @@
         FROM comment c
         <include refid="mainCondition"/>
         ORDER BY c.is_top DESC, c.create_time DESC
+    </select>
+
+    <!-- 统计用户端可见的评论总数（主楼 + 回复） -->
+    <select id="countPublicVisibleByType" resultType="long">
+        SELECT COUNT(*)
+        FROM comment c
+        WHERE c.delete_flag = 0
+          AND c.type = #{type}
+          AND (
+              c.status = 1
+              <if test="viewerId != null">
+                  OR (c.status = 2 AND c.user_id = #{viewerId})
+              </if>
+          )
     </select>
 
     <!-- 根据ID集合查询完整评论VO -->
