@@ -41,6 +41,15 @@ const siteFiling = ref({
   icp: '',
   police: '',
 });
+const policeBadgeUrl = '/filing/police-badge.png';
+const policeBadgeVisible = ref(true);
+const policeFilingUrl = computed(() => {
+  const policeText = String(siteFiling.value.police || '').trim();
+  const policeCode = policeText.match(/\d{8,}/)?.[0] || '';
+  return policeCode
+    ? `https://beian.mps.gov.cn/#/query/webSearch?code=${encodeURIComponent(policeCode)}`
+    : 'https://beian.mps.gov.cn/';
+});
 
 // 登录
 const goLogin = () => {
@@ -81,7 +90,7 @@ watch(
 const logout = async () => {
   // 先清本地登录态，保证请求不再带过期的 token
   userStore.logout();
-  // 本次会话内不再尝试用 cookie 静默恢复登录态（接口异常时兜底）
+  // 本次会话内不再尝试用 cookie 静默恢复登录态
   stopSessionRestore();
   try {
     // 通知后端清除 HttpOnly 的 refreshToken cookie
@@ -286,8 +295,15 @@ onUnmounted(() => {
               <a v-if="siteFiling.icp" href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
                 {{ siteFiling.icp }}
               </a>
-              <a v-if="siteFiling.police" href="https://beian.mps.gov.cn/" target="_blank" rel="noopener noreferrer">
-                | {{ siteFiling.police }}
+              <a v-if="siteFiling.police" :href="policeFilingUrl" target="_blank" rel="noopener noreferrer">
+                <img
+                  v-if="policeBadgeVisible"
+                  :src="policeBadgeUrl"
+                  alt="公安备案图标"
+                  class="police-badge"
+                  @error="policeBadgeVisible = false"
+                />
+                <span>{{ siteFiling.police }}</span>
               </a>
             </div>
             <!-- <div class="version">Version 1.0.0</div> -->
@@ -580,21 +596,71 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 8px 18px;
-  font-size: 13px;
-  opacity: 0.78;
+  gap: 6px 12px;
+  padding: 6px 12px;
+  font-size: 14px;
+  line-height: 1;
+  opacity: 1;
 }
 
 .filing-info a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0;
   color: var(--text-color);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
+.filing-info a + a {
+  padding-left: 12px;
+}
+
+.filing-info a + a::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1px;
+  height: 12px;
+  background: var(--border-color);
+  transform: translateY(-50%);
+}
+
 .filing-info a:hover {
   color: var(--primary-color);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  text-decoration: none;
+}
+
+.police-badge {
+  display: block;
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  object-fit: contain;
+}
+
+@media (max-width: 600px) {
+  .filing-info {
+    gap: 4px 8px;
+    padding: 5px 9px;
+    border-radius: 8px;
+    font-size: 11px;
+  }
+
+  .filing-info a + a {
+    padding-left: 9px;
+  }
+
+  .police-badge {
+    width: 14px;
+    height: 14px;
+    flex-basis: 14px;
+  }
 }
 
 .version {
